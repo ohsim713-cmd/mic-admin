@@ -5,8 +5,8 @@ import SchedulerInitializer from "./components/SchedulerInitializer";
 import { BusinessTypeProvider } from "./context/BusinessTypeContext";
 
 export const metadata: Metadata = {
-  title: "Mignon Admin | チャトレ事務所管理システム",
-  description: "AIがチャトレ事務所に最適なX投稿文を自動生成します",
+  title: "MIC Admin | AI SNS自動投稿",
+  description: "AIが最適なSNS投稿文を自動生成します",
 };
 
 export default function RootLayout({

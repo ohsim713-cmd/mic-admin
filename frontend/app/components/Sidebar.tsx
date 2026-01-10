@@ -111,10 +111,10 @@ export default function Sidebar() {
             WebkitTextFillColor: 'transparent',
             marginBottom: '0.25rem'
           }}>
-            Mignon Admin
+            MIC Admin
           </h1>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            投稿管理システム
+            AI SNS自動投稿
           </p>
         </div>
 
@@ -149,9 +149,9 @@ export default function Sidebar() {
               outline: 'none'
             }}
           >
-            <option value="chat-lady" style={{ background: '#1f2937', color: 'white' }}>チャットレディ事務所</option>
-            <option value="liver-agency" style={{ background: '#1f2937', color: 'white' }}>ライバー事務所</option>
-            <option value="nail-salon" style={{ background: '#1f2937', color: 'white' }}>ネイルサロン</option>
+            <option value="chat-lady" style={{ background: '#1f2937', color: 'white' }}>タイプA</option>
+            <option value="liver-agency" style={{ background: '#1f2937', color: 'white' }}>タイプB</option>
+            <option value="nail-salon" style={{ background: '#1f2937', color: 'white' }}>タイプC</option>
           </select>
           <p style={{
             fontSize: '0.7rem',
@@ -320,7 +320,7 @@ export default function Sidebar() {
           color: 'var(--text-muted)',
           textAlign: 'center'
         }}>
-          © 2024 Mignon Group
+          © 2024 MIC Admin
         </div>
       </aside>
     </>

@@ -270,8 +270,8 @@ export default function Home() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
             <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(45deg, #8b5cf6, #ec4899)' }}></div>
             <div>
-              <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>事務所公式</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>@office_official</div>
+              <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>公式アカウント</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>@mic_official</div>
             </div>
           </div>
 
@@ -319,7 +319,7 @@ export default function Home() {
       <div className="glass fade-in" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', animationDelay: '0.3s' }}>
         <ShieldCheck size={20} color="#4ade80" />
         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-          AIがXの規約やチャトレ業界のトレンドを考慮して、最適な文章を構成します
+          AIがSNSの規約やトレンドを考慮して、最適な文章を構成します
         </div>
       </div>
     </main>

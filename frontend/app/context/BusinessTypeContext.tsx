@@ -32,13 +32,13 @@ export function BusinessTypeProvider({ children }: { children: ReactNode }) {
   const getBusinessLabel = (type: BusinessType): string => {
     switch (type) {
       case 'chat-lady':
-        return 'チャットレディ事務所';
+        return 'タイプA';
       case 'liver-agency':
-        return 'ライバー事務所';
+        return 'タイプB';
       case 'nail-salon':
-        return 'ネイルサロン';
+        return 'タイプC';
       default:
-        return 'チャットレディ事務所';
+        return 'タイプA';
     }
   };
 
