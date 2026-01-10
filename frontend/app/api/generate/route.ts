@@ -84,80 +84,41 @@ export async function POST(request: Request) {
 
         const knowledgeBaseDir = path.join(process.cwd(), "..", "knowledge");
 
-        // 自動モード用のターゲットとテーマの選択肢
-        const targetOptions = ['チャトレ未経験者', 'チャトレ経験者', '夜職経験者', '副業希望者', '在宅ワーク希望者'];
-        const themeOptions = [
-            // マインドセット系
-            '自信がなくても始められる理由',
-            '焦らず続けることが結果につながる',
-            '年齢はハンデじゃなく武器になる',
-            '過去の経験が全部活きる仕事',
-            '配信の「質」が「量」より大事な理由',
-            // 働き方・ライフスタイル系
-            '在宅で完結する働き方の魅力',
-            '子育て・介護と両立できる理由',
-            '人間関係のストレスゼロの働き方',
-            '通勤なし、好きな時間に働ける',
-            'スマホ1台で始められる手軽さ',
-            // お金・収入系
-            '日払いで安心できる報酬体系',
-            '頑張った分だけ収入になる仕組み',
-            '初月から収益が出る人の共通点',
-            '単価を上げるための考え方',
-            // 未経験・初心者向け
-            '未経験から始めた人のリアル',
-            '特別なスキルがなくてもOKな理由',
-            '最初の不安は誰でも同じ',
-            '素人感が逆に武器になる話',
-            '最初の1週間で意識すべきこと',
-            // 安心・安全系
-            '顔出しなしで稼ぐ方法',
-            '身バレ対策の具体的なやり方',
-            '自分のルールで働ける環境',
-            '無理な要求は断っていい',
-            'マスクやウィッグの活用法',
-            // 成長・スキルアップ系
-            '稼げる人が必ずやっている習慣',
-            '勝ちパターンを見つけるコツ',
-            '成功者のマネから始める重要性',
-            '配信構成を変えてマンネリ打破',
-            'リピーターを増やすコツ',
-            // 市場・タイミング系
-            '稼ぎやすい時間帯の狙い方',
-            '需要が高まるタイミングの話',
-            '22時〜2時のゴールデンタイム攻略',
-            '連休・年末年始の稼ぎ方',
-            // DXLIVE特化
-            'DXLIVEで稼ぐための基本戦略',
-            'DXLIVEの2ショット報酬の仕組み',
-            'DXLIVEで人気になるプロフィールの作り方',
-            'DXLIVEの待機時間を有効活用する方法',
-            // STRIPCHAT特化
-            'STRIPCHATのストリップスコアを上げるコツ',
-            'STRIPCHATで海外ユーザーを掴む方法',
-            'STRIPCHATの高還元率を活かす稼ぎ方',
-            'STRIPCHATでチップをもらいやすくする工夫',
-            // FC2ライブ特化
-            'FC2ライブで視聴者を増やすテクニック',
-            'FC2ライブのコメント対応のコツ',
-            'FC2ライブで固定ファンを作る方法',
-            // FC2 LOVETIP特化
-            'FC2 LOVETIPで初心者が稼ぐ方法',
-            'FC2 LOVETIPのノンアダ配信で収益を出すコツ',
-            // 体験談系
-            '始めてよかったと思う瞬間',
-            '最初は半信半疑だった話',
-            '続けた結果こうなった話',
-            '配信を始めて変わった生活',
-            // テクニック系
-            '客を自分の土俵に引き込む方法',
-            '期待値コントロールで単価UP',
-            '優良な客層を見極めるポイント',
-            '「脱いで」と言われた時の対応法'
+        // theme_options.jsonから読み込み
+        let themeOptionsData: any = null;
+        try {
+            themeOptionsData = loadKnowledge('theme_options.json');
+        } catch (e) {
+            console.error('Failed to load theme_options.json:', e);
+        }
+
+        // ターゲットプロファイル（不安・悩み付き）
+        const targetProfiles = themeOptionsData?.targetProfiles || [
+            { id: 'default', label: '完全未経験', concerns: ['本当に稼げるの？'], desires: ['安心して始めたい'] }
         ];
 
+        // フックパターン
+        const hookPatterns = themeOptionsData?.hookPatterns || [
+            'ぶっちゃけ、〇〇って思ってない？',
+            '正直に言います。',
+            '誰にも言えなかったけど、'
+        ];
+
+        // テーマをフラット化
+        const themeCategories = themeOptionsData?.themeOptions || {};
+        const themeOptions = Object.values(themeCategories).flat() as string[];
+
+        // X伸ばし方の知識
+        const xGrowthKnowledge = themeOptionsData?.xGrowthKnowledge || {};
+
         // 自動モードならランダムに選択
-        const target = autoMode ? targetOptions[Math.floor(Math.random() * targetOptions.length)] : (inputTarget || 'チャトレ未経験');
+        const selectedTargetProfile = autoMode
+            ? targetProfiles[Math.floor(Math.random() * targetProfiles.length)]
+            : targetProfiles.find((t: any) => t.label === inputTarget) || targetProfiles[0];
+
+        const target = selectedTargetProfile.label;
+        const targetConcerns = selectedTargetProfile.concerns || [];
+        const targetDesires = selectedTargetProfile.desires || [];
         const postType = autoMode ? themeOptions[Math.floor(Math.random() * themeOptions.length)] : (inputPostType || '実績・収入投稿');
 
         // ビジネスタイプ別の知識の読み取り
@@ -356,10 +317,36 @@ ${seededPost}
         const extractResult = await model.generateContent(extractPrompt);
         const insights = extractResult.response.text();
 
+        // フックパターンからランダムに1つ選択
+        const selectedHook = hookPatterns[Math.floor(Math.random() * hookPatterns.length)];
+
+        // X伸ばし方の知識をプロンプト用に整形
+        const xGrowthContext = xGrowthKnowledge ? `
+### 📈 X（Twitter）で伸びる投稿の法則
+【基本原則】
+${(xGrowthKnowledge.基本原則 || []).slice(0, 3).map((r: string) => `- ${r}`).join('\n')}
+
+【フック文のコツ】
+${(xGrowthKnowledge.フック文のコツ || []).slice(0, 3).map((r: string) => `- ${r}`).join('\n')}
+
+【伸びやすいパターン】
+${(xGrowthKnowledge.伸びやすい投稿パターン || []).slice(0, 3).map((r: string) => `- ${r}`).join('\n')}
+
+【NG】
+${(xGrowthKnowledge.やってはいけないこと || []).slice(0, 2).map((r: string) => `- ${r}`).join('\n')}
+` : '';
+
         // 【ステップ2】 抽出された「型」と「教訓」を使い、事務所データで本番の投稿を作る
         const finalPrompt = `
 あなたは、${businessTerms.role}の代表です。
-目的は求人です。ノウハウや実績を投稿して、ターゲット（${target}、経験者、夜職経験者）の心を掴んでください。
+目的は求人です。ノウハウや実績を投稿して、ターゲット（${target}）の心を掴んでください。
+
+### 🎯 ターゲット詳細
+ペルソナ: ${target}
+【この人の不安・悩み】
+${targetConcerns.map((c: string) => `- ${c}`).join('\n')}
+【この人が求めていること】
+${targetDesires.map((d: string) => `- ${d}`).join('\n')}
 
 ### 🚨 構成指示 (Opal Logic)
 以下の【教訓】を今回の主張にし、抽出された【型】に沿って、事務所の【知識】を盛り込んで作成してください。
@@ -373,14 +360,27 @@ ${knowledgeContext ? `
 ### 📊 AIナレッジ（市場調査・コピーライティング知見）
 ${knowledgeContext}
 ` : ''}
+${xGrowthContext}
 ### 📝 投稿種類
 今回の投稿種類: ${postType}
 ${keywords ? `指定キーワード: ${keywords}` : ""}
 
+### 🪝 一文目（フック）の指示【最重要】
+一文目で読者の手を止めさせること。以下のパターンを参考に、強烈なフックで始めて：
+参考パターン: 「${selectedHook}」
+
+一文目の例:
+- 「ぶっちゃけ、このまま今の収入で大丈夫？って思ったことない？」
+- 「正直に言います。最初の1ヶ月は全然稼げなかった。」
+- 「40歳で始めて、今こうなった」
+- 「誰にも言えなかったけど、私も最初は怖かった」
+
 ### ✍️ 執筆ルール
-- 文字数: 300-400文字。
+- 文字数: 280-350文字。
 - 主張は一投稿に一つ。
 - ハッシュタグは絶対に禁止。
+- 一文目で興味を引く（スクロールを止めさせる）。
+- 「私」視点で本音っぽく語る。
 - 夜職の方でもスッと読める、柔らかくてわかりやすい文章（難しい言葉、失礼なタメ口はNG）。
 - 2-3行ごとに空行を入れ、スマホでの可読性を極限まで高めて。
 
@@ -392,7 +392,13 @@ ${keywords ? `指定キーワード: ${keywords}` : ""}
 
         // メタ情報を生成（自信度は3-5のランダム）
         const confidence = Math.floor(Math.random() * 3) + 3; // 3, 4, or 5
-        const metaInfo = JSON.stringify({ target, theme: postType, confidence });
+        const metaInfo = JSON.stringify({
+            target,
+            theme: postType,
+            confidence,
+            concerns: targetConcerns,
+            desires: targetDesires
+        });
 
         const stream = new ReadableStream({
             async start(controller) {

@@ -149,9 +149,9 @@ export default function Sidebar() {
               outline: 'none'
             }}
           >
-            <option value="chat-lady" style={{ background: '#1f2937', color: 'white' }}>タイプA</option>
-            <option value="liver-agency" style={{ background: '#1f2937', color: 'white' }}>タイプB</option>
-            <option value="nail-salon" style={{ background: '#1f2937', color: 'white' }}>タイプC</option>
+            <option value="chat-lady" style={{ background: '#1f2937', color: 'white' }}>配信事務所</option>
+            <option value="liver-agency" style={{ background: '#1f2937', color: 'white' }}>ライバー事務所</option>
+            <option value="nail-salon" style={{ background: '#1f2937', color: 'white' }}>サロン</option>
           </select>
           <p style={{
             fontSize: '0.7rem',

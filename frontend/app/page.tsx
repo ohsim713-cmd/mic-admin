@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Send, Copy, Check, ShieldCheck, Clock, Target, MessageSquare, Star } from 'lucide-react';
+import { Send, Copy, Check, ShieldCheck, Clock, Target, MessageSquare, Star, AlertCircle, Heart } from 'lucide-react';
 import { useBusinessType } from './context/BusinessTypeContext';
 
 interface PostMeta {
   target: string;
   theme: string;
   confidence: number;
+  concerns?: string[];
+  desires?: string[];
 }
 
 export default function Home() {
@@ -231,39 +233,82 @@ export default function Home() {
           {/* メタ情報表示 */}
           {postMeta && (
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '1rem',
               marginBottom: '1.5rem',
               padding: '1rem',
               background: 'rgba(139, 92, 246, 0.1)',
               borderRadius: '12px',
               border: '1px solid rgba(139, 92, 246, 0.2)'
             }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.25rem' }}>
-                  <Target size={14} />
-                  ターゲット
+              {/* 上段: ターゲット、テーマ、自信度 */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '1rem',
+                marginBottom: '1rem'
+              }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.25rem' }}>
+                    <Target size={14} />
+                    ターゲット
+                  </div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{postMeta.target}</div>
                 </div>
-                <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{postMeta.target}</div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.25rem' }}>
+                    <MessageSquare size={14} />
+                    主張・テーマ
+                  </div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{postMeta.theme}</div>
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.25rem' }}>
+                    <Star size={14} />
+                    自信度
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {renderConfidenceStars(postMeta.confidence)}
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>({postMeta.confidence}/5)</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.25rem' }}>
-                  <MessageSquare size={14} />
-                  主張・テーマ
+
+              {/* 下段: 不安・悩み、欲求 */}
+              {(postMeta.concerns?.length || postMeta.desires?.length) && (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '1rem',
+                  paddingTop: '1rem',
+                  borderTop: '1px solid rgba(139, 92, 246, 0.2)'
+                }}>
+                  {postMeta.concerns && postMeta.concerns.length > 0 && (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#f87171', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
+                        <AlertCircle size={12} />
+                        解消すべき不安
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
+                        {postMeta.concerns.slice(0, 3).map((c, i) => (
+                          <div key={i}>• {c}</div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {postMeta.desires && postMeta.desires.length > 0 && (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#4ade80', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
+                        <Heart size={12} />
+                        刺さるポイント
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
+                        {postMeta.desires.slice(0, 3).map((d, i) => (
+                          <div key={i}>• {d}</div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>{postMeta.theme}</div>
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '0.25rem' }}>
-                  <Star size={14} />
-                  自信度
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {renderConfidenceStars(postMeta.confidence)}
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>({postMeta.confidence}/5)</span>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
