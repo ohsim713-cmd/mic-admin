@@ -1,0 +1,174 @@
+# Mignon Admin - チャトレ事務所自動投稿システム
+
+AIがチャトレ事務所に最適なX（旧Twitter）投稿文を自動生成し、指定した間隔で自動投稿するシステムです。
+
+## 主な機能
+
+1. **投稿生成** - AIが状況に応じた投稿文を生成
+2. **高度な生成** - 複数パターン生成、AI分析、参考投稿学習
+3. **自動投稿スケジューラー** - 2時間おき（または任意の間隔）で自動的にXへ投稿
+4. **生成履歴** - 過去の生成履歴を閲覧
+5. **アナリティクス** - 投稿の分析
+6. **ナレッジ編集** - 事務所情報や過去投稿を管理
+
+## セットアップ
+
+### 1. 依存パッケージのインストール
+
+```bash
+cd frontend
+npm install
+```
+
+### 2. サーバーの起動
+
+```bash
+npm run dev
+```
+
+http://localhost:3000 にアクセスしてください。
+
+### 3. X (Twitter) API認証情報の設定
+
+1. [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard) にアクセス
+2. アプリを作成（Free Tier でOK）
+3. アプリの設定で「Read and Write」権限を有効化
+4. 以下の認証情報を取得:
+   - API Key (Consumer Key)
+   - API Secret (Consumer Secret)
+   - Access Token
+   - Access Secret
+5. ブラウザでサイドバーの「設定」をクリック
+6. 取得した認証情報を入力して「認証情報を保存」をクリック
+7. 「接続をテスト」ボタンで動作確認
+
+**重要**: 認証情報は暗号化されてローカルに保存されます。`.env.local`ファイルは不要です。
+
+## 自動投稿の使い方
+
+### 1. 初回テスト
+
+まずは「自動投稿」ページで「テスト投稿（即座にXへ投稿）」ボタンをクリックして、X APIの接続を確認してください。
+
+### 2. スケジュールの作成
+
+1. サイドバーから「自動投稿」をクリック
+2. 「新しいスケジュール」の「作成」ボタンをクリック
+3. 以下を設定:
+   - **投稿間隔**: 2時間、3時間など（1-24時間で設定可能）
+   - **ターゲット層**: チャトレ未経験、経験者、夜職経験者
+   - **投稿の種類**: 実績・収入投稿、ノウハウ投稿、事務所の強み投稿
+   - **キーワード**: 任意（例: 日払い、在宅、身バレ防止）
+4. 「スケジュールを作成」をクリック
+
+### 3. スケジュールの管理
+
+- **一時停止**: ⏸ボタンをクリック
+- **再開**: ▶ボタンをクリック
+- **削除**: 🗑ボタンをクリック
+
+### 4. 動作の仕組み
+
+- スケジューラーは毎分実行され、投稿時刻になったスケジュールを自動的に実行します
+- サーバーが起動している限り、バックグラウンドで動作し続けます
+- 各スケジュールには「次回実行」時刻が表示されます
+
+## ナレッジベースの管理
+
+`knowledge/` フォルダに以下のファイルを配置してください:
+
+- `internal_data.txt` - 事務所の情報、特典、強みなど
+- `past_posts.txt` - 過去の成功した投稿（TSV形式）
+
+これらの情報は、AIが投稿文を生成する際に参照されます。
+
+## トラブルシューティング
+
+### X API エラーが出る場合
+
+1. 設定ページで認証情報が正しく入力されているか確認
+2. 「接続をテスト」ボタンでAPI接続を確認
+3. Twitter Developer Portalでアプリの権限が「Read and Write」になっているか確認
+4. Access TokenとSecretを再生成してみる
+
+### スケジュールが実行されない場合
+
+1. サーバーが起動しているか確認（`npm run dev` が実行中か）
+2. ブラウザのコンソールで「Scheduler initialization」メッセージが表示されているか確認
+3. スケジュールが「有効」になっているか確認
+
+### 文字数制限エラー
+
+Xの投稿は最大280文字（日本語の場合も同様）です。生成された投稿が長すぎる場合は、プロンプトを調整してください。
+
+## 技術スタック
+
+- **Frontend**: Next.js 16.1.1, React 19, TypeScript
+- **AI**: Google Gemini API (gemini-3-flash-preview)
+- **X API**: twitter-api-v2
+- **Scheduler**: node-cron
+- **Styling**: CSS Variables, Glassmorphism
+
+## 開発者向け情報
+
+### プロジェクト構成
+
+```
+frontend/
+├── app/
+│   ├── api/                 # API Routes
+│   │   ├── generate/        # 投稿生成API
+│   │   ├── post-to-x/       # X投稿API
+│   │   ├── scheduler/       # スケジュール管理API
+│   │   ├── history/         # 履歴API
+│   │   └── analyze/         # 分析API
+│   ├── components/          # React Components
+│   ├── scheduler/           # スケジューラーページ
+│   └── ...                  # その他のページ
+├── lib/
+│   └── scheduler.ts         # Cronスケジューラー
+└── knowledge/               # ナレッジベース
+    ├── internal_data.txt
+    ├── past_posts.txt
+    └── schedules.json       # スケジュール設定（自動生成）
+```
+
+### カスタマイズ
+
+投稿の生成ロジックは `app/api/generate/route.ts` で管理されています。プロンプトや生成ルールを変更したい場合はこのファイルを編集してください。
+
+## iPhoneやスマホからアクセスする
+
+詳細は [MOBILE_ACCESS.md](MOBILE_ACCESS.md) を参照してください。
+
+### 簡単な方法（ngrok）
+
+1. 開発サーバーを起動:
+```bash
+npm run dev
+```
+
+2. 別のターミナルでngrokを起動:
+```bash
+npm run ngrok
+```
+
+3. 表示されたURL（例: `https://xxxx.ngrok-free.app`）をiPhoneのブラウザで開く
+
+### 同じWi-Fiで使う方法
+
+1. モバイルアクセス用にサーバーを起動:
+```bash
+npm run dev:mobile
+```
+
+2. PCのIPアドレスを確認:
+```bash
+ipconfig
+```
+
+3. iPhoneのブラウザで `http://[あなたのIP]:3000` にアクセス
+
+## ライセンス
+
+© 2024 Mignon Group
