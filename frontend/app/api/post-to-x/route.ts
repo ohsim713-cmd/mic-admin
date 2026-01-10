@@ -5,10 +5,10 @@ import fs from "fs";
 import path from "path";
 import crypto from 'crypto';
 
-const apiKey = "AIzaSyCFMnR_25NvqvKzo2NBRSgQ4vnewwhB77Q";
+const apiKey = process.env.GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(apiKey);
 
-const SETTINGS_FILE = path.join(process.cwd(), '..', 'knowledge', 'twitter_credentials.json');
+const SETTINGS_FILE = path.join(process.cwd(), 'knowledge', 'twitter_credentials.json');
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-key-change-in-production-32b';
 const ALGORITHM = 'aes-256-cbc';
 
@@ -63,7 +63,7 @@ function getRandomPost(rawText: string): string {
 }
 
 async function generatePost(target: string, postType: string, keywords: string, referencePost?: string) {
-    const knowledgeBaseDir = path.join(process.cwd(), "..", "knowledge");
+    const knowledgeBaseDir = path.join(process.cwd(), "knowledge");
 
     let internalData = "";
     try {

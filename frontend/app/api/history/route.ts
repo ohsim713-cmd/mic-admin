@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 
-const HISTORY_FILE = path.join(process.cwd(), '..', 'data', 'history.json');
+const HISTORY_FILE = path.join(process.cwd(), 'data', 'history.json');
 
 // データディレクトリを確保
 async function ensureDataDir() {

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-const SETTINGS_DIR = path.join(process.cwd(), '..', 'settings');
+const SETTINGS_DIR = path.join(process.cwd(), 'settings');
 const WP_SETTINGS_FILE = path.join(SETTINGS_DIR, 'wordpress.json');
 
 export async function POST(request: Request) {

@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
-const SCHEDULES_FILE = path.join(process.cwd(), '..', 'knowledge', 'schedules.json');
+const SCHEDULES_FILE = path.join(process.cwd(), 'knowledge', 'schedules.json');
 
 type Schedule = {
   id: string;

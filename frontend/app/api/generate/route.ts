@@ -1,56 +1,16 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs";
 import path from "path";
-import crypto from "crypto";
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-key-change-in-production-32b';
-const ALGORITHM = 'aes-256-cbc';
-
-function decrypt(text: string): string {
-    try {
-        const key = Buffer.from(ENCRYPTION_KEY.padEnd(32, '0').substring(0, 32));
-        const parts = text.split(':');
-        const iv = Buffer.from(parts[0], 'hex');
-        const encryptedText = parts[1];
-        const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-        let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
-        decrypted += decipher.final('utf8');
-        return decrypted;
-    } catch (error) {
-        console.error('Decryption error:', error);
-        return '';
-    }
+// 環境変数から API キーを取得（Vercel 用）
+const apiKey = process.env.GEMINI_API_KEY || "";
+if (!apiKey) {
+    console.error('GEMINI_API_KEY is not set');
 }
-
-function loadGeminiApiKey(): string {
-    try {
-        const settingsFile = path.join(process.cwd(), '..', 'settings', 'gemini.json');
-        if (!fs.existsSync(settingsFile)) {
-            // フォールバック: 古いハードコードされたキーを使用
-            return "AIzaSyCFMnR_25NvqvKzo2NBRSgQ4vnewwhB77Q";
-        }
-
-        const data = fs.readFileSync(settingsFile, 'utf-8');
-        const parsed = JSON.parse(data);
-        const apiKey = parsed.apiKey ? decrypt(parsed.apiKey) : '';
-
-        if (!apiKey) {
-            // フォールバック
-            return "AIzaSyCFMnR_25NvqvKzo2NBRSgQ4vnewwhB77Q";
-        }
-
-        return apiKey;
-    } catch (error) {
-        console.error('Failed to load Gemini API key:', error);
-        // フォールバック
-        return "AIzaSyCFMnR_25NvqvKzo2NBRSgQ4vnewwhB77Q";
-    }
-}
-
-const apiKey = loadGeminiApiKey();
 const genAI = new GoogleGenerativeAI(apiKey);
 
-const KNOWLEDGE_DIR = path.join(process.cwd(), '..', 'knowledge');
+// knowledge フォルダは frontend 内に移動済み
+const KNOWLEDGE_DIR = path.join(process.cwd(), 'knowledge');
 
 // ナレッジファイルを読み込む
 function loadKnowledge(filename: string) {
@@ -82,7 +42,7 @@ export async function POST(request: Request) {
     try {
         const { target: inputTarget, postType: inputPostType, keywords, referencePost, businessType = 'chat-lady', autoMode = false } = await request.json();
 
-        const knowledgeBaseDir = path.join(process.cwd(), "..", "knowledge");
+        const knowledgeBaseDir = path.join(process.cwd(), "knowledge");
 
         // theme_options.jsonから読み込み
         let themeOptionsData: any = null;

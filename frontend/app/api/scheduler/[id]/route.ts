@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-const SCHEDULES_FILE = path.join(process.cwd(), '..', 'knowledge', 'schedules.json');
+const SCHEDULES_FILE = path.join(process.cwd(), 'knowledge', 'schedules.json');
 
 type Schedule = {
   id: string;
@@ -43,10 +43,10 @@ function saveSchedules(schedules: Schedule[]) {
 // PATCH - スケジュールの更新（有効/無効切り替え）
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { enabled } = body;
 
@@ -78,10 +78,10 @@ export async function PATCH(
 // DELETE - スケジュールの削除
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const schedules = loadSchedules();
     const filteredSchedules = schedules.filter(s => s.id !== id);
 

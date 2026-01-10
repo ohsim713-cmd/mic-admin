@@ -143,7 +143,7 @@ export default function AnalyticsPage() {
                   fontSize: '0.9rem'
                 }}>
                   <span>{name}</span>
-                  <span style={{ color: '#8b5cf6', fontWeight: 'bold' }}>{count}回</span>
+                  <span style={{ color: '#8b5cf6', fontWeight: 'bold' }}>{count as number}回</span>
                 </div>
                 <div style={{
                   width: '100%',

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 
-const KNOWLEDGE_FILE = path.join(process.cwd(), '..', 'knowledge', 'agency_knowledge.md');
+const KNOWLEDGE_FILE = path.join(process.cwd(), 'knowledge', 'agency_knowledge.md');
 
 // GET: ナレッジベースを取得
 export async function GET() {

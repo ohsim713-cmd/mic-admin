@@ -2,41 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs';
 import path from 'path';
-import crypto from 'crypto';
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-key-change-in-production-32b';
-const ALGORITHM = 'aes-256-cbc';
-const KNOWLEDGE_DIR = path.join(process.cwd(), '..', 'knowledge');
-
-function decrypt(text: string): string {
-  try {
-    const key = Buffer.from(ENCRYPTION_KEY.padEnd(32, '0').substring(0, 32));
-    const parts = text.split(':');
-    const iv = Buffer.from(parts[0], 'hex');
-    const encryptedText = parts[1];
-    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
-  } catch (error) {
-    return '';
-  }
-}
-
-function loadGeminiApiKey(): string {
-  try {
-    const settingsFile = path.join(process.cwd(), '..', 'settings', 'gemini.json');
-    if (!fs.existsSync(settingsFile)) {
-      return "AIzaSyCFMnR_25NvqvKzo2NBRSgQ4vnewwhB77Q";
-    }
-    const data = fs.readFileSync(settingsFile, 'utf-8');
-    const parsed = JSON.parse(data);
-    const apiKey = parsed.apiKey ? decrypt(parsed.apiKey) : '';
-    return apiKey || "AIzaSyCFMnR_25NvqvKzo2NBRSgQ4vnewwhB77Q";
-  } catch (error) {
-    return "AIzaSyCFMnR_25NvqvKzo2NBRSgQ4vnewwhB77Q";
-  }
-}
+const apiKey = process.env.GEMINI_API_KEY || "";
+const KNOWLEDGE_DIR = path.join(process.cwd(), 'knowledge');
 
 function saveKnowledge(filename: string, data: any) {
   if (!fs.existsSync(KNOWLEDGE_DIR)) {
@@ -58,7 +26,6 @@ function loadKnowledge(filename: string) {
 // Instagram運用ノウハウを生成・更新
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = loadGeminiApiKey();
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
