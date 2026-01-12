@@ -1,0 +1,105 @@
+# 自動投稿スケジューラー (Vercel Cron代替)
+#
+# このワークフローは定期的にauto-post APIを呼び出し、
+# X（Twitter）への自動投稿を実行します。
+#
+# 必要なSecretsの設定:
+#   VERCEL_DEPLOY_URL: デプロイ先のURL (例: https://your-app.vercel.app)
+#   AUTO_POST_SECRET: 認証用シークレット (任意)
+
+name: Auto Post Scheduler
+
+on:
+  # 定期実行 (UTC時間)
+  # 日本時間に合わせて調整: UTC+9
+  schedule:
+    # 朝投稿: 日本時間 7:00 (UTC 22:00前日)
+    - cron: '0 22 * * *'
+    # 昼投稿: 日本時間 12:00 (UTC 3:00)
+    - cron: '0 3 * * *'
+    # 夕方投稿: 日本時間 18:00 (UTC 9:00)
+    - cron: '0 9 * * *'
+    # 夜投稿: 日本時間 21:00 (UTC 12:00)
+    - cron: '0 12 * * *'
+
+  # 手動実行も可能
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: '投稿スロット (1-14)'
+        required: false
+        default: '0'
+        type: string
+      dry_run:
+        description: 'ドライラン (投稿しない)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  auto-post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Determine Time Slot
+        id: slot
+        run: |
+          # 手動実行時はinputを使用、スケジュール時は時間から判定
+          if [ "${{ github.event.inputs.slot }}" != "" ] && [ "${{ github.event.inputs.slot }}" != "0" ]; then
+            echo "slot=${{ github.event.inputs.slot }}" >> $GITHUB_OUTPUT
+          else
+            # 現在のUTC時間から日本時間のスロットを判定
+            HOUR=$(date -u +%H)
+            case $HOUR in
+              22) SLOT=1 ;;  # 朝7時 -> おはよう
+              03) SLOT=5 ;;  # 昼12時 -> 共感
+              09) SLOT=9 ;;  # 夕方18時 -> メリット
+              12) SLOT=14 ;; # 夜21時 -> 夜向け
+              *) SLOT=1 ;;
+            esac
+            echo "slot=$SLOT" >> $GITHUB_OUTPUT
+          fi
+          echo "Selected slot: $SLOT"
+
+      - name: Call Auto Post API
+        env:
+          DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_URL }}
+          AUTO_POST_SECRET: ${{ secrets.AUTO_POST_SECRET }}
+        run: |
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "Error: VERCEL_DEPLOY_URL secret is not set"
+            exit 1
+          fi
+
+          SLOT=${{ steps.slot.outputs.slot }}
+          DRY_RUN=${{ github.event.inputs.dry_run || 'false' }}
+
+          echo "Calling auto-post API..."
+          echo "  URL: $DEPLOY_URL/api/auto-post"
+          echo "  Slot: $SLOT"
+          echo "  Dry Run: $DRY_RUN"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/auto-post" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $AUTO_POST_SECRET" \
+            -d "{\"slot\": $SLOT, \"dryRun\": $DRY_RUN}")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response Code: $HTTP_CODE"
+          echo "Response Body: $BODY"
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "Auto post successful!"
+          else
+            echo "Auto post failed with status $HTTP_CODE"
+            exit 1
+          fi
+
+      - name: Log Result
+        if: always()
+        run: |
+          echo "Auto post job completed at $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "Japan Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M:%S JST')"
