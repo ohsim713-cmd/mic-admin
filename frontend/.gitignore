@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# credentials (sensitive data)
+knowledge/wordpress_credentials.json
+knowledge/sns_credentials.json
+output.log
