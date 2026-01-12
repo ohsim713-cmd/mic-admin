@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { formatForSNS, postToAllSNS } from '@/lib/dm-hunter/sns-adapter';
+import { formatForTwitter, postToTwitterAccount, AccountType } from '@/lib/dm-hunter/sns-adapter';
 import { checkQuality } from '@/lib/dm-hunter/quality-checker';
 
-// POST: 全SNSに投稿
+// POST: 指定アカウントに投稿
 export async function POST(request: NextRequest) {
   try {
-    const { text, skipQualityCheck = false } = await request.json();
+    const { text, account, target, benefit, score: inputScore, skipQualityCheck = false } = await request.json();
 
     if (!text) {
       return NextResponse.json({
@@ -14,42 +14,56 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    if (!account) {
+      return NextResponse.json({
+        success: false,
+        error: 'account is required',
+      }, { status: 400 });
+    }
+
     // 品質チェック（オプションでスキップ可能）
-    if (!skipQualityCheck) {
-      const score = checkQuality(text);
-      if (!score.passed) {
+    let score = inputScore;
+    if (!skipQualityCheck && !inputScore) {
+      const qualityResult = checkQuality(text);
+      score = qualityResult.total;
+      if (!qualityResult.passed) {
         return NextResponse.json({
           success: false,
           error: 'Quality check failed',
-          score,
+          score: qualityResult,
         }, { status: 400 });
       }
     }
 
-    // SNS別にフォーマット
-    const formattedPosts = formatForSNS(text);
+    // Twitter投稿
+    const result = await postToTwitterAccount(text, account as AccountType);
 
-    // ベースURLを取得
+    // ログ保存
     const baseUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
       : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
-    // 全SNSに投稿
-    const results = await postToAllSNS(formattedPosts, baseUrl);
-
-    // 成功/失敗をカウント
-    const successCount = results.filter(r => r.success).length;
-    const failCount = results.filter(r => !r.success).length;
+    await fetch(`${baseUrl}/api/dm-hunter/logs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text,
+        target: target || 'unknown',
+        benefit: benefit || 'unknown',
+        account,
+        score: score || 0,
+        results: [result],
+      }),
+    }).catch(() => {});
 
     return NextResponse.json({
-      success: successCount > 0,
-      message: `${successCount}/${results.length} platforms posted`,
-      results,
-      formattedPosts,
+      success: result.success,
+      account,
+      result,
     });
 
   } catch (error: any) {
-    console.error('Post all error:', error);
+    console.error('Post error:', error);
     return NextResponse.json({
       success: false,
       error: error.message,
