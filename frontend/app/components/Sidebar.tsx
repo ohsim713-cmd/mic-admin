@@ -3,10 +3,11 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sparkles, FileText, BarChart3, Settings, Menu, X, BookOpen, Video, Building2, Share2, MessageSquare, Cloud, Instagram, Music, Youtube, ChevronDown, Factory } from 'lucide-react';
+import { Sparkles, FileText, BarChart3, Settings, Menu, X, BookOpen, Video, Building2, Share2, MessageSquare, Cloud, Instagram, Music, Youtube, ChevronDown, Factory, Zap } from 'lucide-react';
 import { useBusinessType } from '../context/BusinessTypeContext';
 
 const contentMenuItems = [
+  { id: 'auto-post', label: '自動投稿', icon: Zap, href: '/auto-post' },
   { id: 'approval', label: '文章生成', icon: Sparkles, href: '/approval' },
   { id: 'wordpress', label: 'SEO記事生成', icon: BookOpen, href: '/wordpress' },
   { id: 'instagram', label: '画像生成', icon: Instagram, href: '/instagram' },

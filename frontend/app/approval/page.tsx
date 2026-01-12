@@ -533,18 +533,11 @@ export default function ApprovalPage() {
                   <span style={{
                     padding: '0.15rem 0.5rem',
                     borderRadius: '12px',
-                    background: 'rgba(139, 92, 246, 0.2)',
+                    background: 'rgba(59, 130, 246, 0.3)',
                     fontSize: '0.7rem',
+                    fontWeight: 'bold',
                   }}>
-                    {candidate.target}
-                  </span>
-                  <span style={{
-                    padding: '0.15rem 0.5rem',
-                    borderRadius: '12px',
-                    background: 'rgba(59, 130, 246, 0.2)',
-                    fontSize: '0.7rem',
-                  }}>
-                    {candidate.theme}
+                    💎 {candidate.theme}
                   </span>
                 </div>
                 <button
