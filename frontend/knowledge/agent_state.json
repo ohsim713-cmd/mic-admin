@@ -1,0 +1,46 @@
+{
+  "agents": {
+    "director": {
+      "id": "director-001",
+      "name": "Product Director",
+      "role": "脳",
+      "status": "idle",
+      "lastActive": null,
+      "tasksCompleted": 0,
+      "currentTask": null
+    },
+    "hunter": {
+      "id": "hunter-001",
+      "name": "Opportunity Hunter",
+      "role": "目",
+      "status": "idle",
+      "lastActive": null,
+      "opportunitiesFound": 0,
+      "currentTask": null,
+      "schedule": {
+        "intervalHours": 4,
+        "lastRun": null,
+        "nextRun": null
+      }
+    },
+    "dashboard": {
+      "id": "dashboard-001",
+      "name": "Product Dashboard",
+      "role": "顔",
+      "status": "active",
+      "lastActive": null,
+      "productsMonitoring": 0
+    },
+    "builder": {
+      "id": "builder-001",
+      "name": "Builder & Deployer",
+      "role": "手",
+      "status": "idle",
+      "lastActive": null,
+      "productsBuilt": 0,
+      "currentBuild": null
+    }
+  },
+  "systemStatus": "initializing",
+  "lastUpdated": null
+}

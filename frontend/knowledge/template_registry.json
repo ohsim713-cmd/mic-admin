@@ -1,0 +1,43 @@
+{
+  "templates": [
+    {
+      "id": "mic-admin-v1",
+      "name": "MIC Admin - SNS自動投稿",
+      "description": "チャットレディ求人向けSNS自動投稿システム",
+      "repoUrl": "https://github.com/user/mic-admin",
+      "category": "sns-automation",
+      "features": [
+        "AI文章生成 (Gemini)",
+        "マルチSNS投稿 (X, Bluesky, Threads)",
+        "画像生成",
+        "スケジュール投稿"
+      ],
+      "customizableFields": [
+        "業界/ニッチ",
+        "投稿トーン",
+        "ターゲット層",
+        "ブランディング"
+      ],
+      "deployTarget": "vercel",
+      "status": "active",
+      "createdAt": "2026-01-12T00:00:00Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": "sns-automation",
+      "name": "SNS自動化",
+      "description": "SNS投稿を自動化するツール"
+    },
+    {
+      "id": "saas-tool",
+      "name": "SaaSツール",
+      "description": "月額課金型のWebサービス"
+    },
+    {
+      "id": "marketplace",
+      "name": "マーケットプレイス",
+      "description": "売り手と買い手をつなぐプラットフォーム"
+    }
+  ]
+}

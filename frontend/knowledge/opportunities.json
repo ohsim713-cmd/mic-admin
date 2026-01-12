@@ -1,0 +1,18 @@
+{
+  "opportunities": [],
+  "pipeline": {
+    "discovered": [],
+    "evaluating": [],
+    "approved": [],
+    "building": [],
+    "deployed": [],
+    "rejected": []
+  },
+  "stats": {
+    "totalDiscovered": 0,
+    "totalApproved": 0,
+    "totalRejected": 0,
+    "totalDeployed": 0
+  },
+  "lastUpdated": null
+}
