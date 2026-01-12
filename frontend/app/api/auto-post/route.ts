@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TwitterApi } from 'twitter-api-v2';
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import fs from "fs";
 import path from "path";
 import crypto from 'crypto';
-
-const apiKey = process.env.GEMINI_API_KEY || "";
-const genAI = new GoogleGenerativeAI(apiKey);
+import { runPostGraph } from '@/lib/langgraph';
 
 const KNOWLEDGE_DIR = path.join(process.cwd(), 'knowledge');
 const SETTINGS_FILE = path.join(KNOWLEDGE_DIR, 'twitter_credentials.json');
@@ -123,80 +119,6 @@ function getCurrentPostType(): { type: string; slot: number; time: string } {
   };
 }
 
-// 投稿テンプレートを取得
-function getPostTemplate(postType: string): string {
-  const strategy = loadJSON('x_daily15_strategy.json');
-  const templates = strategy?.daily15PostStrategy?.templates;
-  if (!templates || !templates[postType]) {
-    return '';
-  }
-  const typeTemplates = templates[postType];
-  return typeTemplates[Math.floor(Math.random() * typeTemplates.length)];
-}
-
-// AI投稿生成
-async function generateAutoPost(postType: string, template: string): Promise<string> {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-  // メリットリスト
-  const benefits = [
-    { label: '通勤ゼロ', desc: '家から一歩も出ずに稼げる' },
-    { label: '時間自由', desc: '好きな時間に好きなだけ働ける' },
-    { label: '人間関係なし', desc: '上司も同僚もいない' },
-    { label: '顔出しなし', desc: '完全匿名で身バレの心配なし' },
-    { label: '日払いOK', desc: '働いたらすぐお金になる' },
-    { label: 'スマホ1台', desc: '初期費用ゼロで始められる' },
-    { label: '年齢不問', desc: '30代40代でも需要がある' },
-    { label: '高収入', desc: '月収10万〜50万、頑張り次第で青天井' },
-  ];
-  const benefit = benefits[Math.floor(Math.random() * benefits.length)];
-
-  const prompt = `
-あなたは在宅ワーク求人のプロコピーライターです。
-以下の投稿タイプに合った投稿を作成してください。
-
-【投稿タイプ】${postType}
-【参考テンプレート】${template}
-【強調メリット】${benefit.label} - ${benefit.desc}
-
-### ルール
-- 200-280文字（短く刺さる）
-- 「私」視点のリアルな体験談風
-- 数字を具体的に入れる（時間、金額、日数）
-- ハッシュタグ禁止
-- 2-3行ごとに空行
-- ${postType === '求人' ? '最後に「気になる方はDMへ💬」のようなCTAを入れる' : 'CTAは軽めに、または省略'}
-- テンプレートをそのまま使わず、新鮮な表現で
-
-投稿文のみ出力。説明不要。
-`;
-
-  const result = await model.generateContent(prompt);
-  return result.response.text().trim();
-}
-
-// Xに投稿
-async function postToX(text: string): Promise<{ success: boolean; tweetId?: string; error?: string }> {
-  const credentials = loadCredentials();
-  if (!credentials?.apiKey || !credentials?.accessToken) {
-    return { success: false, error: 'X API credentials not configured' };
-  }
-
-  try {
-    const client = new TwitterApi({
-      appKey: credentials.apiKey,
-      appSecret: credentials.apiSecret,
-      accessToken: credentials.accessToken,
-      accessSecret: credentials.accessSecret,
-    });
-
-    const tweet = await client.v2.tweet(text);
-    return { success: true, tweetId: tweet.data.id };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
 // GET: 自動投稿の状態確認
 export async function GET() {
   const todayCount = getTodayPostCount();
@@ -214,6 +136,7 @@ export async function GET() {
 
   return NextResponse.json({
     status: 'active',
+    mode: 'langgraph', // LangGraphモード
     todayPostCount: todayCount,
     maxDailyPosts: 15,
     currentSlot,
@@ -222,18 +145,13 @@ export async function GET() {
   });
 }
 
-// POST: 自動投稿実行
+// POST: LangGraphで自動投稿実行
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
-  // Cron認証（オプション）
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    // 認証ヘッダーがない場合は手動実行として許可（開発用）
-    // 本番では必要に応じてコメントアウトを外す
-    // return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  // URLパラメータでモード選択（legacy = 旧方式）
+  const { searchParams } = new URL(request.url);
+  const mode = searchParams.get('mode') || 'langgraph';
 
   // 1日15投稿の上限チェック
   const todayCount = getTodayPostCount();
@@ -247,54 +165,146 @@ export async function POST(request: NextRequest) {
 
   // 現在の投稿タイプを取得
   const currentSlot = getCurrentPostType();
-  const template = getPostTemplate(currentSlot.type);
 
-  // 投稿文を生成
-  let generatedPost: string;
+  // ========== LangGraph モード ==========
+  if (mode === 'langgraph') {
+    try {
+      console.log('[LangGraph] Starting post flow...');
+
+      // LangGraphでフロー実行
+      const result = await runPostGraph({
+        postType: currentSlot.type,
+        slot: currentSlot.slot,
+        targetAudience: '副業を探している20-40代女性',
+        maxRevisions: 2,
+      });
+
+      // ログ保存
+      const log = {
+        postedAt: new Date().toISOString(),
+        success: result.posted,
+        tweetId: result.tweetId,
+        error: result.error,
+        slot: currentSlot.slot,
+        type: currentSlot.type,
+        postText: (result.revisedPost || result.generatedPost).substring(0, 100) + '...',
+        processingTime: Date.now() - startTime,
+        mode: 'langgraph',
+        qualityScore: result.qualityScore?.overall,
+        revisionCount: result.revisionCount,
+        flowLogs: result.logs,
+      };
+      savePostLog(log);
+
+      if (result.posted) {
+        return NextResponse.json({
+          success: true,
+          message: `投稿完了 (${todayCount + 1}/15) [LangGraph]`,
+          tweetId: result.tweetId,
+          slot: currentSlot,
+          postText: result.revisedPost || result.generatedPost,
+          qualityScore: result.qualityScore,
+          revisionCount: result.revisionCount,
+          flowLogs: result.logs,
+        });
+      } else {
+        return NextResponse.json({
+          success: false,
+          error: result.error,
+          slot: currentSlot,
+          generatedPost: result.generatedPost,
+          flowLogs: result.logs,
+        }, { status: 500 });
+      }
+    } catch (error: any) {
+      console.error('[LangGraph] Error:', error);
+      const log = {
+        postedAt: new Date().toISOString(),
+        success: false,
+        error: `LangGraph error: ${error.message}`,
+        slot: currentSlot.slot,
+        type: currentSlot.type,
+        mode: 'langgraph',
+      };
+      savePostLog(log);
+      return NextResponse.json({ success: false, error: log.error }, { status: 500 });
+    }
+  }
+
+  // ========== Legacy モード（フォールバック） ==========
+  const { GoogleGenerativeAI } = await import('@google/generative-ai');
+  const { TwitterApi } = await import('twitter-api-v2');
+
+  const apiKey = process.env.GEMINI_API_KEY || "";
+  const genAI = new GoogleGenerativeAI(apiKey);
+
+  // メリットリスト
+  const benefits = [
+    { label: '通勤ゼロ', desc: '家から一歩も出ずに稼げる' },
+    { label: '時間自由', desc: '好きな時間に好きなだけ働ける' },
+    { label: '顔出しなし', desc: '完全匿名で身バレの心配なし' },
+    { label: '日払いOK', desc: '働いたらすぐお金になる' },
+    { label: '高収入', desc: '月収10万〜50万、頑張り次第で青天井' },
+  ];
+  const benefit = benefits[Math.floor(Math.random() * benefits.length)];
+
   try {
-    generatedPost = await generateAutoPost(currentSlot.type, template);
+    // 投稿生成
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const prompt = `あなたは在宅ワーク求人のプロコピーライターです。
+【投稿タイプ】${currentSlot.type}
+【強調メリット】${benefit.label} - ${benefit.desc}
+ルール: 200-280文字、体験談風、数字入れる、ハッシュタグ禁止、2-3行ごと空行
+投稿文のみ出力。`;
+
+    const result = await model.generateContent(prompt);
+    const generatedPost = result.response.text().trim();
+
+    // X投稿
+    const credentials = loadCredentials();
+    if (!credentials?.apiKey) {
+      throw new Error('X API credentials not configured');
+    }
+
+    const client = new TwitterApi({
+      appKey: credentials.apiKey,
+      appSecret: credentials.apiSecret,
+      accessToken: credentials.accessToken,
+      accessSecret: credentials.accessSecret,
+    });
+
+    const tweet = await client.v2.tweet(generatedPost);
+
+    // ログ保存
+    const log = {
+      postedAt: new Date().toISOString(),
+      success: true,
+      tweetId: tweet.data.id,
+      slot: currentSlot.slot,
+      type: currentSlot.type,
+      postText: generatedPost.substring(0, 100) + '...',
+      processingTime: Date.now() - startTime,
+      mode: 'legacy',
+    };
+    savePostLog(log);
+
+    return NextResponse.json({
+      success: true,
+      message: `投稿完了 (${todayCount + 1}/15) [Legacy]`,
+      tweetId: tweet.data.id,
+      slot: currentSlot,
+      postText: generatedPost,
+    });
   } catch (error: any) {
     const log = {
       postedAt: new Date().toISOString(),
       success: false,
-      error: `Generation failed: ${error.message}`,
+      error: error.message,
       slot: currentSlot.slot,
       type: currentSlot.type,
+      mode: 'legacy',
     };
     savePostLog(log);
-    return NextResponse.json({ success: false, error: log.error }, { status: 500 });
-  }
-
-  // Xに投稿
-  const result = await postToX(generatedPost);
-
-  // ログ保存
-  const log = {
-    postedAt: new Date().toISOString(),
-    success: result.success,
-    tweetId: result.tweetId,
-    error: result.error,
-    slot: currentSlot.slot,
-    type: currentSlot.type,
-    postText: generatedPost.substring(0, 100) + '...',
-    processingTime: Date.now() - startTime,
-  };
-  savePostLog(log);
-
-  if (result.success) {
-    return NextResponse.json({
-      success: true,
-      message: `投稿完了 (${todayCount + 1}/15)`,
-      tweetId: result.tweetId,
-      slot: currentSlot,
-      postText: generatedPost,
-    });
-  } else {
-    return NextResponse.json({
-      success: false,
-      error: result.error,
-      slot: currentSlot,
-      generatedPost,
-    }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

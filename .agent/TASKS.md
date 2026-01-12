@@ -34,11 +34,14 @@
 - **参考**: `frontend/knowledge/x_operations.json` (DM対応テンプレート)
 
 ### 投稿効果測定
-- **担当**: 未割当
+- **担当**: Claude #4 ✅ 完了
 - **説明**: どの投稿がDMにつながったか追跡
-- **実装案**:
-  - 投稿ログに engagement 追加
-  - DM発生時に紐付け
+- **実装**:
+  - `/api/metrics` - エンゲージメント取得API
+  - `/metrics` - 効果測定ダッシュボード
+- **成果物**:
+  - `frontend/app/api/metrics/route.ts`
+  - `frontend/app/metrics/page.tsx`
 
 ### Vercel Cron代替
 - **担当**: Claude #2 ✅ 完了

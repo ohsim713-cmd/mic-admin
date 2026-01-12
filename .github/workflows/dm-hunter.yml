@@ -1,0 +1,84 @@
+# DM Hunter - 自動投稿スケジューラー
+#
+# 1日6回、複数SNS（X/Bluesky/Threads）に自動投稿
+# 目標: 1日3件のDM問い合わせ獲得
+#
+# 必要なSecrets:
+#   VERCEL_DEPLOY_URL: デプロイ先URL (例: https://your-app.vercel.app)
+#   AUTO_POST_SECRET: 認証シークレット (任意)
+
+name: DM Hunter
+
+on:
+  # 定期実行 (UTC時間) - 日本時間 = UTC + 9
+  schedule:
+    # 07:00 JST = 22:00 UTC (前日)
+    - cron: '0 22 * * *'
+    # 12:00 JST = 03:00 UTC
+    - cron: '0 3 * * *'
+    # 18:00 JST = 09:00 UTC
+    - cron: '0 9 * * *'
+    # 20:00 JST = 11:00 UTC
+    - cron: '0 11 * * *'
+    # 22:00 JST = 13:00 UTC
+    - cron: '0 13 * * *'
+    # 24:00 JST = 15:00 UTC
+    - cron: '0 15 * * *'
+
+  # 手動実行
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'テスト実行（投稿しない）'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  dm-hunter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Call DM Hunter API
+        env:
+          DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_URL }}
+          AUTO_POST_SECRET: ${{ secrets.AUTO_POST_SECRET }}
+        run: |
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "Error: VERCEL_DEPLOY_URL secret is not set"
+            exit 1
+          fi
+
+          DRY_RUN=${{ github.event.inputs.dry_run || 'false' }}
+
+          echo "=== DM Hunter ==="
+          echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
+          echo "Dry Run: $DRY_RUN"
+          echo ""
+
+          # DM Hunter APIを呼び出し
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/dm-hunter/auto-run" \
+            -H "Content-Type: application/json" \
+            -d "{\"dryRun\": $DRY_RUN, \"secret\": \"$AUTO_POST_SECRET\"}")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response Code: $HTTP_CODE"
+          echo "Response: $BODY" | head -c 500
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo ""
+            echo "=== Success ==="
+          else
+            echo ""
+            echo "=== Failed ==="
+            exit 1
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "=== Summary ==="
+          echo "Completed: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M:%S JST')"

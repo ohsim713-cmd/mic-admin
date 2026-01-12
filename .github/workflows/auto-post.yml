@@ -1,4 +1,4 @@
-# 自動投稿スケジューラー (Vercel Cron代替)
+# 自動投稿スケジューラー (1日15投稿)
 #
 # このワークフローは定期的にauto-post APIを呼び出し、
 # X（Twitter）への自動投稿を実行します。
@@ -10,23 +10,44 @@
 name: Auto Post Scheduler
 
 on:
-  # 定期実行 (UTC時間)
-  # 日本時間に合わせて調整: UTC+9
+  # 定期実行 (UTC時間) - 日本時間 = UTC + 9
   schedule:
-    # 朝投稿: 日本時間 7:00 (UTC 22:00前日)
-    - cron: '0 22 * * *'
-    # 昼投稿: 日本時間 12:00 (UTC 3:00)
+    # Slot 1:  6:30 JST = 21:30 UTC前日
+    - cron: '30 21 * * *'
+    # Slot 2:  7:30 JST = 22:30 UTC前日
+    - cron: '30 22 * * *'
+    # Slot 3:  8:30 JST = 23:30 UTC前日
+    - cron: '30 23 * * *'
+    # Slot 4: 10:00 JST =  1:00 UTC
+    - cron: '0 1 * * *'
+    # Slot 5: 12:00 JST =  3:00 UTC
     - cron: '0 3 * * *'
-    # 夕方投稿: 日本時間 18:00 (UTC 9:00)
-    - cron: '0 9 * * *'
-    # 夜投稿: 日本時間 21:00 (UTC 12:00)
+    # Slot 6: 12:45 JST =  3:45 UTC
+    - cron: '45 3 * * *'
+    # Slot 7: 14:00 JST =  5:00 UTC
+    - cron: '0 5 * * *'
+    # Slot 8: 15:30 JST =  6:30 UTC
+    - cron: '30 6 * * *'
+    # Slot 9: 17:30 JST =  8:30 UTC
+    - cron: '30 8 * * *'
+    # Slot 10: 18:30 JST =  9:30 UTC
+    - cron: '30 9 * * *'
+    # Slot 11: 20:00 JST = 11:00 UTC
+    - cron: '0 11 * * *'
+    # Slot 12: 21:00 JST = 12:00 UTC
     - cron: '0 12 * * *'
+    # Slot 13: 21:45 JST = 12:45 UTC
+    - cron: '45 12 * * *'
+    # Slot 14: 22:30 JST = 13:30 UTC
+    - cron: '30 13 * * *'
+    # Slot 15: 23:30 JST = 14:30 UTC
+    - cron: '30 14 * * *'
 
   # 手動実行も可能
   workflow_dispatch:
     inputs:
       slot:
-        description: '投稿スロット (1-14)'
+        description: '投稿スロット (1-15、0=自動判定)'
         required: false
         default: '0'
         type: string
@@ -51,11 +72,25 @@ jobs:
           else
             # 現在のUTC時間から日本時間のスロットを判定
             HOUR=$(date -u +%H)
-            case $HOUR in
-              22) SLOT=1 ;;  # 朝7時 -> おはよう
-              03) SLOT=5 ;;  # 昼12時 -> 共感
-              09) SLOT=9 ;;  # 夕方18時 -> メリット
-              12) SLOT=14 ;; # 夜21時 -> 夜向け
+            MIN=$(date -u +%M)
+
+            # UTC時間 → スロット対応表
+            case "$HOUR:$MIN" in
+              21:3*) SLOT=1 ;;   #  6:30 JST おはよう
+              22:3*) SLOT=2 ;;   #  7:30 JST ノウハウ
+              23:3*) SLOT=3 ;;   #  8:30 JST Q&A
+              01:0*) SLOT=4 ;;   # 10:00 JST 体験談
+              03:0*) SLOT=5 ;;   # 12:00 JST 共感
+              03:4*) SLOT=6 ;;   # 12:45 JST 軽い話題
+              05:0*) SLOT=7 ;;   # 14:00 JST 実績
+              06:3*) SLOT=8 ;;   # 15:30 JST 不安解消
+              08:3*) SLOT=9 ;;   # 17:30 JST 共感
+              09:3*) SLOT=10 ;;  # 18:30 JST メリット
+              11:0*) SLOT=11 ;;  # 20:00 JST 求人
+              12:0*) SLOT=12 ;;  # 21:00 JST 成功事例
+              12:4*) SLOT=13 ;;  # 21:45 JST 本音
+              13:3*) SLOT=14 ;;  # 22:30 JST クロージング
+              14:3*) SLOT=15 ;;  # 23:30 JST 夜向け
               *) SLOT=1 ;;
             esac
             echo "slot=$SLOT" >> $GITHUB_OUTPUT

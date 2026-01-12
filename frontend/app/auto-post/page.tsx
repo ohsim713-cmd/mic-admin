@@ -13,11 +13,13 @@ import {
   ArrowLeft,
   Target,
   TrendingUp,
-  MessageCircle
+  MessageCircle,
+  BarChart3,
 } from 'lucide-react';
 
 interface AutoPostStatus {
   status: string;
+  mode: string;
   todayPostCount: number;
   maxDailyPosts: number;
   currentSlot: {
@@ -38,6 +40,10 @@ interface PostLog {
   type: string;
   postText?: string;
   processingTime?: number;
+  mode?: string;
+  qualityScore?: number;
+  revisionCount?: number;
+  flowLogs?: string[];
 }
 
 // 1日15投稿のスケジュール
@@ -148,21 +154,38 @@ export default function AutoPostPage() {
                 1日15投稿を自動で実行
               </p>
             </div>
-            <Link
-              href="/settings"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 20px',
-                background: 'rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-                color: '#888',
-                textDecoration: 'none',
-              }}
-            >
-              <Settings size={16} /> X API設定
-            </Link>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Link
+                href="/metrics"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 20px',
+                  background: 'rgba(59, 130, 246, 0.2)',
+                  borderRadius: '8px',
+                  color: '#3b82f6',
+                  textDecoration: 'none',
+                }}
+              >
+                <BarChart3 size={16} /> 効果測定
+              </Link>
+              <Link
+                href="/settings"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 20px',
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  color: '#888',
+                  textDecoration: 'none',
+                }}
+              >
+                <Settings size={16} /> X API設定
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -331,7 +354,7 @@ export default function AutoPostPage() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       {log.success ? (
                         <CheckCircle size={16} color="#22c55e" />
                       ) : (
@@ -349,6 +372,39 @@ export default function AutoPostPage() {
                       }}>
                         {log.type}
                       </span>
+                      {log.mode === 'langgraph' && (
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          background: 'rgba(34, 197, 94, 0.2)',
+                          color: '#22c55e',
+                          fontSize: '11px'
+                        }}>
+                          LangGraph
+                        </span>
+                      )}
+                      {log.qualityScore && (
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          background: log.qualityScore >= 7 ? 'rgba(34, 197, 94, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                          color: log.qualityScore >= 7 ? '#22c55e' : '#f59e0b',
+                          fontSize: '11px'
+                        }}>
+                          品質: {log.qualityScore}/10
+                        </span>
+                      )}
+                      {log.revisionCount !== undefined && log.revisionCount > 0 && (
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          background: 'rgba(59, 130, 246, 0.2)',
+                          color: '#3b82f6',
+                          fontSize: '11px'
+                        }}>
+                          改善{log.revisionCount}回
+                        </span>
+                      )}
                     </div>
                     {log.tweetId && (
                       <a
