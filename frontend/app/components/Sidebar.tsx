@@ -3,37 +3,34 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sparkles, FileText, BarChart3, Settings, Book, Menu, X, Zap, Clock, BookOpen, Video, Building2, Share2, MessageSquare, Cloud, Instagram, Music, Youtube } from 'lucide-react';
+import { Sparkles, FileText, BarChart3, Settings, Menu, X, BookOpen, Video, Building2, Share2, MessageSquare, Cloud, Instagram, Music, Youtube, ChevronDown } from 'lucide-react';
 import { useBusinessType } from '../context/BusinessTypeContext';
 
 const contentMenuItems = [
-  { id: 'generate', label: '投稿生成', icon: Sparkles, href: '/' },
-  { id: 'advanced', label: '高度な生成', icon: Zap, href: '/advanced' },
-  { id: 'instagram', label: 'Instagram投稿', icon: Instagram, href: '/instagram' },
-  { id: 'wordpress', label: 'WordPress記事', icon: BookOpen, href: '/wordpress' },
-  { id: 'short-video', label: 'ショート動画', icon: Video, href: '/short-video' },
+  { id: 'approval', label: '文章生成', icon: Sparkles, href: '/approval' },
+  { id: 'wordpress', label: 'SEO記事生成', icon: BookOpen, href: '/wordpress' },
+  { id: 'instagram', label: '画像生成', icon: Instagram, href: '/instagram' },
+  { id: 'short-video', label: 'ショート動画生成', icon: Video, href: '/short-video' },
 ];
 
 const snsMenuItems = [
-  { id: 'twitter', label: 'X (Twitter)', icon: Share2, href: '/sns/twitter', badge: '準備中' },
-  { id: 'threads', label: 'Threads', icon: MessageSquare, href: '/sns/threads', badge: '準備中' },
-  { id: 'bluesky', label: 'Bluesky', icon: Cloud, href: '/sns/bluesky', badge: '準備中' },
-  { id: 'instagram', label: 'Instagram', icon: Instagram, href: '/sns/instagram', badge: '準備中' },
-  { id: 'tiktok', label: 'TikTok', icon: Music, href: '/sns/tiktok', badge: '準備中' },
-  { id: 'youtube', label: 'YouTube', icon: Youtube, href: '/sns/youtube', badge: '準備中' },
+  { id: 'twitter', label: 'X (Twitter)', icon: Share2 },
+  { id: 'threads', label: 'Threads', icon: MessageSquare },
+  { id: 'bluesky', label: 'Bluesky', icon: Cloud },
+  { id: 'tiktok', label: 'TikTok', icon: Music },
+  { id: 'youtube', label: 'YouTube', icon: Youtube },
 ];
 
 const systemMenuItems = [
-  { id: 'scheduler', label: '自動投稿', icon: Clock, href: '/scheduler' },
   { id: 'history', label: '生成履歴', icon: FileText, href: '/history' },
   { id: 'analytics', label: 'アナリティクス', icon: BarChart3, href: '/analytics' },
-  { id: 'knowledge', label: 'ナレッジ編集', icon: Book, href: '/knowledge' },
   { id: 'settings', label: '設定', icon: Settings, href: '/settings' },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [snsExpanded, setSnsExpanded] = useState(false);
   const { businessType, setBusinessType, businessLabel } = useBusinessType();
 
   return (
@@ -71,10 +68,10 @@ export default function Sidebar() {
           style={{
             position: 'fixed',
             top: 0,
-            left: '260px',
+            left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0, 0, 0, 0.5)',
+            background: 'rgba(0, 0, 0, 0.6)',
             zIndex: 999,
             display: 'block',
           }}
@@ -102,7 +99,7 @@ export default function Sidebar() {
         className="sidebar-desktop-open"
       >
         {/* Logo */}
-        <div style={{ marginBottom: '2rem', textAlign: 'center', marginTop: '3rem' }}>
+        <div style={{ marginBottom: '1.5rem', textAlign: 'center', marginTop: '0.5rem' }}>
           <h1 style={{
             fontSize: '1.5rem',
             fontWeight: 'bold',
@@ -121,17 +118,21 @@ export default function Sidebar() {
         {/* ビジネスタイプ選択 */}
         <div style={{
           marginBottom: '2rem',
-          padding: '0 0.5rem'
+          padding: '0.75rem',
+          background: 'rgba(139, 92, 246, 0.08)',
+          borderRadius: '12px',
+          border: '1px solid rgba(139, 92, 246, 0.2)'
         }}>
           <label style={{
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
-            fontSize: '0.75rem',
-            color: 'var(--text-muted)',
-            marginBottom: '0.5rem'
+            fontSize: '0.8rem',
+            color: '#a78bfa',
+            marginBottom: '0.75rem',
+            fontWeight: '600'
           }}>
-            <Building2 size={14} />
+            <Building2 size={16} />
             ビジネスタイプ
           </label>
           <select
@@ -139,12 +140,13 @@ export default function Sidebar() {
             onChange={(e) => setBusinessType(e.target.value as 'chat-lady' | 'liver-agency' | 'nail-salon')}
             style={{
               width: '100%',
-              padding: '0.75rem',
-              borderRadius: '8px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              padding: '0.85rem 1rem',
+              borderRadius: '10px',
+              background: 'rgba(31, 41, 55, 0.9)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
               color: 'white',
-              fontSize: '0.9rem',
+              fontSize: '0.95rem',
+              fontWeight: '500',
               cursor: 'pointer',
               outline: 'none'
             }}
@@ -154,27 +156,30 @@ export default function Sidebar() {
             <option value="nail-salon" style={{ background: '#1f2937', color: 'white' }}>サロン</option>
           </select>
           <p style={{
-            fontSize: '0.7rem',
-            color: 'var(--text-muted)',
-            marginTop: '0.5rem',
-            fontWeight: '500'
+            fontSize: '0.75rem',
+            color: '#c4b5fd',
+            marginTop: '0.75rem',
+            fontWeight: '500',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.25rem'
           }}>
-            選択中: {businessLabel}
+            <span style={{ color: '#22c55e' }}>●</span> 選択中: {businessLabel}
           </p>
         </div>
 
         {/* Menu Items */}
         <nav style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: '1rem' }}>
           {/* コンテンツ生成 */}
-          <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{ marginBottom: '1rem' }}>
             <p style={{
               fontSize: '0.7rem',
-              fontWeight: '600',
-              color: 'var(--text-muted)',
+              fontWeight: '700',
+              color: '#9ca3af',
               textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              padding: '0 1rem',
-              marginBottom: '0.75rem'
+              letterSpacing: '0.08em',
+              padding: '0 0.85rem',
+              marginBottom: '0.5rem'
             }}>
               コンテンツ生成
             </p>
@@ -189,94 +194,40 @@ export default function Sidebar() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '1rem',
-                    padding: '0.875rem 1rem',
-                    marginBottom: '0.5rem',
-                    borderRadius: '12px',
+                    gap: '0.75rem',
+                    padding: '0.65rem 0.85rem',
+                    marginBottom: '0.25rem',
+                    borderRadius: '10px',
                     textDecoration: 'none',
                     color: isActive ? 'white' : 'var(--text-muted)',
                     background: isActive ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
                     border: isActive ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid transparent',
                     transition: 'all 0.2s',
                   }}
-                >
-                  <Icon size={20} color={isActive ? '#8b5cf6' : '#9ca3af'} />
-                  <span style={{ fontSize: '0.95rem', fontWeight: isActive ? '600' : '400' }}>
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* SNS投稿 */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            <p style={{
-              fontSize: '0.7rem',
-              fontWeight: '600',
-              color: 'var(--text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              padding: '0 1rem',
-              marginBottom: '0.75rem'
-            }}>
-              SNS投稿
-            </p>
-            {snsMenuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1rem',
-                    padding: '0.875rem 1rem',
-                    marginBottom: '0.5rem',
-                    borderRadius: '12px',
-                    textDecoration: 'none',
-                    color: isActive ? 'white' : 'var(--text-muted)',
-                    background: isActive ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
-                    border: isActive ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid transparent',
-                    transition: 'all 0.2s',
-                    opacity: 0.6,
-                    cursor: 'not-allowed'
-                  }}
-                  onClick={(e) => e.preventDefault()}
                 >
                   <Icon size={18} color={isActive ? '#8b5cf6' : '#9ca3af'} />
-                  <span style={{ fontSize: '0.85rem', fontWeight: isActive ? '600' : '400', flex: 1 }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: isActive ? '600' : '400' }}>
                     {item.label}
                   </span>
-                  {item.badge && (
-                    <span style={{
-                      fontSize: '0.65rem',
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '4px',
-                      background: 'rgba(139, 92, 246, 0.2)',
-                      color: '#a78bfa'
-                    }}>
-                      {item.badge}
-                    </span>
-                  )}
                 </Link>
               );
             })}
           </div>
 
           {/* システム */}
-          <div>
+          <div style={{
+            marginTop: '0.25rem',
+            paddingTop: '0.75rem',
+            borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+          }}>
             <p style={{
               fontSize: '0.7rem',
-              fontWeight: '600',
-              color: 'var(--text-muted)',
+              fontWeight: '700',
+              color: '#9ca3af',
               textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              padding: '0 1rem',
-              marginBottom: '0.75rem'
+              letterSpacing: '0.08em',
+              padding: '0 0.85rem',
+              marginBottom: '0.5rem'
             }}>
               システム
             </p>
@@ -291,10 +242,10 @@ export default function Sidebar() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '1rem',
-                    padding: '0.875rem 1rem',
-                    marginBottom: '0.5rem',
-                    borderRadius: '12px',
+                    gap: '0.75rem',
+                    padding: '0.65rem 0.85rem',
+                    marginBottom: '0.25rem',
+                    borderRadius: '10px',
                     textDecoration: 'none',
                     color: isActive ? 'white' : 'var(--text-muted)',
                     background: isActive ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
@@ -302,13 +253,99 @@ export default function Sidebar() {
                     transition: 'all 0.2s',
                   }}
                 >
-                  <Icon size={20} color={isActive ? '#8b5cf6' : '#9ca3af'} />
-                  <span style={{ fontSize: '0.95rem', fontWeight: isActive ? '600' : '400' }}>
+                  <Icon size={18} color={isActive ? '#8b5cf6' : '#9ca3af'} />
+                  <span style={{ fontSize: '0.85rem', fontWeight: isActive ? '600' : '400' }}>
                     {item.label}
                   </span>
                 </Link>
               );
             })}
+          </div>
+
+          {/* SNS連携 */}
+          <div style={{ marginTop: '0.75rem' }}>
+            <button
+              onClick={() => setSnsExpanded(!snsExpanded)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                width: '100%',
+                padding: '0.5rem 0.85rem',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                borderRadius: '8px',
+              }}
+            >
+              <span style={{
+                fontSize: '0.7rem',
+                fontWeight: '700',
+                color: '#9ca3af',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+              }}>
+                SNS連携
+              </span>
+              <ChevronDown
+                size={14}
+                color="#9ca3af"
+                style={{
+                  transform: snsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s'
+                }}
+              />
+            </button>
+            {snsExpanded && (
+              <div style={{
+                padding: '0.5rem 0.85rem',
+                marginTop: '0.25rem'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '0.4rem',
+                  marginBottom: '0.75rem'
+                }}>
+                  {snsMenuItems.slice(0, 3).map((item) => {
+                    const Icon = item.icon;
+                    const isActive = item.id === 'bluesky';
+                    return (
+                      <div
+                        key={item.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          padding: '0.3rem 0.5rem',
+                          borderRadius: '5px',
+                          background: isActive ? 'rgba(139, 92, 246, 0.15)' : 'rgba(107, 114, 128, 0.1)',
+                          border: isActive ? '1px solid rgba(139, 92, 246, 0.3)' : 'none',
+                          opacity: isActive ? 1 : 0.5,
+                        }}
+                      >
+                        <Icon size={12} color={isActive ? '#8b5cf6' : '#6b7280'} />
+                        <span style={{ fontSize: '0.7rem', color: isActive ? '#a78bfa' : '#6b7280' }}>
+                          {item.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <Link
+                  href="/settings"
+                  style={{
+                    display: 'block',
+                    fontSize: '0.7rem',
+                    color: '#8b5cf6',
+                    textDecoration: 'none',
+                    padding: '0.25rem 0',
+                  }}
+                >
+                  API設定はこちら →
+                </Link>
+              </div>
+            )}
           </div>
         </nav>
 

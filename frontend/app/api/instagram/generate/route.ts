@@ -25,6 +25,7 @@ function getCurrentSeason(): string {
   return '冬';
 }
 
+
 export async function POST(request: NextRequest) {
   try {
     const { designDescription, targetAudience, additionalInfo, businessType } = await request.json();
@@ -36,35 +37,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-
-    // ナレッジベースを読み込む
-    const nailTrends = loadKnowledge('nail_trends.json');
-    const instagramTips = loadKnowledge('instagram_tips.json');
-    const season = getCurrentSeason();
-
-    // トレンド情報をコンテキストに追加
-    let trendContext = '';
-    if (nailTrends) {
-      const currentTrends = nailTrends.trends?.slice(0, 3).map((t: any) => t.name).join('、') || '';
-      const popularColors = nailTrends.colorPalette?.primary?.join('、') || '';
-      trendContext = `
-【最新トレンド情報】
-- 今季のトレンド: ${currentTrends}
-- 人気カラー: ${popularColors}
-- 季節: ${season}`;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'GEMINI_API_KEYが設定されていません。.env.localを確認してください。' },
+        { status: 500 }
+      );
     }
 
-    // Instagram運用ノウハウをコンテキストに追加
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+    // ナレッジベースを読み込む (エラーハンドリング付き)
+    let trendContext = '';
     let tipsContext = '';
-    if (instagramTips) {
-      const captionTips = instagramTips.instagramTips?.captionTips?.slice(0, 3).join('、') || '';
-      const hookExamples = instagramTips.captionStrategies?.[0]?.examples?.slice(0, 2).join(' / ') || '';
-      tipsContext = `
-【キャプション作成のコツ】
-- ${captionTips}
-- フックの例: ${hookExamples}`;
+    const season = getCurrentSeason();
+
+    try {
+      const knowledgeDir = path.join(process.cwd(), 'knowledge');
+      const loadK = (f: string) => {
+        try {
+          const p = path.join(knowledgeDir, f);
+          if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf-8'));
+        } catch (e) { console.warn(`Knowledge load skipped for ${f}`, e); }
+        return null;
+      };
+
+      const nailTrends = loadK('nail_trends.json');
+      const instagramTips = loadK('instagram_tips.json');
+
+      // トレンド情報をコンテキストに追加
+      if (nailTrends) {
+        const currentTrends = nailTrends.trends?.slice(0, 3).map((t: any) => t.name).join('、') || '';
+        const popularColors = nailTrends.colorPalette?.primary?.join('、') || '';
+        trendContext = `
+    【最新トレンド情報】
+    - 今季のトレンド: ${currentTrends}
+    - 人気カラー: ${popularColors}
+    - 季節: ${season}`;
+      }
+
+      // Instagram運用ノウハウをコンテキストに追加
+      if (instagramTips) {
+        const captionTips = instagramTips.instagramTips?.captionTips?.slice(0, 3).join('、') || '';
+        const hookExamples = instagramTips.captionStrategies?.[0]?.examples?.slice(0, 2).join(' / ') || '';
+        tipsContext = `
+    【キャプション作成のコツ】
+    - ${captionTips}
+    - フックの例: ${hookExamples}`;
+      }
+    } catch (e) {
+      console.error('Error loading knowledge context:', e);
+      // Continue without context
     }
 
     // ビジネスタイプに応じたコンテキスト

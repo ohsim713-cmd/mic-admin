@@ -3,9 +3,13 @@
 import { useState } from 'react';
 import { Sparkles, Send, FileText, Copy, Check, BookOpen, Upload, CheckCircle2, XCircle, Image as ImageIcon } from 'lucide-react';
 import { useBusinessType } from '../context/BusinessTypeContext';
+import { CharCounter } from '../components/CharCounter';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { useToast } from '../components/Toast';
 
 export default function WordPressPage() {
   const { businessType } = useBusinessType();
+  const { showToast } = useToast();
   const [title, setTitle] = useState('');
   const [keywords, setKeywords] = useState('');
   const [targetLength, setTargetLength] = useState('2000-3000');
@@ -108,7 +112,7 @@ export default function WordPressPage() {
 
   const generateArticle = async () => {
     if (!title.trim()) {
-      alert('タイトルを入力してください');
+      showToast('タイトルを入力してください', 'warning');
       return;
     }
 
@@ -147,7 +151,8 @@ export default function WordPressPage() {
         }
       }
     } catch (error) {
-      setGeneratedArticle('エラーが発生しました。接続を確認してください。');
+      setGeneratedArticle('');
+      showToast('エラーが発生しました。接続を確認してください。', 'error');
       console.error(error);
     } finally {
       setIsGenerating(false);
@@ -156,7 +161,7 @@ export default function WordPressPage() {
 
   const postToWordPress = async (status: 'draft' | 'publish') => {
     if (!generatedArticle || !title) {
-      alert('記事を生成してから投稿してください');
+      showToast('記事を生成してから投稿してください', 'warning');
       return;
     }
 
@@ -243,9 +248,10 @@ export default function WordPressPage() {
 
     if (success) {
       setCopied(true);
+      showToast('クリップボードにコピーしました', 'success');
       setTimeout(() => setCopied(false), 2000);
     } else {
-      alert('コピーが制限されています。プレビューの文章を直接長押ししてコピーしてください。');
+      showToast('コピーが制限されています。文章を直接選択してコピーしてください。', 'warning');
     }
   }
 
@@ -291,6 +297,7 @@ export default function WordPressPage() {
                 fontSize: '0.95rem'
               }}
             />
+            <CharCounter current={title.length} max={60} warning={50} />
           </div>
 
           {/* キーワード */}
@@ -535,8 +542,20 @@ export default function WordPressPage() {
             borderRadius: '8px',
             border: '1px solid rgba(255, 255, 255, 0.05)'
           }}>
-            {generatedArticle || 'ここに生成された記事が表示されます。\n\n左側のフォームに必要な情報を入力して「記事を生成する」ボタンをクリックしてください。\n\nAIが自動的に見出しを含む構造化された記事を作成します。'}
+            {isGenerating ? (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+                <LoadingSpinner size={32} text="記事を生成中" subText="SEOに最適化された記事を作成しています..." />
+              </div>
+            ) : (
+              generatedArticle || 'ここに生成された記事が表示されます。\n\n左側のフォームに必要な情報を入力して「記事を生成する」ボタンをクリックしてください。\n\nAIが自動的に見出しを含む構造化された記事を作成します。'
+            )}
           </div>
+
+          {generatedArticle && !isGenerating && (
+            <div style={{ marginTop: '0.5rem' }}>
+              <CharCounter current={generatedArticle.length} showProgress={false} />
+            </div>
+          )}
 
           {generatedArticle && (
             <>

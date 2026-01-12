@@ -3,10 +3,18 @@ import "./globals.css";
 import Sidebar from "./components/Sidebar";
 import SchedulerInitializer from "./components/SchedulerInitializer";
 import { BusinessTypeProvider } from "./context/BusinessTypeContext";
+import { ToastProvider } from "./components/Toast";
 
 export const metadata: Metadata = {
   title: "MIC Admin | AI SNS自動投稿",
   description: "AIが最適なSNS投稿文を自動生成します",
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -16,15 +24,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
+      <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
       <body>
         <BusinessTypeProvider>
-          <SchedulerInitializer />
-          <div style={{ display: 'flex' }}>
-            <Sidebar />
-            <main className="main-content">
-              {children}
-            </main>
-          </div>
+          <ToastProvider>
+            <SchedulerInitializer />
+            <div style={{ display: 'flex' }}>
+              <Sidebar />
+              <main className="main-content">
+                {children}
+              </main>
+            </div>
+          </ToastProvider>
         </BusinessTypeProvider>
       </body>
     </html>

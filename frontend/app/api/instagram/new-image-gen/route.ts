@@ -36,15 +36,22 @@ function getSeasonalStyle(): string {
   return styles[season] || styles.spring;
 }
 
-// Gemini 2.0 Flash - 画像生成機能（強化版）
+// Imagen 3 - 画像生成機能
 export async function POST(request: NextRequest) {
   try {
-    const { designDescription } = await request.json();
+    const { designDescription, referenceImage } = await request.json();
 
     if (!designDescription) {
       return NextResponse.json(
         { error: 'デザインの説明が必要です' },
         { status: 400 }
+      );
+    }
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'GEMINI_API_KEYが設定されていません' },
+        { status: 500 }
       );
     }
 
@@ -87,25 +94,33 @@ Create an image that would make viewers want to book an appointment immediately.
 
     console.log('Image prompt:', prompt);
 
-    // Gemini 2.0 Flash で画像生成
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
+    // Imagen 3.0 Generate 001 で画像生成
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }],
-        generationConfig: {
-          responseModalities: ["TEXT", "IMAGE"]
+        instances: [{ prompt: prompt }],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: "1:1" // Instagram用スクエア
         }
       })
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('Gemini API error:', errorData);
+      console.error('Imagen API error:', errorData);
+
+      // レート制限の場合
+      if (response.status === 429) {
+        return NextResponse.json(
+          { error: 'APIのレート制限に達しました。少し待ってから再試行してください。', detail: errorData.error?.message },
+          { status: 429 }
+        );
+      }
+
       return NextResponse.json(
         { error: '画像生成に失敗しました', detail: errorData.error?.message || '不明なエラー' },
         { status: response.status }
@@ -113,9 +128,17 @@ Create an image that would make viewers want to book an appointment immediately.
     }
 
     const data = await response.json();
-    console.log('Gemini response:', JSON.stringify(data, null, 2));
+    console.log('Imagen response received');
 
-    // 生成された画像を探す
+    // 生成された画像を取得 (Imagen 3の形式)
+    if (data.predictions && data.predictions[0] && data.predictions[0].bytesBase64Encoded) {
+      const base64Image = data.predictions[0].bytesBase64Encoded;
+      // mimeTypeは通常JPEGかPNG。JPEGとして返すのが無難。
+      const imageUrl = `data:image/jpeg;base64,${base64Image}`;
+      return NextResponse.json({ imageUrl });
+    }
+
+    // 古い形式(Gemini)か他の形式の場合のフォールバック (念のため残すが、基本はpredictions)
     if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
       for (const part of data.candidates[0].content.parts) {
         if (part.inlineData && part.inlineData.data) {
@@ -127,7 +150,7 @@ Create an image that would make viewers want to book an appointment immediately.
     }
 
     return NextResponse.json(
-      { error: '画像データが取得できませんでした', detail: 'テキストのみが生成されました' },
+      { error: '画像データが取得できませんでした', detail: 'APIレスポンスの形式が不明です' },
       { status: 500 }
     );
 

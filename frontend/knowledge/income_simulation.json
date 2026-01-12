@@ -1,0 +1,185 @@
+{
+  "incomeSimulations": {
+    "副業パターン": [
+      {
+        "pattern": "週3日・1日2時間",
+        "weeklyHours": 6,
+        "monthlyHours": 24,
+        "estimatedIncome": {
+          "beginner": {"min": "3万円", "max": "6万円", "average": "4.5万円"},
+          "intermediate": {"min": "6万円", "max": "12万円", "average": "9万円"},
+          "experienced": {"min": "10万円", "max": "20万円", "average": "15万円"}
+        },
+        "suitableFor": "本業あり・子育て中・学生",
+        "tips": "ゴールデンタイム（22-24時）に集中配信"
+      },
+      {
+        "pattern": "週4日・1日3時間",
+        "weeklyHours": 12,
+        "monthlyHours": 48,
+        "estimatedIncome": {
+          "beginner": {"min": "6万円", "max": "12万円", "average": "9万円"},
+          "intermediate": {"min": "12万円", "max": "24万円", "average": "18万円"},
+          "experienced": {"min": "20万円", "max": "40万円", "average": "30万円"}
+        },
+        "suitableFor": "パート代わり・しっかり副業",
+        "tips": "固定時間帯で配信してリピーターを増やす"
+      }
+    ],
+    "本業パターン": [
+      {
+        "pattern": "週5日・1日4時間",
+        "weeklyHours": 20,
+        "monthlyHours": 80,
+        "estimatedIncome": {
+          "beginner": {"min": "10万円", "max": "20万円", "average": "15万円"},
+          "intermediate": {"min": "20万円", "max": "40万円", "average": "30万円"},
+          "experienced": {"min": "35万円", "max": "60万円", "average": "47万円"}
+        },
+        "suitableFor": "フリーター・専業主婦・退職後",
+        "tips": "昼と夜の2部制で幅広い客層を獲得"
+      },
+      {
+        "pattern": "週5日・1日6時間",
+        "weeklyHours": 30,
+        "monthlyHours": 120,
+        "estimatedIncome": {
+          "beginner": {"min": "15万円", "max": "30万円", "average": "22万円"},
+          "intermediate": {"min": "30万円", "max": "55万円", "average": "42万円"},
+          "experienced": {"min": "50万円", "max": "80万円", "average": "65万円"}
+        },
+        "suitableFor": "本気で稼ぎたい人",
+        "tips": "複数サイト掛け持ちで収入最大化"
+      }
+    ],
+    "ハイペースパターン": [
+      {
+        "pattern": "週6日・1日8時間（トップ層）",
+        "weeklyHours": 48,
+        "monthlyHours": 192,
+        "estimatedIncome": {
+          "beginner": {"min": "20万円", "max": "40万円", "average": "30万円"},
+          "intermediate": {"min": "50万円", "max": "80万円", "average": "65万円"},
+          "experienced": {"min": "80万円", "max": "150万円", "average": "100万円"}
+        },
+        "suitableFor": "月100万円以上を目指す人",
+        "tips": "体調管理必須、休息日を確保"
+      }
+    ]
+  },
+  "siteIncomeComparison": {
+    "国内サイト": [
+      {
+        "site": "FANZA",
+        "hourlyRate": {"2shot": "最大7,500円", "party": "3,000〜5,000円", "waiting": "最大6,000円"},
+        "features": "待機保証あり、バーチャル配信可",
+        "bestFor": "安定収入、初心者"
+      },
+      {
+        "site": "エンジェルライブ",
+        "hourlyRate": {"2shot": "4,000〜6,000円", "party": "2,000〜3,000円", "tip": "別途チップ収入"},
+        "features": "Lovense対応、チップ制度",
+        "bestFor": "経験者、差別化したい人"
+      },
+      {
+        "site": "チャットピア",
+        "hourlyRate": {"2shot": "4,500円", "party": "2,000〜3,000円"},
+        "features": "人妻・マダム専門、昼需要高",
+        "bestFor": "30代以上、主婦"
+      },
+      {
+        "site": "ジュエルライブ",
+        "hourlyRate": {"2shot": "4,500円", "party": "3,000円×人数", "replay": "最大81円/分"},
+        "features": "再放送機能、若年層向け",
+        "bestFor": "20代、動画で稼ぎたい人"
+      },
+      {
+        "site": "ライブでゴーゴー",
+        "hourlyRate": {"2shot": "最大4,200円", "party": "3,000円", "mail": "別途収入"},
+        "features": "完全ノンアダルト、報酬率最大70%",
+        "bestFor": "脱ぎたくない人、会話メイン"
+      }
+    ],
+    "海外サイト": [
+      {
+        "site": "Stripchat",
+        "hourlyRate": {"average": "5,000〜15,000円", "top": "1配信3〜5万円"},
+        "features": "月間10億ユーザー、還元率55-60%",
+        "bestFor": "本気で高収入、海外ファン獲得"
+      },
+      {
+        "site": "DXLIVE",
+        "hourlyRate": {"2shot": "約11,000円", "party": "5,500円×人数"},
+        "features": "完全日本語対応、老舗の安心感",
+        "bestFor": "海外初心者、高単価狙い"
+      },
+      {
+        "site": "FC2ライブ",
+        "hourlyRate": {"range": "時給5,000〜30,000円", "note": "個人差大"},
+        "features": "報酬率70%、料金自由設定",
+        "bestFor": "経験者、パフォーマンス自信あり"
+      },
+      {
+        "site": "FC2 LOVETIP",
+        "hourlyRate": {"range": "チップ次第"},
+        "features": "投げ銭メイン、ノンアダOK",
+        "bestFor": "初心者、ノンアダ希望"
+      }
+    ]
+  },
+  "incomeGrowthPath": {
+    "phases": [
+      {
+        "phase": "1ヶ月目",
+        "goal": "サイトに慣れる",
+        "income": "5〜15万円",
+        "focus": ["プロフィール完成", "配信リズム確立", "常連1-2人獲得"],
+        "mistakes": ["すぐ諦める", "比較しすぎる", "無理して長時間配信"]
+      },
+      {
+        "phase": "2-3ヶ月目",
+        "goal": "自分のスタイル確立",
+        "income": "15〜30万円",
+        "focus": ["常連5人以上", "配信時間最適化", "会話スキル向上"],
+        "mistakes": ["マンネリ化", "休みなく配信", "客層を選ばない"]
+      },
+      {
+        "phase": "4-6ヶ月目",
+        "goal": "安定収入達成",
+        "income": "25〜50万円",
+        "focus": ["リピーター維持", "単価UP", "複数サイト検討"],
+        "mistakes": ["成長止まり", "メンタル不調", "稼げる時間を逃す"]
+      },
+      {
+        "phase": "6ヶ月〜1年",
+        "goal": "プロレベル",
+        "income": "40〜80万円",
+        "focus": ["ファンクラブ", "太客育成", "効率最大化"],
+        "mistakes": ["燃え尽き", "客依存", "ルーティン化しすぎ"]
+      },
+      {
+        "phase": "1年以上",
+        "goal": "トップ層",
+        "income": "60〜150万円以上",
+        "focus": ["ブランディング", "新規開拓", "長期関係構築"],
+        "mistakes": ["慢心", "市場変化に遅れる", "健康管理怠り"]
+      }
+    ]
+  },
+  "realNumbers": {
+    "industryAverages": {
+      "newcomerFirstMonth": "8〜15万円",
+      "after3Months": "20〜35万円",
+      "after6Months": "30〜50万円",
+      "after1Year": "40〜70万円",
+      "top10Percent": "月80万円以上",
+      "top1Percent": "月150万円以上"
+    },
+    "timeToProfit": {
+      "breakEven": "1〜2週間（機材投資分を回収）",
+      "stable10Man": "1〜2ヶ月",
+      "stable30Man": "3〜6ヶ月",
+      "stable50Man": "6ヶ月〜1年"
+    }
+  }
+}

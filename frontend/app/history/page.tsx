@@ -7,8 +7,8 @@ type HistoryEntry = {
   id: string;
   timestamp: string;
   target: string;
-  atmosphere: string;
-  perks: string[];
+  atmosphere?: string;
+  perks?: string[];
   generatedPost: string;
 };
 
@@ -135,14 +135,16 @@ export default function HistoryPage() {
                     <Tag size={14} />
                     {entry.target}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Tag size={14} />
-                    {entry.atmosphere}
-                  </div>
+                  {entry.atmosphere && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Tag size={14} />
+                      {entry.atmosphere}
+                    </div>
+                  )}
                 </div>
 
                 {/* アピールポイント */}
-                {entry.perks.length > 0 && (
+                {entry.perks && entry.perks.length > 0 && (
                   <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     {entry.perks.map((perk, idx) => (
                       <span

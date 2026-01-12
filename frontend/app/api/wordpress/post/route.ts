@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-const SETTINGS_DIR = path.join(process.cwd(), 'settings');
-const WP_SETTINGS_FILE = path.join(SETTINGS_DIR, 'wordpress.json');
+const SETTINGS_DIR = path.join(process.cwd(), 'knowledge');
+const WP_SETTINGS_FILE = path.join(SETTINGS_DIR, 'wordpress_credentials.json');
 
 export async function POST(request: Request) {
   try {

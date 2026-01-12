@@ -3,9 +3,13 @@
 import { useState } from 'react';
 import { Camera, Sparkles, Upload, Image as ImageIcon, Copy, CheckCircle } from 'lucide-react';
 import { useBusinessType } from '../context/BusinessTypeContext';
+import { CharCounter } from '../components/CharCounter';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { useToast } from '../components/Toast';
 
 export default function InstagramPage() {
   const { businessType, businessLabel } = useBusinessType();
+  const { showToast } = useToast();
 
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -34,7 +38,7 @@ export default function InstagramPage() {
 
   const generateCaption = async () => {
     if (!designDescription) {
-      alert('デザインの説明を入力してください');
+      showToast('デザインの説明を入力してください', 'warning');
       return;
     }
 
@@ -57,12 +61,13 @@ export default function InstagramPage() {
 
       if (response.ok && data.caption) {
         setGeneratedCaption(data.caption);
+        showToast('キャプションを生成しました', 'success');
       } else {
-        alert('キャプション生成に失敗しました');
+        showToast('キャプション生成に失敗しました', 'error');
       }
     } catch (error) {
       console.error('Failed to generate caption:', error);
-      alert('キャプション生成に失敗しました');
+      showToast('キャプション生成に失敗しました', 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -70,7 +75,7 @@ export default function InstagramPage() {
 
   const generateImage = async () => {
     if (!designDescription) {
-      alert('デザインの説明を入力してください');
+      showToast('デザインの説明を入力してください', 'warning');
       return;
     }
 
@@ -78,7 +83,7 @@ export default function InstagramPage() {
     setGeneratedImageUrl('');
 
     try {
-      const response = await fetch('/api/instagram/generate-image', {
+      const response = await fetch('/api/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -91,41 +96,46 @@ export default function InstagramPage() {
 
       if (response.ok && data.imageUrl) {
         setGeneratedImageUrl(data.imageUrl);
-        setImagePreview(data.imageUrl);
+        showToast('画像を生成しました', 'success');
       } else {
-        alert('画像生成に失敗しました: ' + (data.error || '不明なエラー'));
+        showToast('画像生成に失敗しました: ' + (data.error || '不明なエラー'), 'error');
       }
     } catch (error) {
       console.error('Failed to generate image:', error);
-      alert('画像生成に失敗しました');
+      showToast('画像生成に失敗しました', 'error');
     } finally {
       setIsGeneratingImage(false);
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedCaption);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedCaption);
+      setIsCopied(true);
+      showToast('クリップボードにコピーしました', 'success');
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      showToast('コピーに失敗しました', 'error');
+    }
   };
 
   return (
     <main style={{ padding: '3rem', maxWidth: '1200px', margin: '0 auto' }}>
       <header style={{ marginBottom: '3rem' }}>
         <h1 style={{
-          fontSize: '2.5rem',
+          fontSize: '2rem',
           marginBottom: '0.5rem',
           background: 'var(--gradient-main)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           display: 'flex',
           alignItems: 'center',
-          gap: '1rem'
+          gap: '0.75rem'
         }}>
-          <Camera size={40} />
+          <Camera size={32} />
           Instagram投稿生成
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>
+        <p style={{ color: 'var(--text-muted)' }}>
           {businessLabel} - ネイルデザインの写真とキャプションを自動生成
         </p>
       </header>
@@ -232,6 +242,7 @@ export default function InstagramPage() {
                 resize: 'vertical'
               }}
             />
+            <CharCounter current={designDescription.length} />
           </div>
 
           {/* ターゲット層 */}
@@ -291,6 +302,7 @@ export default function InstagramPage() {
             />
           </div>
 
+          {/* 生成ボタン */}
           {/* 生成ボタン */}
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button
@@ -361,98 +373,163 @@ export default function InstagramPage() {
           </div>
         </section>
 
-        {/* 生成されたキャプション */}
-        <section className="glass" style={{ padding: '2rem' }}>
-          <h2 style={{
-            fontSize: '1.5rem',
-            marginBottom: '1.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem'
-          }}>
-            <Sparkles size={24} color="var(--accent-secondary)" />
-            生成されたキャプション
-          </h2>
+        {/* 生成結果エリア (画像 & キャプション) */}
+        {(generatedImageUrl || generatedCaption) && (
+          <section className="glass fade-in" style={{ padding: '2rem', border: '1px solid var(--accent-primary)' }}>
+            <h2 style={{
+              fontSize: '1.5rem',
+              marginBottom: '2rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.75rem',
+              borderBottom: '1px solid rgba(255,255,255,0.1)',
+              paddingBottom: '1rem'
+            }}>
+              <Sparkles size={28} color="var(--accent-secondary)" />
+              AI生成結果
+            </h2>
 
-          {generatedCaption ? (
-            <div>
-              <div style={{
-                padding: '1.5rem',
-                borderRadius: '8px',
-                background: 'rgba(139, 92, 246, 0.1)',
-                border: '1px solid rgba(139, 92, 246, 0.2)',
-                marginBottom: '1rem',
-                minHeight: '300px',
-                whiteSpace: 'pre-wrap',
-                fontSize: '0.95rem',
-                lineHeight: '1.7'
-              }}>
-                {generatedCaption}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: '2rem'
+            }}>
+              {/* 生成された画像 */}
+              <div>
+                <h3 style={{ marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '1rem' }}>
+                  📸 生成された画像
+                </h3>
+                {generatedImageUrl ? (
+                  <div style={{ textAlign: 'center' }}>
+                    <img
+                      src={generatedImageUrl}
+                      alt="Generated Nail Art"
+                      style={{
+                        width: '100%',
+                        borderRadius: '12px',
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+                        marginBottom: '1rem'
+                      }}
+                    />
+                    <a
+                      href={generatedImageUrl}
+                      download={`nail-design-${Date.now()}.png`}
+                      style={{
+                        display: 'inline-block',
+                        padding: '0.5rem 1rem',
+                        background: 'rgba(255,255,255,0.1)',
+                        borderRadius: '6px',
+                        color: 'white',
+                        textDecoration: 'none',
+                        fontSize: '0.9rem'
+                      }}
+                    >
+                      画像を保存
+                    </a>
+                  </div>
+                ) : (
+                  <div style={{
+                    height: '300px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(0,0,0,0.2)',
+                    borderRadius: '12px',
+                    color: 'var(--text-muted)'
+                  }}>
+                    画像はまだ生成されていません
+                  </div>
+                )}
               </div>
 
-              <button
-                onClick={copyToClipboard}
-                style={{
-                  width: '100%',
-                  padding: '0.85rem',
-                  borderRadius: '8px',
-                  background: isCopied ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.1)',
-                  border: isCopied ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(255, 255, 255, 0.2)',
-                  color: isCopied ? '#10b981' : 'white',
-                  fontSize: '0.95rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {isCopied ? (
-                  <>
-                    <CheckCircle size={18} />
-                    コピーしました
-                  </>
-                ) : (
-                  <>
-                    <Copy size={18} />
-                    クリップボードにコピー
-                  </>
-                )}
-              </button>
+              {/* 生成されたキャプション */}
+              <div>
+                <h3 style={{ marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '1rem' }}>
+                  📝 生成されたキャプション
+                </h3>
+                {generatedCaption ? (
+                  <div>
+                    <div style={{
+                      padding: '1.5rem',
+                      borderRadius: '8px',
+                      background: 'rgba(139, 92, 246, 0.1)',
+                      border: '1px solid rgba(139, 92, 246, 0.2)',
+                      marginBottom: '1rem',
+                      minHeight: '300px',
+                      whiteSpace: 'pre-wrap',
+                      fontSize: '0.95rem',
+                      lineHeight: '1.7'
+                    }}>
+                      {generatedCaption}
+                    </div>
 
-              <div style={{
-                marginTop: '2rem',
-                padding: '1rem',
-                background: 'rgba(59, 130, 246, 0.1)',
-                border: '1px solid rgba(59, 130, 246, 0.2)',
-                borderRadius: '8px',
-                fontSize: '0.85rem',
-                color: 'var(--text-muted)'
-              }}>
-                <strong style={{ color: 'white' }}>次のステップ:</strong>
-                <ol style={{ paddingLeft: '1.2rem', marginTop: '0.5rem', lineHeight: '1.6' }}>
-                  <li>キャプションをコピー</li>
-                  <li>Instagramアプリを開く</li>
-                  <li>アップロードした画像を選択</li>
-                  <li>キャプションを貼り付け</li>
-                  <li>ハッシュタグを追加して投稿</li>
-                </ol>
+                    <button
+                      onClick={copyToClipboard}
+                      style={{
+                        width: '100%',
+                        padding: '0.85rem',
+                        borderRadius: '8px',
+                        background: isCopied ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.1)',
+                        border: isCopied ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(255, 255, 255, 0.2)',
+                        color: isCopied ? '#10b981' : 'white',
+                        fontSize: '0.95rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {isCopied ? (
+                        <>
+                          <CheckCircle size={18} />
+                          コピーしました
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={18} />
+                          クリップボードにコピー
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{
+                    height: '300px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(0,0,0,0.2)',
+                    borderRadius: '12px',
+                    color: 'var(--text-muted)'
+                  }}>
+                    キャプションはまだ生成されていません
+                  </div>
+                )}
               </div>
             </div>
-          ) : (
+
             <div style={{
-              padding: '3rem',
-              textAlign: 'center',
+              marginTop: '2rem',
+              padding: '1rem',
+              background: 'rgba(59, 130, 246, 0.1)',
+              border: '1px solid rgba(59, 130, 246, 0.2)',
+              borderRadius: '8px',
+              fontSize: '0.85rem',
               color: 'var(--text-muted)'
             }}>
-              <Camera size={64} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
-              <p>デザイン情報を入力して</p>
-              <p>キャプションを生成してください</p>
+              <strong style={{ color: 'white' }}>次のステップ:</strong>
+              <ol style={{ paddingLeft: '1.2rem', marginTop: '0.5rem', lineHeight: '1.6' }}>
+                <li>生成された画像を保存</li>
+                <li>キャプションをコピー</li>
+                <li>Instagramアプリを開いて投稿！</li>
+              </ol>
             </div>
-          )}
-        </section>
+          </section>
+        )}
       </div>
     </main>
   );

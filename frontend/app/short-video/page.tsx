@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Video, Sparkles, Download, Play, Pause, Volume2 } from 'lucide-react';
+import { Video, Sparkles, Download, Volume2 } from 'lucide-react';
 
 export default function ShortVideoPage() {
   const [script, setScript] = useState('');
@@ -12,6 +12,7 @@ export default function ShortVideoPage() {
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [progress, setProgress] = useState('');
+  const [isGeneratingScript, setIsGeneratingScript] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -42,6 +43,37 @@ export default function ShortVideoPage() {
     } catch (error) {
       console.error('Avatar generation failed:', error);
       setProgress('');
+    }
+  };
+
+  // 台本を自動生成
+  const generateScript = async () => {
+    if (!script.trim() && !confirm('現在の台本が上書きされますがよろしいですか？')) {
+      return;
+    }
+
+    const topic = prompt('動画のテーマやトピックを入力してください', '在宅ワークで稼ぐコツ');
+    if (!topic) return;
+
+    setIsGeneratingScript(true);
+    try {
+      const response = await fetch('/api/short-video/generate-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, mood })
+      });
+
+      const data = await response.json();
+      if (response.ok && data.script) {
+        setScript(data.script);
+      } else {
+        alert('台本生成に失敗しました: ' + (data.error || '不明なエラー'));
+      }
+    } catch (error) {
+      console.error('Script generation failed:', error);
+      alert('台本生成に失敗しました');
+    } finally {
+      setIsGeneratingScript(false);
     }
   };
 
@@ -296,9 +328,28 @@ export default function ShortVideoPage() {
 
           {/* 台本入力 */}
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-              台本(15秒分) *
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                台本(15秒分) *
+              </label>
+              <button
+                onClick={generateScript}
+                disabled={isGeneratingScript}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--accent-primary)',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem'
+                }}
+              >
+                <Sparkles size={14} />
+                {isGeneratingScript ? '生成中...' : 'AIで台本生成'}
+              </button>
+            </div>
             <textarea
               value={script}
               onChange={(e) => setScript(e.target.value)}
