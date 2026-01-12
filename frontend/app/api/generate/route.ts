@@ -534,46 +534,74 @@ ${finalGoalData.cta ? `【CTA】最後に「${finalGoalData.cta}」のような�
 
         // メリット一覧（ランダムに1つ選ぶ）
         const benefitOptions = [
-            { id: 'no-commute', label: '通勤ゼロ', description: '家から一歩も出ずに稼げる' },
-            { id: 'time-free', label: '時間自由', description: '好きな時間に好きなだけ働ける' },
-            { id: 'no-relations', label: '人間関係なし', description: '上司も同僚もいない' },
-            { id: 'anonymous', label: '顔出しなし', description: '完全匿名で身バレの心配なし' },
-            { id: 'daily-pay', label: '日払いOK', description: '働いたらすぐお金になる' },
-            { id: 'smartphone', label: 'スマホ1台でOK', description: '初期費用ゼロで始められる' },
-            { id: 'age-free', label: '年齢不問', description: '30代40代でも需要がある' },
-            { id: 'beginner-ok', label: '未経験OK', description: '特別なスキル不要' },
-            { id: 'high-income', label: '高収入', description: '月収10万〜50万、頑張り次第で青天井' },
+            // 働き方・自由系
+            { id: 'no-commute', label: '通勤ゼロ', description: '満員電車なし。家から一歩も出ずに稼げる。移動時間ゼロで1日2時間浮く', howTo: '在宅ワークを始めるだけ。登録したその日から家で働ける' },
+            { id: 'time-free', label: '完全シフト自由', description: '朝5時でも深夜2時でもOK。週1でも毎日でも自分で決められる', howTo: '好きな時間にログインするだけ。予約も申請も不要' },
+            { id: 'pajama-work', label: 'パジャマで仕事OK', description: 'メイクなし、着替えなし。起きたらそのまま仕事開始できる', howTo: 'スマホかPCがあれば、ベッドの上でも稼げる' },
+            { id: 'no-relations', label: '人間関係ストレスゼロ', description: '上司なし、同僚なし、先輩後輩なし。誰にも気を使わない', howTo: '完全個人プレー。チームワークも飲み会も一切なし' },
+            { id: 'kids-ok', label: '子供がいてもできる', description: '子供が寝てる間の2時間だけでOK。急な発熱でも休める', howTo: '短時間からスタート可能。1日1時間でも収入になる' },
+
+            // 収入系
+            { id: 'daily-pay', label: '日払い対応', description: '働いた翌日に振込。急な出費にもすぐ対応できる', howTo: '申請すれば翌日入金。週払い・月払いも選べる' },
+            { id: 'high-hourly', label: '時給3,000円〜', description: 'コンビニバイトの3倍以上。同じ時間働いて3倍稼げる', howTo: '登録して配信を始めるだけ。経験者なら時給5,000円以上も' },
+            { id: 'income-10man', label: '月10万円の副収入', description: '週3日×3時間で月10万円。本業にプラスで生活が変わる', howTo: '空いてる時間を使うだけ。本業バレなしで副収入' },
+            { id: 'income-30man', label: '月30万円を在宅で', description: '1日4時間×週5で月30万円。フルタイムパートの2倍の収入', howTo: '本気で取り組めば3ヶ月で到達。サポート体制あり' },
+            { id: 'income-50man', label: '月50万円超えも現実的', description: 'トップ層は月100万円以上。努力次第で青天井', howTo: 'コツを掴めば半年で到達。ノウハウは全部教えます' },
+            { id: 'bonus-system', label: 'ボーナス・歩合あり', description: '基本報酬+インセンティブ。頑張りがそのまま収入に', howTo: 'ランキング上位や継続特典など、やればやるほど稼げる仕組み' },
+
+            // 安心・安全系
+            { id: 'anonymous', label: '完全匿名OK', description: '本名不要、顔出し不要、年齢も偽装OK。誰にもバレない', howTo: 'ニックネーム登録だけ。マスク・ウィッグ使用者多数' },
+            { id: 'no-face', label: '顔出しなしで稼げる', description: 'マスクOK、手元だけ配信OK。80%が顔出しなしで稼いでる', howTo: '顔を出さないスタイルでも月20万円以上稼ぐ人多数' },
+            { id: 'privacy-safe', label: '身バレ対策万全', description: 'IP制限、知り合いブロック機能あり。徹底的に守れる', howTo: '専用ツールで対策。身バレ率は対策すればほぼゼロ' },
+            { id: 'no-touch', label: '非接触で安全', description: '誰とも会わない、触られない。画面越しだから100%安全', howTo: 'オンライン完結。実際に会う必要は一切なし' },
+
+            // ハードル低い系
+            { id: 'beginner-ok', label: '完全未経験から始められる', description: '特別なスキル不要。スマホが使えれば誰でもできる', howTo: '登録は5分。マニュアルとサポートありで初日から稼げる' },
+            { id: 'smartphone', label: 'スマホ1台で完結', description: '初期費用ゼロ、機材不要。今持ってるスマホでOK', howTo: 'アプリを入れるだけ。PCがなくても問題なし' },
+            { id: 'age-30s', label: '30代から始める人が多い', description: '20代より30代の方が稼げる。落ち着きと会話力が武器になる', howTo: '年齢は強み。大人の女性を求めるユーザーは多い' },
+            { id: 'age-40s', label: '40代でも需要あり', description: '40代の方が指名率高いことも。経験と包容力が価値になる', howTo: '熟女カテゴリは常に人気。年齢を活かして稼ぐ' },
+            { id: 'trial-ok', label: 'お試し感覚で始められる', description: '合わなければすぐ辞められる。ノルマなし、違約金なし', howTo: 'まず1日だけ試してみる。続けるかは後から決めればOK' },
+
+            // 生活改善系
+            { id: 'save-money', label: '貯金が増える', description: '月5万円の副収入で年間60万円の貯金。将来の不安が消える', howTo: '空き時間を収入に変えるだけ。生活費はそのままで貯金UP' },
+            { id: 'loan-payoff', label: '借金・ローン返済に', description: '毎月の返済がラクになる。完済して身軽になった人多数', howTo: '副業収入を返済に回す。精神的にもラクになる' },
+            { id: 'quit-job', label: '嫌な仕事を辞められる', description: '在宅収入が安定したら本業を辞める選択肢も。実際に脱サラした人多数', howTo: 'まず副業で始めて、収入が安定したら独立を検討' },
+            { id: 'luxury', label: 'ちょっと贅沢ができる', description: '我慢してたものが買える。旅行も外食も気兼ねなく', howTo: '月数万円の余裕で生活の質が上がる' },
         ];
         const selectedBenefit = benefitOptions[Math.floor(Math.random() * benefitOptions.length)];
 
         // 【ステップ2】 メリット特化の投稿を作成
         const finalPrompt = `
 あなたは在宅ワーク求人のプロコピーライターです。
-ターゲット「${target}」に向けて、**この働き方のメリット**を伝える投稿を書いてください。
+**「${selectedBenefit.label}」** というメリットを伝える投稿を書いてください。
 
-### 🎯 今回のテーマ：「${selectedBenefit.label}」
+### 🎯 今回伝えるメリット
+**${selectedBenefit.label}**
 ${selectedBenefit.description}
 
-このメリットを深掘りして、具体的に伝えてください。
+### 💡 このメリットを得る方法
+${selectedBenefit.howTo}
 
-### 🪝 書き出し（メリットから始める）
-一文目で「これ、私のことだ」と思わせる。
+### 📝 投稿の構成
+1. **メリットをドーンと出す**（1文目で興味を引く）
+2. **具体的な数字や事例**で信頼性UP
+3. **どうすれば得られるか**を軽く触れる
+4. **CTA**で締める（DMへ誘導）
 
-書き出し例：
+### 書き出し例：
 - 「通勤なし、人間関係なし、時間自由。これが私の働き方」
 - 「週3日、1日3時間で月15万。在宅ワークの現実」
 - 「顔出しなしで月20万稼いでる。誰にもバレてない」
 - 「40代、未経験から始めて3ヶ月で月収30万になった」
-- 「朝起きて、パジャマのまま仕事開始。これが毎日」
+- 「子供が寝た後の2時間で月8万円。これがリアル」
 
 ### ✍️ ルール
 - 文字数: 200-280文字（短く刺さる）
-- 「${selectedBenefit.label}」のメリットを具体的に書く
 - 数字を入れる（時間、金額、日数など）
 - 「私」視点のリアルな体験談風に
 - ハッシュタグ禁止
 - 2-3行ごとに空行
-- 最後は軽いCTAで締める（「気になる人はDMで」など）
+- 最後に「気になる人はDMで💬」などCTAを入れる
 
 投稿文のみ出力。余計な説明不要。
 `;
