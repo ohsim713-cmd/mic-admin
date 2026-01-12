@@ -1,24 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, Check, X, Edit3, Clock, MessageCircle, RefreshCw, Zap, Database, Trash2, Copy, Target, Sparkles } from 'lucide-react';
+import { Send, Check, X, Edit3, Clock, MessageCircle, RefreshCw, Zap, Database, Trash2, Copy } from 'lucide-react';
 import { useBusinessType } from '../context/BusinessTypeContext';
 import { useToast } from '../components/Toast';
-
-interface PostGoal {
-  id: string;
-  label: string;
-  description: string;
-  promptHint: string;
-  cta: string | null;
-}
-
-interface PostAngle {
-  id: string;
-  label: string;
-  description: string;
-  promptHint: string;
-}
 
 interface PostCandidate {
   id: string;
@@ -66,23 +51,6 @@ export default function ApprovalPage() {
 
   // フィルター
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'scheduled' | 'rejected'>('all');
-
-  // 目的別・切り口の選択
-  const [postGoals, setPostGoals] = useState<PostGoal[]>([]);
-  const [postAngles, setPostAngles] = useState<PostAngle[]>([]);
-  const [selectedGoal, setSelectedGoal] = useState<string>('auto');
-  const [selectedAngle, setSelectedAngle] = useState<string>('auto');
-
-  // theme_options.jsonから目的別・切り口を読み込む
-  useEffect(() => {
-    fetch('/api/theme-options')
-      .then(res => res.json())
-      .then(data => {
-        if (data.postGoals) setPostGoals(data.postGoals);
-        if (data.postAngles) setPostAngles(data.postAngles);
-      })
-      .catch(e => console.error('Failed to load theme options:', e));
-  }, []);
 
   // ローカルストレージから読み込み
   useEffect(() => {
@@ -159,8 +127,6 @@ export default function ApprovalPage() {
         body: JSON.stringify({
           businessType,
           autoMode: true,
-          postGoal: selectedGoal !== 'auto' ? selectedGoal : undefined,
-          postAngle: selectedAngle !== 'auto' ? selectedAngle : undefined,
         }),
       });
 

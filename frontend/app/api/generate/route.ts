@@ -532,30 +532,32 @@ ${finalGoalData.cta ? `【CTA】最後に「${finalGoalData.cta}」のような�
 【構成のコツ】${finalAngleData.promptHint}
 ` : '';
 
+        // メリット一覧（ランダムに1つ選ぶ）
+        const benefitOptions = [
+            { id: 'no-commute', label: '通勤ゼロ', description: '家から一歩も出ずに稼げる' },
+            { id: 'time-free', label: '時間自由', description: '好きな時間に好きなだけ働ける' },
+            { id: 'no-relations', label: '人間関係なし', description: '上司も同僚もいない' },
+            { id: 'anonymous', label: '顔出しなし', description: '完全匿名で身バレの心配なし' },
+            { id: 'daily-pay', label: '日払いOK', description: '働いたらすぐお金になる' },
+            { id: 'smartphone', label: 'スマホ1台でOK', description: '初期費用ゼロで始められる' },
+            { id: 'age-free', label: '年齢不問', description: '30代40代でも需要がある' },
+            { id: 'beginner-ok', label: '未経験OK', description: '特別なスキル不要' },
+            { id: 'high-income', label: '高収入', description: '月収10万〜50万、頑張り次第で青天井' },
+        ];
+        const selectedBenefit = benefitOptions[Math.floor(Math.random() * benefitOptions.length)];
+
         // 【ステップ2】 メリット特化の投稿を作成
         const finalPrompt = `
 あなたは在宅ワーク求人のプロコピーライターです。
-ターゲット「${target}」に向けて、**この働き方のメリットだけ**を伝える投稿を書いてください。
+ターゲット「${target}」に向けて、**この働き方のメリット**を伝える投稿を書いてください。
 
-### 🎯 このターゲットが得られる具体的メリット
-${targetDesires.map((d: string) => `✅ ${d}`).join('\n')}
+### 🎯 今回のテーマ：「${selectedBenefit.label}」
+${selectedBenefit.description}
 
-### 💎 投稿で伝えるべきメリット（1つ選んで深掘り）
-- 通勤ゼロ。家から一歩も出ずに稼げる
-- 時間自由。好きな時間に好きなだけ働ける
-- 人間関係なし。上司も同僚もいない
-- 顔出しなし。完全匿名で身バレの心配なし
-- 日払いOK。働いたらすぐお金になる
-- スマホ1台でOK。初期費用ゼロで始められる
-- 年齢不問。30代40代でも需要がある
-- 未経験OK。特別なスキル不要
-- 月収10万〜50万。頑張り次第で青天井
+このメリットを深掘りして、具体的に伝えてください。
 
-${goalContext}
-${angleContext}
-
-### 🪝 書き出し（必ずメリットから始める）
-一文目で「これ、私のことだ」と思わせる。メリットをドーンと出す。
+### 🪝 書き出し（メリットから始める）
+一文目で「これ、私のことだ」と思わせる。
 
 書き出し例：
 - 「通勤なし、人間関係なし、時間自由。これが私の働き方」
@@ -566,7 +568,7 @@ ${angleContext}
 
 ### ✍️ ルール
 - 文字数: 200-280文字（短く刺さる）
-- メリットを1つに絞って具体的に書く
+- 「${selectedBenefit.label}」のメリットを具体的に書く
 - 数字を入れる（時間、金額、日数など）
 - 「私」視点のリアルな体験談風に
 - ハッシュタグ禁止
@@ -583,10 +585,10 @@ ${angleContext}
         const confidence = Math.floor(Math.random() * 3) + 3; // 3, 4, or 5
         const metaInfo = JSON.stringify({
             target,
-            theme: postType,
+            theme: selectedBenefit.label,
+            benefit: selectedBenefit.label,
+            benefitDescription: selectedBenefit.description,
             confidence,
-            concerns: targetConcerns,
-            desires: targetDesires
         });
 
         const stream = new ReadableStream({

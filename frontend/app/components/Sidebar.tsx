@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sparkles, FileText, BarChart3, Settings, Menu, X, BookOpen, Video, Building2, Share2, MessageSquare, Cloud, Instagram, Music, Youtube, ChevronDown } from 'lucide-react';
+import { Sparkles, FileText, BarChart3, Settings, Menu, X, BookOpen, Video, Building2, Share2, MessageSquare, Cloud, Instagram, Music, Youtube, ChevronDown, Factory } from 'lucide-react';
 import { useBusinessType } from '../context/BusinessTypeContext';
 
 const contentMenuItems = [
@@ -22,6 +22,7 @@ const snsMenuItems = [
 ];
 
 const systemMenuItems = [
+  { id: 'dashboard', label: 'Factory', icon: Factory, href: '/dashboard' },
   { id: 'history', label: '生成履歴', icon: FileText, href: '/history' },
   { id: 'analytics', label: 'アナリティクス', icon: BarChart3, href: '/analytics' },
   { id: 'settings', label: '設定', icon: Settings, href: '/settings' },

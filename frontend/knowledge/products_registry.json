@@ -1,0 +1,32 @@
+{
+  "products": [
+    {
+      "id": "mic-admin-original",
+      "name": "MIC Admin",
+      "description": "チャットレディ求人向けSNS自動投稿システム",
+      "templateId": "mic-admin-v1",
+      "status": "active",
+      "deployUrl": "https://mic-admin.vercel.app",
+      "repoUrl": null,
+      "metrics": {
+        "users": 0,
+        "revenue": 0,
+        "postsGenerated": 0,
+        "lastActive": null
+      },
+      "health": {
+        "status": "healthy",
+        "lastCheck": null,
+        "uptime": 100
+      },
+      "createdAt": "2026-01-12T00:00:00Z",
+      "isOriginal": true
+    }
+  ],
+  "stats": {
+    "totalProducts": 1,
+    "activeProducts": 1,
+    "totalRevenue": 0,
+    "totalUsers": 0
+  }
+}
