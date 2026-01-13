@@ -6,6 +6,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { AccountType } from './sns-adapter';
 import { checkQuality, QualityScore } from './quality-checker';
+import { saveSuccessPattern, getSuccessExamplesForPrompt } from './success-patterns';
 
 const apiKey = process.env.GEMINI_API_KEY || "";
 const genAI = new GoogleGenAI({ apiKey });
@@ -103,6 +104,7 @@ export interface GeneratedPost {
 /**
  * アカウント別のDM獲得投稿を生成（自動品質改善付き）
  * 7点未満なら最大3回まで自動リトライ
+ * 7点以上なら成功パターンDBに保存
  */
 export async function generateDMPostForAccount(account: AccountType): Promise<GeneratedPost & { score?: QualityScore }> {
   const config = ACCOUNT_CONFIG[account];
@@ -110,11 +112,14 @@ export async function generateDMPostForAccount(account: AccountType): Promise<Ge
   const benefit = randomPick(config.benefits);
   const pattern = randomPick(POST_PATTERNS);
 
+  // 過去の成功例を取得
+  const successExamples = await getSuccessExamplesForPrompt(account, 3);
+
   let bestPost: { text: string; score: QualityScore } | null = null;
   let feedback = '';
 
   for (let attempt = 0; attempt < 3; attempt++) {
-    const prompt = buildPrompt(config, target, benefit, pattern, feedback);
+    const prompt = buildPrompt(config, target, benefit, pattern, feedback, successExamples);
 
     const result = await genAI.models.generateContent({
       model: "gemini-2.0-flash",
@@ -125,8 +130,16 @@ export async function generateDMPostForAccount(account: AccountType): Promise<Ge
 
     console.log(`[Generator] ${account} attempt ${attempt + 1}: score=${score.total}/10`);
 
-    // 7点以上なら即採用
+    // 7点以上なら即採用 & 成功パターンに保存
     if (score.passed && score.total >= 7) {
+      await saveSuccessPattern(
+        account,
+        text,
+        score.total,
+        target.label,
+        benefit.label,
+        pattern.label
+      );
       return { text, target, benefit, pattern, account, score };
     }
 
@@ -139,7 +152,7 @@ export async function generateDMPostForAccount(account: AccountType): Promise<Ge
     feedback = buildFeedback(score);
   }
 
-  // 3回試しても7点未満なら最高スコアのものを返す
+  // 3回試しても7点未満なら最高スコアのものを返す（保存はしない）
   return {
     text: bestPost!.text,
     target,
@@ -158,7 +171,8 @@ function buildPrompt(
   target: typeof ACCOUNT_CONFIG.liver.targets[0],
   benefit: typeof ACCOUNT_CONFIG.liver.benefits[0],
   pattern: typeof POST_PATTERNS[0],
-  feedback: string
+  feedback: string,
+  successExamples: string
 ): string {
   let prompt = `あなたは${config.stance}です。
 ${config.jobType}の求人で、DMからの問い合わせを獲得するための投稿を書いてください。
@@ -189,6 +203,15 @@ ${pattern.label}: ${pattern.structure}
 - 2-3行ごとに空行
 - ハッシュタグ禁止
 - 過度な煽りNG（「絶対」「確実」「100%」禁止）`;
+
+  // 過去の成功例があれば追加
+  if (successExamples) {
+    prompt += `
+
+${successExamples}
+
+※上記は参考例です。同じ文章は書かず、構成やトーンを参考に新しい投稿を作成してください。`;
+  }
 
   if (feedback) {
     prompt += `
