@@ -133,7 +133,10 @@ export default function DMHunterPage() {
         body: JSON.stringify({ dryRun: true }),
       });
       const data = await res.json();
-      if (data.posts) {
+      console.log('API response:', data);
+      if (data.error) {
+        setLastResult({ success: false, error: data.error });
+      } else if (data.posts) {
         setPreviews(data.posts.map((p: any) => ({
           account: p.account,
           text: p.text,
@@ -142,9 +145,12 @@ export default function DMHunterPage() {
           score: p.score?.total ?? p.score,
           passed: p.score?.passed ?? p.score >= 7,
         })));
+      } else {
+        setLastResult({ success: false, error: 'プレビュー生成に失敗しました' });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Preview error:', error);
+      setLastResult({ success: false, error: error.message });
     } finally {
       setPreviewLoading(false);
     }
