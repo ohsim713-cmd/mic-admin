@@ -3,11 +3,11 @@
  * 3アカウント対応版（ライバー/チャトレ）
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { AccountType } from './sns-adapter';
 
 const apiKey = process.env.GEMINI_API_KEY || "";
-const genAI = new GoogleGenerativeAI(apiKey);
+const genAI = new GoogleGenAI({ apiKey });
 
 // アカウント種別ごとの設定
 export const ACCOUNT_CONFIG = {
@@ -137,9 +137,11 @@ ${pattern.label}: ${pattern.structure}
 
 投稿文のみ出力。説明不要。`;
 
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().trim();
+  const result = await genAI.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: prompt,
+  });
+  const text = result.text?.trim() || "";
 
   return {
     text,
@@ -217,9 +219,11 @@ ${pattern.label}: ${pattern.structure}
 
 投稿文のみ出力。説明不要。`;
 
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().trim();
+  const result = await genAI.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: prompt,
+  });
+  const text = result.text?.trim() || "";
 
   return {
     text,
