@@ -44,22 +44,22 @@ function getTwitterClient(account: AccountType): TwitterApi | null {
 
   switch (account) {
     case 'liver':
-      apiKey = process.env.TWITTER_API_KEY_LIVER;
-      apiSecret = process.env.TWITTER_API_SECRET_LIVER;
-      accessToken = process.env.TWITTER_ACCESS_TOKEN_LIVER;
-      accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET_LIVER;
+      apiKey = process.env.TWITTER_API_KEY_TT_LIVER;
+      apiSecret = process.env.TWITTER_API_SECRET_TT_LIVER;
+      accessToken = process.env.TWITTER_ACCESS_TOKEN_TT_LIVER;
+      accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET_TT_LIVER;
       break;
     case 'chatre1':
-      apiKey = process.env.TWITTER_API_KEY_CHATRE1;
-      apiSecret = process.env.TWITTER_API_SECRET_CHATRE1;
-      accessToken = process.env.TWITTER_ACCESS_TOKEN_CHATRE1;
-      accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET_CHATRE1;
+      apiKey = process.env.TWITTER_API_KEY_MIC_CHAT;
+      apiSecret = process.env.TWITTER_API_SECRET_MIC_CHAT;
+      accessToken = process.env.TWITTER_ACCESS_TOKEN_MIC_CHAT;
+      accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET_MIC_CHAT;
       break;
     case 'chatre2':
-      apiKey = process.env.TWITTER_API_KEY_CHATRE2;
-      apiSecret = process.env.TWITTER_API_SECRET_CHATRE2;
-      accessToken = process.env.TWITTER_ACCESS_TOKEN_CHATRE2;
-      accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET_CHATRE2;
+      apiKey = process.env.TWITTER_API_KEY_MS_STRIPCHAT;
+      apiSecret = process.env.TWITTER_API_SECRET_MS_STRIPCHAT;
+      accessToken = process.env.TWITTER_ACCESS_TOKEN_MS_STRIPCHAT;
+      accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET_MS_STRIPCHAT;
       break;
   }
 
