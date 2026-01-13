@@ -1,7 +1,8 @@
-# 自動投稿スケジューラー (1日15投稿)
+# 自動投稿スケジューラー (1日15投稿 x 3アカウント)
 #
-# このワークフローは定期的にauto-post APIを呼び出し、
+# このワークフローは定期的に /api/automation/post を呼び出し、
 # X（Twitter）への自動投稿を実行します。
+# 各時間帯で @tt_liver, @mic_chat_, @ms_stripchat の3アカウントに投稿
 #
 # 必要なSecretsの設定:
 #   VERCEL_DEPLOY_URL: デプロイ先のURL (例: https://your-app.vercel.app)
@@ -11,46 +12,42 @@ name: Auto Post Scheduler
 
 on:
   # 定期実行 (UTC時間) - 日本時間 = UTC + 9
+  # 15スロット: 07:00, 08:00, 09:00, 10:00, 11:00, 12:00, 13:00, 14:00, 15:00, 16:00, 17:00, 18:00, 20:00, 22:00, 23:00
   schedule:
-    # Slot 1:  6:30 JST = 21:30 UTC前日
-    - cron: '30 21 * * *'
-    # Slot 2:  7:30 JST = 22:30 UTC前日
-    - cron: '30 22 * * *'
-    # Slot 3:  8:30 JST = 23:30 UTC前日
-    - cron: '30 23 * * *'
-    # Slot 4: 10:00 JST =  1:00 UTC
+    # 07:00 JST = 22:00 UTC前日
+    - cron: '0 22 * * *'
+    # 08:00 JST = 23:00 UTC前日
+    - cron: '0 23 * * *'
+    # 09:00 JST = 00:00 UTC
+    - cron: '0 0 * * *'
+    # 10:00 JST = 01:00 UTC
     - cron: '0 1 * * *'
-    # Slot 5: 12:00 JST =  3:00 UTC
+    # 11:00 JST = 02:00 UTC
+    - cron: '0 2 * * *'
+    # 12:00 JST = 03:00 UTC
     - cron: '0 3 * * *'
-    # Slot 6: 12:45 JST =  3:45 UTC
-    - cron: '45 3 * * *'
-    # Slot 7: 14:00 JST =  5:00 UTC
+    # 13:00 JST = 04:00 UTC
+    - cron: '0 4 * * *'
+    # 14:00 JST = 05:00 UTC
     - cron: '0 5 * * *'
-    # Slot 8: 15:30 JST =  6:30 UTC
-    - cron: '30 6 * * *'
-    # Slot 9: 17:30 JST =  8:30 UTC
-    - cron: '30 8 * * *'
-    # Slot 10: 18:30 JST =  9:30 UTC
-    - cron: '30 9 * * *'
-    # Slot 11: 20:00 JST = 11:00 UTC
+    # 15:00 JST = 06:00 UTC
+    - cron: '0 6 * * *'
+    # 16:00 JST = 07:00 UTC
+    - cron: '0 7 * * *'
+    # 17:00 JST = 08:00 UTC
+    - cron: '0 8 * * *'
+    # 18:00 JST = 09:00 UTC
+    - cron: '0 9 * * *'
+    # 20:00 JST = 11:00 UTC
     - cron: '0 11 * * *'
-    # Slot 12: 21:00 JST = 12:00 UTC
-    - cron: '0 12 * * *'
-    # Slot 13: 21:45 JST = 12:45 UTC
-    - cron: '45 12 * * *'
-    # Slot 14: 22:30 JST = 13:30 UTC
-    - cron: '30 13 * * *'
-    # Slot 15: 23:30 JST = 14:30 UTC
-    - cron: '30 14 * * *'
+    # 22:00 JST = 13:00 UTC
+    - cron: '0 13 * * *'
+    # 23:00 JST = 14:00 UTC
+    - cron: '0 14 * * *'
 
   # 手動実行も可能
   workflow_dispatch:
     inputs:
-      slot:
-        description: '投稿スロット (1-15、0=自動判定)'
-        required: false
-        default: '0'
-        type: string
       dry_run:
         description: 'ドライラン (投稿しない)'
         required: false
@@ -63,41 +60,7 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - name: Determine Time Slot
-        id: slot
-        run: |
-          # 手動実行時はinputを使用、スケジュール時は時間から判定
-          if [ "${{ github.event.inputs.slot }}" != "" ] && [ "${{ github.event.inputs.slot }}" != "0" ]; then
-            echo "slot=${{ github.event.inputs.slot }}" >> $GITHUB_OUTPUT
-          else
-            # 現在のUTC時間から日本時間のスロットを判定
-            HOUR=$(date -u +%H)
-            MIN=$(date -u +%M)
-
-            # UTC時間 → スロット対応表
-            case "$HOUR:$MIN" in
-              21:3*) SLOT=1 ;;   #  6:30 JST おはよう
-              22:3*) SLOT=2 ;;   #  7:30 JST ノウハウ
-              23:3*) SLOT=3 ;;   #  8:30 JST Q&A
-              01:0*) SLOT=4 ;;   # 10:00 JST 体験談
-              03:0*) SLOT=5 ;;   # 12:00 JST 共感
-              03:4*) SLOT=6 ;;   # 12:45 JST 軽い話題
-              05:0*) SLOT=7 ;;   # 14:00 JST 実績
-              06:3*) SLOT=8 ;;   # 15:30 JST 不安解消
-              08:3*) SLOT=9 ;;   # 17:30 JST 共感
-              09:3*) SLOT=10 ;;  # 18:30 JST メリット
-              11:0*) SLOT=11 ;;  # 20:00 JST 求人
-              12:0*) SLOT=12 ;;  # 21:00 JST 成功事例
-              12:4*) SLOT=13 ;;  # 21:45 JST 本音
-              13:3*) SLOT=14 ;;  # 22:30 JST クロージング
-              14:3*) SLOT=15 ;;  # 23:30 JST 夜向け
-              *) SLOT=1 ;;
-            esac
-            echo "slot=$SLOT" >> $GITHUB_OUTPUT
-          fi
-          echo "Selected slot: $SLOT"
-
-      - name: Call Auto Post API
+      - name: Call Automation Post API
         env:
           DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_URL }}
           AUTO_POST_SECRET: ${{ secrets.AUTO_POST_SECRET }}
@@ -107,34 +70,51 @@ jobs:
             exit 1
           fi
 
-          SLOT=${{ steps.slot.outputs.slot }}
           DRY_RUN=${{ github.event.inputs.dry_run || 'false' }}
 
-          echo "Calling auto-post API..."
-          echo "  URL: $DEPLOY_URL/api/auto-post"
-          echo "  Slot: $SLOT"
-          echo "  Dry Run: $DRY_RUN"
+          echo "=========================================="
+          echo "  MIC AI Auto Post"
+          echo "=========================================="
+          echo "Time (UTC): $(date -u '+%Y-%m-%d %H:%M:%S')"
+          echo "Time (JST): $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M:%S')"
+          echo "Dry Run: $DRY_RUN"
+          echo ""
+          echo "Calling: $DEPLOY_URL/api/automation/post"
+          echo ""
 
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/auto-post" \
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/automation/post" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $AUTO_POST_SECRET" \
-            -d "{\"slot\": $SLOT, \"dryRun\": $DRY_RUN}")
+            -d "{\"dryRun\": $DRY_RUN, \"secret\": \"$AUTO_POST_SECRET\"}")
 
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | head -n-1)
 
           echo "Response Code: $HTTP_CODE"
-          echo "Response Body: $BODY"
+          echo ""
+          echo "Response:"
+          echo "$BODY" | jq . 2>/dev/null || echo "$BODY"
 
           if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
-            echo "Auto post successful!"
+            echo ""
+            echo "=========================================="
+            echo "  Result: SUCCESS"
+            echo "=========================================="
+            # 結果サマリー
+            SUCCESS_COUNT=$(echo "$BODY" | jq -r '.results | map(select(.success == true)) | length' 2>/dev/null || echo "?")
+            TOTAL_COUNT=$(echo "$BODY" | jq -r '.results | length' 2>/dev/null || echo "?")
+            SLOT=$(echo "$BODY" | jq -r '.slot.label' 2>/dev/null || echo "?")
+            echo "Slot: $SLOT"
+            echo "Posted: $SUCCESS_COUNT/$TOTAL_COUNT accounts"
           else
-            echo "Auto post failed with status $HTTP_CODE"
+            echo ""
+            echo "=========================================="
+            echo "  Result: FAILED"
+            echo "=========================================="
             exit 1
           fi
 
-      - name: Log Result
+      - name: Log Completion
         if: always()
         run: |
-          echo "Auto post job completed at $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "Japan Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M:%S JST')"
+          echo ""
+          echo "Job completed at $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M:%S JST')"
