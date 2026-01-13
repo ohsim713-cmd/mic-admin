@@ -1,8 +1,12 @@
 import re
+from pathlib import Path
 
 # ファイルの読み込み
-file_path = r"c:\Users\user\.gemini\antigravity\playground\charged-tyson\knowledge\past_posts.txt"
-with open(file_path, "r", encoding="utf-8") as f:
+# スクリプトの場所から相対パスでknowledgeディレクトリを取得
+script_dir = Path(__file__).parent
+project_root = script_dir.parent.parent  # frontend/knowledge -> frontend -> charged-tyson
+file_path = project_root / "knowledge" / "past_posts.txt"
+with open(str(file_path), "r", encoding="utf-8") as f:
     lines = f.readlines()
 
 cleaned_posts = []
@@ -38,5 +42,5 @@ for line in lines:
             cleaned_posts.append(stripped)
 
 # ファイルに書き戻し
-with open(file_path, "w", encoding="utf-8") as f:
+with open(str(file_path), "w", encoding="utf-8") as f:
     f.write("\n".join(cleaned_posts))

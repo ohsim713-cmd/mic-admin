@@ -4,6 +4,8 @@ import Sidebar from "./components/Sidebar";
 import SchedulerInitializer from "./components/SchedulerInitializer";
 import { BusinessTypeProvider } from "./context/BusinessTypeContext";
 import { ToastProvider } from "./components/Toast";
+import { GlobalActivityProvider, GlobalActivityBar } from "./components/GlobalActivityBar";
+import AutoRunInitializer from "./components/AutoRunInitializer";
 
 export const metadata: Metadata = {
   title: "MIC Admin | AI SNS自動投稿",
@@ -31,13 +33,17 @@ export default function RootLayout({
       <body>
         <BusinessTypeProvider>
           <ToastProvider>
-            <SchedulerInitializer />
-            <div style={{ display: 'flex' }}>
-              <Sidebar />
-              <main className="main-content">
-                {children}
-              </main>
-            </div>
+            <GlobalActivityProvider>
+              <SchedulerInitializer />
+              <AutoRunInitializer />
+              <div style={{ display: 'flex' }}>
+                <Sidebar />
+                <main className="main-content">
+                  {children}
+                </main>
+              </div>
+              <GlobalActivityBar />
+            </GlobalActivityProvider>
           </ToastProvider>
         </BusinessTypeProvider>
       </body>

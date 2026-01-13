@@ -1,0 +1,131 @@
+{
+  "schedules": {
+    "2026-01-13": {
+      "date": "2026-01-13",
+      "posts": [
+        {
+          "id": "2026-01-13-08:00-liver",
+          "account": "liver",
+          "scheduledTime": "08:00",
+          "slot": "朝活層",
+          "status": "pending"
+        },
+        {
+          "id": "2026-01-13-08:00-chatre1",
+          "account": "chatre1",
+          "scheduledTime": "08:00",
+          "slot": "朝活層",
+          "status": "pending"
+        },
+        {
+          "id": "2026-01-13-08:00-chatre2",
+          "account": "chatre2",
+          "scheduledTime": "08:00",
+          "slot": "朝活層",
+          "status": "pending"
+        },
+        {
+          "id": "2026-01-13-12:00-liver",
+          "account": "liver",
+          "scheduledTime": "12:00",
+          "slot": "昼休み",
+          "status": "pending"
+        },
+        {
+          "id": "2026-01-13-12:00-chatre1",
+          "account": "chatre1",
+          "scheduledTime": "12:00",
+          "slot": "昼休み",
+          "status": "pending"
+        },
+        {
+          "id": "2026-01-13-12:00-chatre2",
+          "account": "chatre2",
+          "scheduledTime": "12:00",
+          "slot": "昼休み",
+          "status": "pending"
+        },
+        {
+          "id": "2026-01-13-18:00-liver",
+          "account": "liver",
+          "scheduledTime": "18:00",
+          "slot": "退勤時間",
+          "status": "pending"
+        },
+        {
+          "id": "2026-01-13-18:00-chatre1",
+          "account": "chatre1",
+          "scheduledTime": "18:00",
+          "slot": "退勤時間",
+          "status": "pending"
+        },
+        {
+          "id": "2026-01-13-18:00-chatre2",
+          "account": "chatre2",
+          "scheduledTime": "18:00",
+          "slot": "退勤時間",
+          "status": "pending"
+        },
+        {
+          "id": "2026-01-13-21:00-liver",
+          "account": "liver",
+          "scheduledTime": "21:00",
+          "slot": "ゴールデンタイム",
+          "status": "posted",
+          "tweetId": "2011040475562852858",
+          "postedAt": "2026-01-13T11:39:47.870Z"
+        },
+        {
+          "id": "2026-01-13-21:00-chatre1",
+          "account": "chatre1",
+          "scheduledTime": "21:00",
+          "slot": "ゴールデンタイム",
+          "status": "pending"
+        },
+        {
+          "id": "2026-01-13-21:00-chatre2",
+          "account": "chatre2",
+          "scheduledTime": "21:00",
+          "slot": "ゴールデンタイム",
+          "status": "posted",
+          "tweetId": "2011040478066827506",
+          "postedAt": "2026-01-13T11:39:48.378Z"
+        },
+        {
+          "id": "2026-01-13-23:00-liver",
+          "account": "liver",
+          "scheduledTime": "23:00",
+          "slot": "夜更かし層",
+          "status": "pending"
+        },
+        {
+          "id": "2026-01-13-23:00-chatre1",
+          "account": "chatre1",
+          "scheduledTime": "23:00",
+          "slot": "夜更かし層",
+          "status": "pending"
+        },
+        {
+          "id": "2026-01-13-23:00-chatre2",
+          "account": "chatre2",
+          "scheduledTime": "23:00",
+          "slot": "夜更かし層",
+          "status": "pending"
+        }
+      ],
+      "stats": {
+        "total": 15,
+        "posted": 2,
+        "pending": 13,
+        "failed": 0,
+        "totalImpressions": 0
+      }
+    }
+  },
+  "stats": {
+    "totalPosted": 2,
+    "totalImpressions": 0,
+    "totalDMs": 0,
+    "lastUpdated": "2026-01-13T11:39:48.388Z"
+  }
+}

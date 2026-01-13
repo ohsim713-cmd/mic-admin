@@ -1,37 +1,35 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sparkles, Settings, Menu, X, BookOpen, Video, Building2, Share2, MessageSquare, Cloud, Instagram, Music, Youtube, ChevronDown, Zap, Target } from 'lucide-react';
-import { useBusinessType } from '../context/BusinessTypeContext';
+import { Menu, X, Zap, FileText, Image, Video, Activity } from 'lucide-react';
 
-const contentMenuItems = [
-  { id: 'dm-hunter', label: 'DM Hunter', icon: Target, href: '/dm-hunter' },
-  { id: 'auto-post', label: '自動投稿', icon: Zap, href: '/auto-post' },
-  { id: 'approval', label: '文章生成', icon: Sparkles, href: '/approval' },
-  { id: 'wordpress', label: 'SEO記事生成', icon: BookOpen, href: '/wordpress' },
-  { id: 'instagram', label: '画像生成', icon: Instagram, href: '/instagram' },
-  { id: 'short-video', label: 'ショート動画生成', icon: Video, href: '/short-video' },
-];
-
-const snsMenuItems = [
-  { id: 'twitter', label: 'X (Twitter)', icon: Share2 },
-  { id: 'threads', label: 'Threads', icon: MessageSquare },
-  { id: 'bluesky', label: 'Bluesky', icon: Cloud },
-  { id: 'tiktok', label: 'TikTok', icon: Music },
-  { id: 'youtube', label: 'YouTube', icon: Youtube },
-];
-
-const systemMenuItems = [
-  { id: 'settings', label: '設定', icon: Settings, href: '/settings' },
+// シンプル化 - ダッシュボード1つに統合
+const menuItems = [
+  {
+    id: 'dashboard',
+    label: 'ダッシュボード',
+    sublabel: '全体状況・投稿管理・分析',
+    icon: Activity,
+    href: '/automation',
+    isMain: true,
+    gradient: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+  },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const [snsExpanded, setSnsExpanded] = useState(false);
-  const { businessType, setBusinessType, businessLabel } = useBusinessType();
+  const [pulsePhase, setPulsePhase] = useState(0);
+
+  // アニメーション用の位相更新
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPulsePhase(p => (p + 1) % 100);
+    }, 50);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <>
@@ -46,21 +44,22 @@ export default function Sidebar() {
           zIndex: 1001,
           width: '48px',
           height: '48px',
-          borderRadius: '12px',
-          background: 'rgba(17, 24, 39, 0.9)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '14px',
+          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2))',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(139, 92, 246, 0.3)',
           color: 'white',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
+          boxShadow: '0 4px 20px rgba(139, 92, 246, 0.2)',
         }}
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      {/* オーバーレイ（モバイル時、サイドバー開いている時のみ表示） */}
+      {/* オーバーレイ */}
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
@@ -71,294 +70,296 @@ export default function Sidebar() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0, 0, 0, 0.6)',
+            background: 'rgba(0, 0, 0, 0.7)',
+            backdropFilter: 'blur(4px)',
             zIndex: 999,
-            display: 'block',
           }}
         />
       )}
 
-      {/* サイドバー */}
+      {/* サイドバー - 先進的デザイン */}
       <aside style={{
-        width: '260px',
+        width: '280px',
         height: '100vh',
-        background: 'rgba(17, 24, 39, 0.95)',
-        backdropFilter: 'blur(10px)',
-        borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-        padding: '2rem 1rem',
+        background: 'linear-gradient(180deg, rgba(15, 15, 25, 0.98) 0%, rgba(10, 10, 20, 0.99) 100%)',
+        backdropFilter: 'blur(20px)',
+        borderRight: '1px solid rgba(139, 92, 246, 0.15)',
+        padding: '1.5rem 1rem',
         display: 'flex',
         flexDirection: 'column',
         position: 'fixed',
-        left: isOpen ? 0 : '-260px',
+        left: isOpen ? 0 : '-280px',
         top: 0,
         zIndex: 1000,
-        transition: 'left 0.3s ease',
+        transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         overflowY: 'auto',
-        overflowX: 'hidden'
+        overflowX: 'hidden',
       }}
         className="sidebar-desktop-open"
       >
-        {/* Logo */}
-        <div style={{ marginBottom: '1.5rem', textAlign: 'center', marginTop: '0.5rem' }}>
-          <h1 style={{
-            fontSize: '1.5rem',
-            fontWeight: 'bold',
-            background: 'var(--gradient-main)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            marginBottom: '0.25rem'
-          }}>
-            MIC Admin
-          </h1>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            AI SNS自動投稿
-          </p>
-        </div>
-
-        {/* ビジネスタイプ選択 */}
+        {/* ロゴエリア - 先進的 */}
         <div style={{
           marginBottom: '2rem',
-          padding: '0.75rem',
-          background: 'rgba(139, 92, 246, 0.08)',
-          borderRadius: '12px',
-          border: '1px solid rgba(139, 92, 246, 0.2)'
+          padding: '1.5rem',
+          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.1))',
+          borderRadius: '16px',
+          border: '1px solid rgba(139, 92, 246, 0.2)',
+          position: 'relative',
+          overflow: 'hidden',
         }}>
-          <label style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            fontSize: '0.8rem',
-            color: '#a78bfa',
-            marginBottom: '0.75rem',
-            fontWeight: '600'
-          }}>
-            <Building2 size={16} />
-            ビジネスタイプ
-          </label>
-          <select
-            value={businessType}
-            onChange={(e) => setBusinessType(e.target.value as 'chat-lady' | 'liver-agency' | 'nail-salon')}
-            style={{
-              width: '100%',
-              padding: '0.85rem 1rem',
-              borderRadius: '10px',
-              background: 'rgba(31, 41, 55, 0.9)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              color: 'white',
-              fontSize: '0.95rem',
-              fontWeight: '500',
-              cursor: 'pointer',
-              outline: 'none'
-            }}
-          >
-            <option value="chat-lady" style={{ background: '#1f2937', color: 'white' }}>配信事務所</option>
-            <option value="liver-agency" style={{ background: '#1f2937', color: 'white' }}>ライバー事務所</option>
-            <option value="nail-salon" style={{ background: '#1f2937', color: 'white' }}>サロン</option>
-          </select>
-          <p style={{
-            fontSize: '0.75rem',
-            color: '#c4b5fd',
-            marginTop: '0.75rem',
-            fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.25rem'
-          }}>
-            <span style={{ color: '#22c55e' }}>●</span> 選択中: {businessLabel}
-          </p>
-        </div>
-
-        {/* Menu Items */}
-        <nav style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: '1rem' }}>
-          {/* コンテンツ生成 */}
-          <div style={{ marginBottom: '1rem' }}>
-            <p style={{
-              fontSize: '0.7rem',
-              fontWeight: '700',
-              color: '#9ca3af',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              padding: '0 0.85rem',
-              marginBottom: '0.5rem'
-            }}>
-              コンテンツ生成
-            </p>
-            {contentMenuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.65rem 0.85rem',
-                    marginBottom: '0.25rem',
-                    borderRadius: '10px',
-                    textDecoration: 'none',
-                    color: isActive ? 'white' : 'var(--text-muted)',
-                    background: isActive ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
-                    border: isActive ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid transparent',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <Icon size={18} color={isActive ? '#8b5cf6' : '#9ca3af'} />
-                  <span style={{ fontSize: '0.85rem', fontWeight: isActive ? '600' : '400' }}>
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* システム */}
+          {/* 動くグラデーション背景 */}
           <div style={{
-            marginTop: '0.25rem',
-            paddingTop: '0.75rem',
-            borderTop: '1px solid rgba(255, 255, 255, 0.08)'
-          }}>
-            <p style={{
-              fontSize: '0.7rem',
-              fontWeight: '700',
-              color: '#9ca3af',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              padding: '0 0.85rem',
-              marginBottom: '0.5rem'
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: `linear-gradient(${pulsePhase * 3.6}deg, rgba(139, 92, 246, 0.1), transparent, rgba(236, 72, 153, 0.1))`,
+            transition: 'background 0.1s linear',
+          }} />
+
+          <div style={{ position: 'relative', textAlign: 'center' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginBottom: '0.5rem',
             }}>
-              システム
-            </p>
-            {systemMenuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.65rem 0.85rem',
-                    marginBottom: '0.25rem',
-                    borderRadius: '10px',
-                    textDecoration: 'none',
-                    color: isActive ? 'white' : 'var(--text-muted)',
-                    background: isActive ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
-                    border: isActive ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid transparent',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <Icon size={18} color={isActive ? '#8b5cf6' : '#9ca3af'} />
-                  <span style={{ fontSize: '0.85rem', fontWeight: isActive ? '600' : '400' }}>
-                    {item.label}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* SNS連携 */}
-          <div style={{ marginTop: '0.75rem' }}>
-            <button
-              onClick={() => setSnsExpanded(!snsExpanded)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                width: '100%',
-                padding: '0.5rem 0.85rem',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                borderRadius: '8px',
-              }}
-            >
-              <span style={{
-                fontSize: '0.7rem',
-                fontWeight: '700',
-                color: '#9ca3af',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-              }}>
-                SNS連携
-              </span>
-              <ChevronDown
-                size={14}
-                color="#9ca3af"
+              <Activity
+                size={24}
                 style={{
-                  transform: snsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.2s'
+                  color: '#8b5cf6',
+                  filter: 'drop-shadow(0 0 8px rgba(139, 92, 246, 0.5))',
                 }}
               />
-            </button>
-            {snsExpanded && (
-              <div style={{
-                padding: '0.5rem 0.85rem',
-                marginTop: '0.25rem'
+              <h1 style={{
+                fontSize: '1.4rem',
+                fontWeight: '800',
+                background: 'linear-gradient(135deg, #a78bfa, #ec4899, #8b5cf6)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '-0.02em',
               }}>
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '0.4rem',
-                  marginBottom: '0.75rem'
-                }}>
-                  {snsMenuItems.slice(0, 3).map((item) => {
-                    const Icon = item.icon;
-                    const isActive = item.id === 'bluesky';
-                    return (
-                      <div
-                        key={item.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.3rem',
-                          padding: '0.3rem 0.5rem',
-                          borderRadius: '5px',
-                          background: isActive ? 'rgba(139, 92, 246, 0.15)' : 'rgba(107, 114, 128, 0.1)',
-                          border: isActive ? '1px solid rgba(139, 92, 246, 0.3)' : 'none',
-                          opacity: isActive ? 1 : 0.5,
-                        }}
-                      >
-                        <Icon size={12} color={isActive ? '#8b5cf6' : '#6b7280'} />
-                        <span style={{ fontSize: '0.7rem', color: isActive ? '#a78bfa' : '#6b7280' }}>
-                          {item.label}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+                MIC AI
+              </h1>
+            </div>
+            <p style={{
+              fontSize: '0.7rem',
+              color: 'rgba(167, 139, 250, 0.8)',
+              fontWeight: '500',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}>
+              Autonomous System
+            </p>
+
+            {/* ライブインジケーター */}
+            <div style={{
+              marginTop: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+            }}>
+              <span style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#22c55e',
+                boxShadow: '0 0 10px rgba(34, 197, 94, 0.6)',
+                animation: 'pulse 1.5s ease-in-out infinite',
+              }} />
+              <span style={{
+                fontSize: '0.65rem',
+                color: '#22c55e',
+                fontWeight: '600',
+                letterSpacing: '0.05em',
+              }}>
+                LIVE • 自動運用中
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* メニューアイテム - ミニマル&先進的 */}
+        <nav style={{ flex: 1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {menuItems.map((item, index) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
+              const isMain = item.isMain;
+
+              return (
                 <Link
-                  href="/settings"
+                  key={item.id}
+                  href={item.href}
                   style={{
-                    display: 'block',
-                    fontSize: '0.7rem',
-                    color: '#8b5cf6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    padding: isMain ? '1rem 1.25rem' : '0.85rem 1.25rem',
+                    borderRadius: '14px',
                     textDecoration: 'none',
-                    padding: '0.25rem 0',
+                    background: isActive
+                      ? `linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.15))`
+                      : isMain
+                        ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(236, 72, 153, 0.05))'
+                        : 'rgba(255, 255, 255, 0.02)',
+                    border: isActive
+                      ? '1px solid rgba(139, 92, 246, 0.4)'
+                      : isMain
+                        ? '1px solid rgba(139, 92, 246, 0.2)'
+                        : '1px solid rgba(255, 255, 255, 0.05)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
                   }}
                 >
-                  API設定はこちら →
+                  {/* アイコン背景 */}
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    background: isActive ? item.gradient : 'rgba(255, 255, 255, 0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.3s',
+                    boxShadow: isActive ? `0 4px 15px rgba(139, 92, 246, 0.3)` : 'none',
+                  }}>
+                    <Icon
+                      size={20}
+                      color={isActive ? 'white' : '#9ca3af'}
+                      style={{
+                        filter: isActive ? 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.5))' : 'none',
+                      }}
+                    />
+                  </div>
+
+                  {/* テキスト */}
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      fontSize: '0.95rem',
+                      fontWeight: isActive ? '700' : '500',
+                      color: isActive ? 'white' : 'rgba(255, 255, 255, 0.85)',
+                      marginBottom: '0.15rem',
+                    }}>
+                      {item.label}
+                    </div>
+                    <div style={{
+                      fontSize: '0.7rem',
+                      color: isActive ? 'rgba(167, 139, 250, 0.9)' : 'rgba(156, 163, 175, 0.7)',
+                      fontWeight: '400',
+                    }}>
+                      {item.sublabel}
+                    </div>
+                  </div>
+
+                  {/* AUTO バッジ (メインアイテムのみ) */}
+                  {isMain && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '4px 8px',
+                      background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.3))',
+                      border: '1px solid rgba(139, 92, 246, 0.4)',
+                      borderRadius: '8px',
+                      fontSize: '9px',
+                      color: '#a78bfa',
+                      fontWeight: '700',
+                      letterSpacing: '0.05em',
+                    }}>
+                      <span style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: '#8b5cf6',
+                        animation: 'pulse 1.5s ease-in-out infinite',
+                      }} />
+                      AUTO
+                    </div>
+                  )}
+
+                  {/* アクティブ時のグロー効果 */}
+                  {isActive && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: `linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.1), transparent)`,
+                      animation: 'shimmer 2s infinite',
+                      pointerEvents: 'none',
+                    }} />
+                  )}
                 </Link>
-              </div>
-            )}
+              );
+            })}
           </div>
         </nav>
 
-        {/* Footer */}
+        {/* ステータス表示 */}
         <div style={{
           padding: '1rem',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-          fontSize: '0.75rem',
-          color: 'var(--text-muted)',
-          textAlign: 'center'
+          background: 'rgba(34, 197, 94, 0.08)',
+          borderRadius: '12px',
+          border: '1px solid rgba(34, 197, 94, 0.2)',
+          marginTop: '1rem',
         }}>
-          © 2024 MIC Admin
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            marginBottom: '0.5rem',
+          }}>
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: '#22c55e',
+              animation: 'pulse 2s ease-in-out infinite',
+            }} />
+            <span style={{
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              color: '#22c55e',
+            }}>
+              システム稼働中
+            </span>
+          </div>
+          <div style={{
+            fontSize: '0.65rem',
+            color: 'rgba(156, 163, 175, 0.8)',
+            lineHeight: '1.5',
+          }}>
+            AI が自律的にコンテンツを生成・最適化しています
+          </div>
         </div>
+
+        {/* フッター */}
+        <div style={{
+          padding: '1rem 0 0',
+          marginTop: '1rem',
+          borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+          fontSize: '0.65rem',
+          color: 'rgba(156, 163, 175, 0.5)',
+          textAlign: 'center',
+        }}>
+          Powered by AI Automation
+        </div>
+
+        <style jsx>{`
+          @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.95); }
+          }
+          @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+        `}</style>
       </aside>
     </>
   );

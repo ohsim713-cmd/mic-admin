@@ -1,0 +1,178 @@
+# 完全自動化システム - 1日15投稿
+#
+# 目標:
+#   - 1日15投稿（3アカウント × 5回）
+#   - 平均インプレッション1000
+#   - 月3件のDM問い合わせ
+#
+# スケジュール（JST）:
+#   08:00 - 朝活層向け（3アカウント）
+#   12:00 - 昼休み層向け（3アカウント）
+#   18:00 - 退勤時間層向け（3アカウント）
+#   21:00 - ゴールデンタイム（3アカウント）
+#   23:00 - 夜更かし層向け（3アカウント）
+#
+# ストック補充:
+#   06:00, 14:00 - 各アカウント5件を維持
+
+name: Full Automation
+
+on:
+  schedule:
+    # ストック補充 06:00 JST = 21:00 UTC (前日)
+    - cron: '0 21 * * *'
+    # 投稿 08:00 JST = 23:00 UTC (前日)
+    - cron: '0 23 * * *'
+    # 投稿 12:00 JST = 03:00 UTC
+    - cron: '0 3 * * *'
+    # ストック補充 14:00 JST = 05:00 UTC
+    - cron: '0 5 * * *'
+    # 投稿 18:00 JST = 09:00 UTC
+    - cron: '0 9 * * *'
+    # 投稿 21:00 JST = 12:00 UTC
+    - cron: '0 12 * * *'
+    # 投稿 23:00 JST = 14:00 UTC + 日次サマリー
+    - cron: '0 14 * * *'
+    # インプレッション取得 02:00 JST = 17:00 UTC
+    - cron: '0 17 * * *'
+
+  workflow_dispatch:
+    inputs:
+      action:
+        description: '実行アクション'
+        required: true
+        default: 'post'
+        type: choice
+        options:
+          - post
+          - refill-stock
+          - fetch-impressions
+          - daily-summary
+      dry_run:
+        description: 'テスト実行（投稿しない）'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  automation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Determine Action
+        id: action
+        run: |
+          CRON="${{ github.event.schedule }}"
+          ACTION="${{ github.event.inputs.action }}"
+
+          if [ -n "$ACTION" ]; then
+            echo "action=$ACTION" >> $GITHUB_OUTPUT
+          elif [ "$CRON" = "0 21 * * *" ] || [ "$CRON" = "0 5 * * *" ]; then
+            echo "action=refill-stock" >> $GITHUB_OUTPUT
+          elif [ "$CRON" = "0 17 * * *" ]; then
+            echo "action=fetch-impressions" >> $GITHUB_OUTPUT
+          elif [ "$CRON" = "0 14 * * *" ]; then
+            # 23:00 JST - 投稿 + 日次サマリー
+            echo "action=post-and-summary" >> $GITHUB_OUTPUT
+          else
+            echo "action=post" >> $GITHUB_OUTPUT
+          fi
+
+      # ストック補充
+      - name: Refill Stock
+        if: steps.action.outputs.action == 'refill-stock'
+        env:
+          DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_URL }}
+          AUTO_POST_SECRET: ${{ secrets.AUTO_POST_SECRET }}
+        run: |
+          echo "=== Stock Refill ==="
+          echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/automation/stock" \
+            -H "Content-Type: application/json" \
+            -d '{"action": "refill-all", "secret": "'"$AUTO_POST_SECRET"'"}')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response Code: $HTTP_CODE"
+          echo "Response: $BODY" | head -c 1000
+
+      # 投稿実行
+      - name: Post to All Accounts
+        if: steps.action.outputs.action == 'post' || steps.action.outputs.action == 'post-and-summary'
+        env:
+          DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_URL }}
+          AUTO_POST_SECRET: ${{ secrets.AUTO_POST_SECRET }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          echo "=== Auto Post ==="
+          echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
+          echo "Dry Run: $DRY_RUN"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/automation/post" \
+            -H "Content-Type: application/json" \
+            -d '{"dryRun": '"$DRY_RUN"', "secret": "'"$AUTO_POST_SECRET"'"}')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response Code: $HTTP_CODE"
+          echo "Response: $BODY" | head -c 1000
+
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo ""
+            echo "=== Success ==="
+          else
+            echo ""
+            echo "=== Failed ==="
+            exit 1
+          fi
+
+      # インプレッション取得
+      - name: Fetch Impressions
+        if: steps.action.outputs.action == 'fetch-impressions'
+        env:
+          DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_URL }}
+          AUTO_POST_SECRET: ${{ secrets.AUTO_POST_SECRET }}
+        run: |
+          echo "=== Fetch Impressions ==="
+          echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/automation/impressions" \
+            -H "Content-Type: application/json" \
+            -d '{"secret": "'"$AUTO_POST_SECRET"'"}')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response Code: $HTTP_CODE"
+          echo "Response: $BODY" | head -c 1000
+
+      # 日次サマリー
+      - name: Daily Summary
+        if: steps.action.outputs.action == 'post-and-summary' || steps.action.outputs.action == 'daily-summary'
+        env:
+          DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_URL }}
+          AUTO_POST_SECRET: ${{ secrets.AUTO_POST_SECRET }}
+        run: |
+          echo "=== Daily Summary ==="
+          echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/automation/summary" \
+            -H "Content-Type: application/json" \
+            -d '{"secret": "'"$AUTO_POST_SECRET"'"}')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response Code: $HTTP_CODE"
+          echo "Response: $BODY" | head -c 1000
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "=== Completed ==="
+          echo "Action: ${{ steps.action.outputs.action }}"
+          echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M:%S JST')"

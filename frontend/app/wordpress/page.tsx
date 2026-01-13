@@ -1,11 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles, Send, FileText, Copy, Check, BookOpen, Upload, CheckCircle2, XCircle, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, Send, FileText, Copy, Check, BookOpen, Upload, CheckCircle2, XCircle, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { useBusinessType } from '../context/BusinessTypeContext';
 import { CharCounter } from '../components/CharCounter';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useToast } from '../components/Toast';
+import { TaskListProgress } from '../components/ProgressStepper';
+
+type WorkflowTask = {
+  id: string;
+  label: string;
+  status: 'pending' | 'running' | 'completed' | 'error';
+  message?: string;
+};
 
 export default function WordPressPage() {
   const { businessType } = useBusinessType();
@@ -23,6 +31,12 @@ export default function WordPressPage() {
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [thumbnailGenerating, setThumbnailGenerating] = useState(false);
   const [featuredImageId, setFeaturedImageId] = useState<number | null>(null);
+  const [workflowTasks, setWorkflowTasks] = useState<WorkflowTask[]>([]);
+  const [showWorkflow, setShowWorkflow] = useState(false);
+
+  const updateTask = (id: string, updates: Partial<WorkflowTask>) => {
+    setWorkflowTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+  };
 
   const lengthOptions = ['1000-1500', '2000-3000', '3000-5000', '5000+'];
   const toneOptions = ['親しみやすく、専門的', 'フォーマル', 'カジュアル', '説得力のある'];
@@ -118,9 +132,21 @@ export default function WordPressPage() {
 
     setIsGenerating(true);
     setGeneratedArticle('');
+    setShowWorkflow(true);
+    setWorkflowTasks([
+      { id: 'analyze', label: 'キーワード分析中', status: 'running' },
+      { id: 'outline', label: '記事構成を作成中', status: 'pending' },
+      { id: 'generate', label: '本文を生成中', status: 'pending' },
+      { id: 'optimize', label: 'SEO最適化中', status: 'pending' },
+    ]);
     let fullArticle = '';
 
     try {
+      // Simulate analysis step
+      await new Promise(r => setTimeout(r, 500));
+      updateTask('analyze', { status: 'completed' });
+      updateTask('outline', { status: 'running' });
+
       const response = await fetch('/api/generate/wordpress', {
         method: 'POST',
         headers: {
@@ -137,6 +163,9 @@ export default function WordPressPage() {
 
       if (!response.ok) throw new Error('Network response was not ok');
 
+      updateTask('outline', { status: 'completed' });
+      updateTask('generate', { status: 'running', message: '文章をストリーミング中...' });
+
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
@@ -148,10 +177,28 @@ export default function WordPressPage() {
           const chunk = decoder.decode(value, { stream: true });
           fullArticle += chunk;
           setGeneratedArticle(prev => prev + chunk);
+
+          // Update progress message
+          if (fullArticle.length > 0) {
+            updateTask('generate', {
+              status: 'running',
+              message: `${fullArticle.length.toLocaleString()}文字生成済み`
+            });
+          }
         }
       }
+
+      updateTask('generate', { status: 'completed', message: `${fullArticle.length.toLocaleString()}文字` });
+      updateTask('optimize', { status: 'running' });
+      await new Promise(r => setTimeout(r, 300));
+      updateTask('optimize', { status: 'completed' });
+
+      setTimeout(() => setShowWorkflow(false), 2000);
     } catch (error) {
       setGeneratedArticle('');
+      setWorkflowTasks(prev => prev.map(t =>
+        t.status === 'running' ? { ...t, status: 'error', message: 'エラーが発生しました' } : t
+      ));
       showToast('エラーが発生しました。接続を確認してください。', 'error');
       console.error(error);
     } finally {
@@ -528,6 +575,36 @@ export default function WordPressPage() {
             )}
           </div>
 
+          {/* ワークフロー進捗表示 */}
+          {showWorkflow && workflowTasks.length > 0 && (
+            <div style={{
+              marginBottom: '1rem',
+              padding: '1rem',
+              background: 'rgba(139, 92, 246, 0.1)',
+              borderRadius: '12px',
+              border: '1px solid rgba(139, 92, 246, 0.2)',
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                marginBottom: '0.75rem',
+                fontSize: '0.85rem',
+                color: 'var(--accent-secondary)',
+                fontWeight: 600,
+              }}>
+                <Loader2 size={16} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                AI記事生成ワークフロー
+              </div>
+              <TaskListProgress tasks={workflowTasks} />
+              <style jsx>{`
+                @keyframes spin {
+                  to { transform: rotate(360deg); }
+                }
+              `}</style>
+            </div>
+          )}
+
           <div style={{
             whiteSpace: 'pre-wrap',
             fontSize: '1rem',
@@ -542,9 +619,9 @@ export default function WordPressPage() {
             borderRadius: '8px',
             border: '1px solid rgba(255, 255, 255, 0.05)'
           }}>
-            {isGenerating ? (
+            {isGenerating && !generatedArticle ? (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-                <LoadingSpinner size={32} text="記事を生成中" subText="SEOに最適化された記事を作成しています..." />
+                <LoadingSpinner size={32} variant="gradient" text="記事を生成中" subText="SEOに最適化された記事を作成しています..." />
               </div>
             ) : (
               generatedArticle || 'ここに生成された記事が表示されます。\n\n左側のフォームに必要な情報を入力して「記事を生成する」ボタンをクリックしてください。\n\nAIが自動的に見出しを含む構造化された記事を作成します。'

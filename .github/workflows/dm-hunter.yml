@@ -1,7 +1,13 @@
-# DM Hunter - 自動投稿スケジューラー
+# DM Hunter - 自動投稿スケジューラー + 自律改善システム
 #
 # 1日6回、複数SNS（X/Bluesky/Threads）に自動投稿
 # 目標: 1日3件のDM問い合わせ獲得
+#
+# 機能:
+#   - 自動投稿（6回/日 × 3アカウント = 18投稿）
+#   - ストック自動補充（各アカウント3件キープ）
+#   - アラートチェック（2回/日）
+#   - 週次レポート（毎週月曜）
 #
 # 必要なSecrets:
 #   VERCEL_DEPLOY_URL: デプロイ先URL (例: https://your-app.vercel.app)
@@ -10,24 +16,43 @@
 name: DM Hunter
 
 on:
-  # 定期実行 (UTC時間) - 日本時間 = UTC + 9
-  schedule:
-    # 07:00 JST = 22:00 UTC (前日)
-    - cron: '0 22 * * *'
-    # 12:00 JST = 03:00 UTC
-    - cron: '0 3 * * *'
-    # 18:00 JST = 09:00 UTC
-    - cron: '0 9 * * *'
-    # 20:00 JST = 11:00 UTC
-    - cron: '0 11 * * *'
-    # 22:00 JST = 13:00 UTC
-    - cron: '0 13 * * *'
-    # 24:00 JST = 15:00 UTC
-    - cron: '0 15 * * *'
+  # ===== 自動スケジュール停止中 =====
+  # 再開するにはコメントを外してください
+  #
+  # schedule:
+  #   # 06:00 JST = 21:00 UTC (前日) - ストック補充
+  #   - cron: '0 21 * * *'
+  #   # 07:00 JST = 22:00 UTC (前日) - 投稿
+  #   - cron: '0 22 * * *'
+  #   # 12:00 JST = 03:00 UTC - 投稿
+  #   - cron: '0 3 * * *'
+  #   # 14:00 JST = 05:00 UTC - アラートチェック + ストック補充
+  #   - cron: '0 5 * * *'
+  #   # 18:00 JST = 09:00 UTC - 投稿
+  #   - cron: '0 9 * * *'
+  #   # 20:00 JST = 11:00 UTC - 投稿
+  #   - cron: '0 11 * * *'
+  #   # 22:00 JST = 13:00 UTC - 投稿 + アラートチェック
+  #   - cron: '0 13 * * *'
+  #   # 24:00 JST = 15:00 UTC - 投稿 + 日次サマリー
+  #   - cron: '0 15 * * *'
+  #   # 毎週月曜 09:00 JST = 00:00 UTC - 週次レポート
+  #   - cron: '0 0 * * 1'
 
   # 手動実行
   workflow_dispatch:
     inputs:
+      action:
+        description: '実行アクション'
+        required: true
+        default: 'post'
+        type: choice
+        options:
+          - post
+          - alert-check
+          - weekly-report
+          - daily-summary
+          - refill-stock
       dry_run:
         description: 'テスト実行（投稿しない）'
         required: false
@@ -76,6 +101,81 @@ jobs:
             echo "=== Failed ==="
             exit 1
           fi
+
+      # ストック補充（06:00, 14:00 JST または手動）
+      - name: Refill Stock
+        if: github.event.inputs.action == 'refill-stock' || (github.event_name == 'schedule' && (github.event.schedule == '0 21 * * *' || github.event.schedule == '0 5 * * *'))
+        env:
+          DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_URL }}
+        run: |
+          echo "=== Refill Stock ==="
+          echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/dm-hunter/stock" \
+            -H "Content-Type: application/json" \
+            -d '{"action": "refill-all"}')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response Code: $HTTP_CODE"
+          echo "Response: $BODY" | head -c 500
+          echo ""
+
+      # アラートチェック（14:00, 22:00 JST または手動）
+      - name: Alert Check
+        if: github.event.inputs.action == 'alert-check' || (github.event_name == 'schedule' && (github.event.schedule == '0 5 * * *' || github.event.schedule == '0 13 * * *'))
+        env:
+          DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_URL }}
+        run: |
+          echo "=== Alert Check ==="
+          echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" "$DEPLOY_URL/api/dm-hunter/alerts?view=check")
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response: $BODY" | head -c 300
+          echo ""
+
+      # 日次サマリー（24:00 JST または手動）
+      - name: Daily Summary
+        if: github.event.inputs.action == 'daily-summary' || (github.event_name == 'schedule' && github.event.schedule == '0 15 * * *')
+        env:
+          DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_URL }}
+        run: |
+          echo "=== Daily Summary ==="
+          echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/dm-hunter/alerts" \
+            -H "Content-Type: application/json" \
+            -d '{"action": "daily-summary"}')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response: $BODY" | head -c 300
+          echo ""
+
+      # 週次レポート（毎週月曜 または手動）
+      - name: Weekly Report
+        if: github.event.inputs.action == 'weekly-report' || (github.event_name == 'schedule' && github.event.schedule == '0 0 * * 1')
+        env:
+          DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_URL }}
+        run: |
+          echo "=== Weekly Report ==="
+          echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/dm-hunter/weekly-report" \
+            -H "Content-Type: application/json" \
+            -d '{"notify": true}')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response Code: $HTTP_CODE"
+          echo "Response: $BODY" | head -c 500
+          echo ""
 
       - name: Summary
         if: always()

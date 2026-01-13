@@ -1,0 +1,285 @@
+{
+  "patterns": [
+    {
+      "id": "1",
+      "pattern": "ぶっちゃけ、〜って思ってる人へ",
+      "category": "hook",
+      "score": 8.5,
+      "usageCount": 0,
+      "createdAt": "2026-01-13T10:00:38.556Z",
+      "updatedAt": "2026-01-13T10:00:38.556Z"
+    },
+    {
+      "id": "2",
+      "pattern": "正直、〜だと思ってない？",
+      "category": "hook",
+      "score": 8.2,
+      "usageCount": 0,
+      "createdAt": "2026-01-13T10:00:38.556Z",
+      "updatedAt": "2026-01-13T10:00:38.556Z"
+    },
+    {
+      "id": "3",
+      "pattern": "〜なんて無理って思ってた私が",
+      "category": "hook",
+      "score": 8,
+      "usageCount": 0,
+      "createdAt": "2026-01-13T10:00:38.556Z",
+      "updatedAt": "2026-01-13T10:00:38.556Z"
+    },
+    {
+      "id": "4",
+      "pattern": "気になったらDMで💬",
+      "category": "cta",
+      "score": 8.3,
+      "usageCount": 0,
+      "createdAt": "2026-01-13T10:00:38.556Z",
+      "updatedAt": "2026-01-13T10:00:38.556Z"
+    },
+    {
+      "id": "5",
+      "pattern": "気軽に話聞かせて",
+      "category": "cta",
+      "score": 8.1,
+      "usageCount": 0,
+      "createdAt": "2026-01-13T10:00:38.556Z",
+      "updatedAt": "2026-01-13T10:00:38.556Z"
+    },
+    {
+      "id": "6",
+      "pattern": "月30万以上",
+      "category": "benefit",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T10:00:38.556Z",
+      "updatedAt": "2026-01-13T11:07:45.489Z"
+    },
+    {
+      "id": "7",
+      "pattern": "スマホ1台で",
+      "category": "benefit",
+      "score": 8.2,
+      "usageCount": 0,
+      "createdAt": "2026-01-13T10:00:38.556Z",
+      "updatedAt": "2026-01-13T10:00:38.556Z"
+    },
+    {
+      "id": "8",
+      "pattern": "初月から稼げた",
+      "category": "benefit",
+      "score": 8.6,
+      "usageCount": 0,
+      "createdAt": "2026-01-13T10:00:38.556Z",
+      "updatedAt": "2026-01-13T10:00:38.556Z"
+    },
+    {
+      "id": "1768299234234",
+      "pattern": "DMで聞いてみてね！気軽に",
+      "category": "cta",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T10:13:54.234Z",
+      "updatedAt": "2026-01-13T10:13:54.234Z"
+    },
+    {
+      "id": "1768299234239",
+      "pattern": "気軽に相談乗ります🙌",
+      "category": "cta",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T10:13:54.239Z",
+      "updatedAt": "2026-01-13T10:13:54.239Z"
+    },
+    {
+      "id": "1768299234245",
+      "pattern": "月30万",
+      "category": "benefit",
+      "score": 8,
+      "usageCount": 5,
+      "createdAt": "2026-01-13T10:13:54.245Z",
+      "updatedAt": "2026-01-13T14:21:19.928Z"
+    },
+    {
+      "id": "1768301022458",
+      "pattern": "DMで気軽に相談してくださ",
+      "category": "cta",
+      "score": 8,
+      "usageCount": 3,
+      "createdAt": "2026-01-13T10:43:42.458Z",
+      "updatedAt": "2026-01-13T14:04:05.787Z"
+    },
+    {
+      "id": "1768301022469",
+      "pattern": "気軽に相談してくださいね😊気になっ",
+      "category": "cta",
+      "score": 8,
+      "usageCount": 2,
+      "createdAt": "2026-01-13T10:43:42.469Z",
+      "updatedAt": "2026-01-13T11:57:15.736Z"
+    },
+    {
+      "id": "1768301450372",
+      "pattern": "DMで相談くださいね！気に",
+      "category": "cta",
+      "score": 9,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T10:50:50.372Z",
+      "updatedAt": "2026-01-13T10:50:50.372Z"
+    },
+    {
+      "id": "1768301450384",
+      "pattern": "月30万円以上",
+      "category": "benefit",
+      "score": 8.5,
+      "usageCount": 2,
+      "createdAt": "2026-01-13T10:50:50.384Z",
+      "updatedAt": "2026-01-13T12:01:28.952Z"
+    },
+    {
+      "id": "1768301450393",
+      "pattern": "完全在宅",
+      "category": "benefit",
+      "score": 8.5,
+      "usageCount": 2,
+      "createdAt": "2026-01-13T10:50:50.393Z",
+      "updatedAt": "2026-01-13T10:58:21.326Z"
+    },
+    {
+      "id": "1768301901317",
+      "pattern": "DMで💬",
+      "category": "cta",
+      "score": 8,
+      "usageCount": 3,
+      "createdAt": "2026-01-13T10:58:21.317Z",
+      "updatedAt": "2026-01-13T14:21:19.916Z"
+    },
+    {
+      "id": "1768302465476",
+      "pattern": "ぶっちゃけ、今のバイトだけじゃ生活キツいよね😥",
+      "category": "hook",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T11:07:45.476Z",
+      "updatedAt": "2026-01-13T11:07:45.476Z"
+    },
+    {
+      "id": "1768302465484",
+      "pattern": "DMで聞いてね😊",
+      "category": "cta",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T11:07:45.484Z",
+      "updatedAt": "2026-01-13T11:07:45.484Z"
+    },
+    {
+      "id": "1768303820075",
+      "pattern": "DMで「シミュレーション希",
+      "category": "cta",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T11:30:20.075Z",
+      "updatedAt": "2026-01-13T11:30:20.075Z"
+    },
+    {
+      "id": "1768304164509",
+      "pattern": "DMで相談してくださいね✨",
+      "category": "cta",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T11:36:04.509Z",
+      "updatedAt": "2026-01-13T11:36:04.509Z"
+    },
+    {
+      "id": "1768305056525",
+      "pattern": "DMで相談してね💬",
+      "category": "cta",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T11:50:56.525Z",
+      "updatedAt": "2026-01-13T11:50:56.525Z"
+    },
+    {
+      "id": "1768305056531",
+      "pattern": "月30万円",
+      "category": "benefit",
+      "score": 8,
+      "usageCount": 2,
+      "createdAt": "2026-01-13T11:50:56.531Z",
+      "updatedAt": "2026-01-13T11:57:15.739Z"
+    },
+    {
+      "id": "1768305071190",
+      "pattern": "DMでご相談くださいね😊",
+      "category": "cta",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T11:51:11.190Z",
+      "updatedAt": "2026-01-13T11:51:11.190Z"
+    },
+    {
+      "id": "1768305071194",
+      "pattern": "気軽にDMでご相談くださいね😊",
+      "category": "cta",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T11:51:11.194Z",
+      "updatedAt": "2026-01-13T11:51:11.194Z"
+    },
+    {
+      "id": "1768305688945",
+      "pattern": "DMで💬気軽に質問してく",
+      "category": "cta",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T12:01:28.945Z",
+      "updatedAt": "2026-01-13T12:01:28.945Z"
+    },
+    {
+      "id": "1768305688949",
+      "pattern": "気軽に質問してくださいね✨",
+      "category": "cta",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T12:01:28.949Z",
+      "updatedAt": "2026-01-13T12:01:28.949Z"
+    },
+    {
+      "id": "1768305688956",
+      "pattern": "初月からどんどん稼いでます\ud83d",
+      "category": "benefit",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T12:01:28.956Z",
+      "updatedAt": "2026-01-13T12:01:28.956Z"
+    },
+    {
+      "id": "1768313045765",
+      "pattern": "ぶっちゃけ、今の仕事…将来性ある？🤔",
+      "category": "hook",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T14:04:05.765Z",
+      "updatedAt": "2026-01-13T14:04:05.765Z"
+    },
+    {
+      "id": "1768313045796",
+      "pattern": "気軽に相談してくださいね😊",
+      "category": "cta",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T14:04:05.796Z",
+      "updatedAt": "2026-01-13T14:04:05.796Z"
+    },
+    {
+      "id": "1768313045813",
+      "pattern": "初月から20万円超えを達成で",
+      "category": "benefit",
+      "score": 8,
+      "usageCount": 1,
+      "createdAt": "2026-01-13T14:04:05.813Z",
+      "updatedAt": "2026-01-13T14:04:05.813Z"
+    }
+  ],
+  "lastUpdated": "2026-01-13T14:21:19.929Z",
+  "version": 1
+}

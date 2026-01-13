@@ -8,6 +8,12 @@ import {
   ACCOUNTS,
   AccountType
 } from '@/lib/dm-hunter/sns-adapter';
+import {
+  getPostForAccount,
+  getStockStatus,
+  refillAllStocks,
+  checkStockLevels,
+} from '@/lib/dm-hunter/post-stock';
 
 // POST: 自動実行（3アカウント同時投稿）
 export async function POST(request: NextRequest) {
@@ -122,19 +128,41 @@ async function runSingleAccount(account: AccountType, dryRun: boolean, startTime
   });
 }
 
-// 全アカウント実行
+// 全アカウント実行（ストック優先）
 async function runAllAccounts(dryRun: boolean, startTime: number) {
-  console.log('[DM Hunter] Generating posts for all accounts...');
+  console.log('[DM Hunter] Getting posts from stock or generating...');
 
-  // 3アカウント分の投稿を生成
-  const generated = await generatePostsForAllAccounts();
+  const accounts: AccountType[] = ['liver', 'chatre1', 'chatre2'];
 
-  // 各投稿の品質チェック
-  const postsWithScore = generated.map(({ account, post }) => ({
-    account,
-    post,
-    score: checkQuality(post.text),
-  }));
+  // ストックから取得、なければ生成
+  const postsWithScore = await Promise.all(
+    accounts.map(async (account) => {
+      const { post, fromStock, stockRemaining } = await getPostForAccount(account);
+
+      // StockedPostの場合はtarget/benefitが文字列
+      const target = typeof post.target === 'string' ? post.target : post.target.label;
+      const benefit = typeof post.benefit === 'string' ? post.benefit : post.benefit.label;
+
+      const score = checkQuality(post.text);
+
+      console.log(`[DM Hunter] ${account}: ${fromStock ? 'from stock' : 'generated'}, remaining=${stockRemaining}`);
+
+      return {
+        account,
+        post: {
+          text: post.text,
+          target: { label: target },
+          benefit: { label: benefit },
+        },
+        score,
+        fromStock,
+        stockRemaining,
+      };
+    })
+  );
+
+  // 投稿後にストックを補充（バックグラウンド）- 自動生成停止中
+  // refillAllStocks().catch(err => console.error('[DM Hunter] Stock refill error:', err));
 
   // 品質チェックを通過したもののみ
   const validPosts = postsWithScore.filter(p => p.score.passed);
@@ -153,6 +181,7 @@ async function runAllAccounts(dryRun: boolean, startTime: number) {
 
   // ドライラン
   if (dryRun) {
+    const stockStatus = await getStockStatus();
     return NextResponse.json({
       success: true,
       dryRun: true,
@@ -163,7 +192,10 @@ async function runAllAccounts(dryRun: boolean, startTime: number) {
         target: p.post.target.label,
         benefit: p.post.benefit.label,
         score: p.score,
+        fromStock: p.fromStock,
+        stockRemaining: p.stockRemaining,
       })),
+      stockStatus: stockStatus.counts,
       processingTime: Date.now() - startTime,
     });
   }
@@ -222,8 +254,11 @@ async function runAllAccounts(dryRun: boolean, startTime: number) {
 // GET: ステータス確認
 export async function GET() {
   try {
-    // アカウント状態を確認
-    const accountsStatus = await checkAllAccountsStatus();
+    // アカウント状態とストック状態を並列取得
+    const [accountsStatus, stockStatus] = await Promise.all([
+      checkAllAccountsStatus(),
+      getStockStatus(),
+    ]);
 
     const baseUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
@@ -236,12 +271,19 @@ export async function GET() {
       stats = logsData.stats || stats;
     } catch {}
 
+    const stockLevels = await checkStockLevels();
+
     return NextResponse.json({
       status: 'ready',
       accounts: accountsStatus,
       todayPosts: stats.todayPosts,
       todaySuccess: stats.todaySuccess,
       scheduledTimes: ['07:00', '12:00', '18:00', '20:00', '22:00', '24:00'],
+      stock: {
+        counts: stockStatus.counts,
+        needsRefill: stockStatus.needsRefill,
+        isLow: stockLevels.isLow,
+      },
     });
   } catch (error: any) {
     return NextResponse.json({
@@ -257,6 +299,7 @@ export async function GET() {
       todayPosts: 0,
       todaySuccess: 0,
       scheduledTimes: ['07:00', '12:00', '18:00', '20:00', '22:00', '24:00'],
+      stock: { counts: { liver: 0, chatre1: 0, chatre2: 0 }, needsRefill: ['liver', 'chatre1', 'chatre2'], isLow: true },
     });
   }
 }

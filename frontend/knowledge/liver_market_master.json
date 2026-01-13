@@ -1,0 +1,51 @@
+{
+    "platform_deep_dive": {
+        "Pococha": {
+            "system": "ランク連動型時給報酬（時間ダイヤ）+ 盛り上がり報酬",
+            "rank_stages": "E1〜S6の19段階",
+            "hourly_rate": "30円〜16,500円",
+            "monetization_criteria": "18歳以上（高校生不可）、日本国内居住",
+            "exchange_rate": "1ダイヤ=1円（100%還元、源泉徴収あり）",
+            "payout_threshold": "5,000円から",
+            "maintenance_tips": "おやすみチケットの活用、メーター（応援ポイント）の監視"
+        },
+        "17LIVE": {
+            "system": "ギフト（投げ銭）ベースのロイヤリティ報酬",
+            "royalty_rate": "非認証:13-30%、認証:30-40%",
+            "monetization_criteria": "認証ライバーへの昇格が鍵。ライバーグレードシステム（2025導入）",
+            "unique_features": "アーミー（定額ファン）、ガーディアン（特別な支援者）"
+        },
+        "TikTok_LIVE": {
+            "system": "ギフト → ダイヤモンド → 現金（換金率 約25%〜30%）",
+            "monetization_criteria": "18歳以上、フォロワー1,000人以上（または事務所経由）",
+            "strengths": "圧倒的な若年層への拡散力、TikTok Creator Fundとの併用可能"
+        },
+        "IRIAM": {
+            "system": "2Dイラスト×時給（時間ダイヤ）+ ギフト（応援ダイヤ）",
+            "hourly_rate": "最大2,300円",
+            "monetization_criteria": "10日以上配信、累計15時間、5,000pt獲得",
+            "pros": "顔出し不要、低遅延、Vライバー特化の高収益性"
+        },
+        "REALITY": {
+            "system": "3Dアバター×LIVEポイント換金（6,000pt〜）",
+            "pros": "イラスト不要（アプリ内でアバター作成）、3Dでの高い表現力、コラボ機能"
+        }
+    },
+    "liver_business_costs": {
+        "Live2D_Model": {
+            "budget": "5万〜40万円",
+            "breakdown": "デザイン(5-15万) + パーツ分け(1-5万) + モデリング(5-20万)",
+            "merit": "初期費用安、PCスペック不問、トーク配信向き"
+        },
+        "3D_Model": {
+            "budget": "15万〜100万円以上",
+            "breakdown": "モデリング(15-50万) + リギング + 物理演算設定",
+            "merit": "ダンス、全身の動き、高い没入感"
+        }
+    },
+    "earnings_projections": {
+        "beginner_1st_month": "〜5万円以上（事務所経由・時給制活用時）",
+        "intermediate": "15万〜30万円（固定ファンあり）",
+        "professional_top": "100万円以上（複数サイト・ファンクラブ併用）"
+    }
+}

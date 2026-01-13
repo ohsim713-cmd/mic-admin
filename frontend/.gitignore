@@ -44,3 +44,5 @@ next-env.d.ts
 knowledge/wordpress_credentials.json
 knowledge/sns_credentials.json
 output.log
+
+.vercel

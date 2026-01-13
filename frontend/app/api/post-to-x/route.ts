@@ -13,38 +13,38 @@ const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-key-change-in-prod
 const ALGORITHM = 'aes-256-cbc';
 
 function decrypt(text: string): string {
-  try {
-    const key = Buffer.from(ENCRYPTION_KEY.padEnd(32, '0').substring(0, 32));
-    const parts = text.split(':');
-    const iv = Buffer.from(parts[0], 'hex');
-    const encryptedText = parts[1];
-    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
-  } catch (error) {
-    return '';
-  }
+    try {
+        const key = Buffer.from(ENCRYPTION_KEY.padEnd(32, '0').substring(0, 32));
+        const parts = text.split(':');
+        const iv = Buffer.from(parts[0], 'hex');
+        const encryptedText = parts[1];
+        const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+        let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+    } catch (error) {
+        return '';
+    }
 }
 
 function loadCredentials() {
-  try {
-    if (!fs.existsSync(SETTINGS_FILE)) {
-      return null;
+    try {
+        if (!fs.existsSync(SETTINGS_FILE)) {
+            return null;
+        }
+
+        const data = fs.readFileSync(SETTINGS_FILE, 'utf-8');
+        const parsed = JSON.parse(data);
+
+        return {
+            apiKey: parsed.apiKey ? decrypt(parsed.apiKey) : '',
+            apiSecret: parsed.apiSecret ? decrypt(parsed.apiSecret) : '',
+            accessToken: parsed.accessToken ? decrypt(parsed.accessToken) : '',
+            accessSecret: parsed.accessSecret ? decrypt(parsed.accessSecret) : '',
+        };
+    } catch (error) {
+        return null;
     }
-
-    const data = fs.readFileSync(SETTINGS_FILE, 'utf-8');
-    const parsed = JSON.parse(data);
-
-    return {
-      apiKey: parsed.apiKey ? decrypt(parsed.apiKey) : '',
-      apiSecret: parsed.apiSecret ? decrypt(parsed.apiSecret) : '',
-      accessToken: parsed.accessToken ? decrypt(parsed.accessToken) : '',
-      accessSecret: parsed.accessSecret ? decrypt(parsed.accessSecret) : '',
-    };
-  } catch (error) {
-    return null;
-  }
 }
 
 function getRandomPost(rawText: string): string {
@@ -153,7 +153,35 @@ export async function POST(request: NextRequest) {
         // Xに投稿
         const tweet = await client.v2.tweet(postText);
 
-        // 履歴に保存
+        // posts_history.jsonに保存
+        const POSTS_HISTORY_FILE = path.join(process.cwd(), 'knowledge', 'posts_history.json');
+        try {
+            let postsHistory: { posts: any[] } = { posts: [] };
+            if (fs.existsSync(POSTS_HISTORY_FILE)) {
+                const data = fs.readFileSync(POSTS_HISTORY_FILE, 'utf-8');
+                postsHistory = JSON.parse(data);
+            }
+
+            postsHistory.posts.push({
+                id: tweet.data.id,
+                text: postText,
+                timestamp: new Date().toISOString(),
+                tweetId: tweet.data.id,
+                target,
+                postType,
+                keywords
+            });
+
+            const dir = path.dirname(POSTS_HISTORY_FILE);
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+            fs.writeFileSync(POSTS_HISTORY_FILE, JSON.stringify(postsHistory, null, 2));
+        } catch (e) {
+            console.error('Failed to save to posts_history.json:', e);
+        }
+
+        // 履歴に保存 (既存の履歴APIも使用)
         try {
             await fetch(`${request.nextUrl.origin}/api/history`, {
                 method: 'POST',

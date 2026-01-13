@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, Check, X, Edit3, Clock, MessageCircle, RefreshCw, Zap, Database, Trash2, Copy } from 'lucide-react';
 import { useBusinessType } from '../context/BusinessTypeContext';
 import { useToast } from '../components/Toast';
+import { ProgressBar } from '../components/ActivityIndicator';
+import { TypingIndicator } from '../components/TypingIndicator';
 
 interface PostCandidate {
   id: string;
@@ -150,7 +152,7 @@ export default function ApprovalPage() {
       if (metaMatch) {
         try {
           meta = JSON.parse(metaMatch[1]);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const cleanContent = fullPost.replace(/<!--META:.*?-->/, '').trim();
@@ -496,6 +498,28 @@ export default function ApprovalPage() {
             </button>
           </div>
         </div>
+
+        {/* 生成進捗バー */}
+        {isGenerating && (
+          <div style={{ marginTop: '0.75rem' }}>
+            <ProgressBar
+              progress={(generatedCount / generateCount) * 100}
+              showPercent={false}
+              height={6}
+              animated={true}
+            />
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginTop: '0.25rem',
+              fontSize: '0.75rem',
+              color: 'var(--text-muted)'
+            }}>
+              <span>AI生成中...</span>
+              <span>{generatedCount} / {generateCount} 件完了</span>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Candidates Grid - カード形式 */}
@@ -517,11 +541,10 @@ export default function ApprovalPage() {
               className="glass"
               style={{
                 padding: '1rem',
-                borderLeft: `3px solid ${
-                  candidate.status === 'scheduled' ? '#4ade80' :
-                  candidate.status === 'rejected' ? '#ef4444' :
-                  '#fbbf24'
-                }`,
+                borderLeft: `3px solid ${candidate.status === 'scheduled' ? '#4ade80' :
+                    candidate.status === 'rejected' ? '#ef4444' :
+                      '#fbbf24'
+                  }`,
                 opacity: candidate.status === 'rejected' ? 0.6 : 1,
                 display: 'flex',
                 flexDirection: 'column',
@@ -537,7 +560,7 @@ export default function ApprovalPage() {
                     fontSize: '0.7rem',
                     fontWeight: 'bold',
                   }}>
-                    💎 {candidate.theme}
+                    {candidate.theme}
                   </span>
                 </div>
                 <button
@@ -674,8 +697,8 @@ export default function ApprovalPage() {
                       </div>
                     ))}
                     {isChatLoading && (
-                      <div style={{ padding: '0.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                        考え中...
+                      <div style={{ padding: '0.5rem' }}>
+                        <TypingIndicator text="修正案を作成中" />
                       </div>
                     )}
                     <div ref={chatEndRef} />
