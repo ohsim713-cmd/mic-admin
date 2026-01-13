@@ -137,7 +137,7 @@ ${pattern.label}: ${pattern.structure}
 
 投稿文のみ出力。説明不要。`;
 
-  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
   const result = await model.generateContent(prompt);
   const text = result.response.text().trim();
 
@@ -217,7 +217,7 @@ ${pattern.label}: ${pattern.structure}
 
 投稿文のみ出力。説明不要。`;
 
-  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
   const result = await model.generateContent(prompt);
   const text = result.response.text().trim();
 
