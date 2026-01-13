@@ -5,6 +5,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { AccountType } from './sns-adapter';
+import { checkQuality, QualityScore } from './quality-checker';
 
 const apiKey = process.env.GEMINI_API_KEY || "";
 const genAI = new GoogleGenAI({ apiKey });
@@ -100,15 +101,66 @@ export interface GeneratedPost {
 }
 
 /**
- * アカウント別のDM獲得投稿を生成
+ * アカウント別のDM獲得投稿を生成（自動品質改善付き）
+ * 7点未満なら最大3回まで自動リトライ
  */
-export async function generateDMPostForAccount(account: AccountType): Promise<GeneratedPost> {
+export async function generateDMPostForAccount(account: AccountType): Promise<GeneratedPost & { score?: QualityScore }> {
   const config = ACCOUNT_CONFIG[account];
   const target = randomPick(config.targets);
   const benefit = randomPick(config.benefits);
   const pattern = randomPick(POST_PATTERNS);
 
-  const prompt = `あなたは${config.stance}です。
+  let bestPost: { text: string; score: QualityScore } | null = null;
+  let feedback = '';
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const prompt = buildPrompt(config, target, benefit, pattern, feedback);
+
+    const result = await genAI.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: prompt,
+    });
+    const text = result.text?.trim() || "";
+    const score = checkQuality(text);
+
+    console.log(`[Generator] ${account} attempt ${attempt + 1}: score=${score.total}/10`);
+
+    // 7点以上なら即採用
+    if (score.passed && score.total >= 7) {
+      return { text, target, benefit, pattern, account, score };
+    }
+
+    // 最高スコアを保持
+    if (!bestPost || score.total > bestPost.score.total) {
+      bestPost = { text, score };
+    }
+
+    // 次回用のフィードバックを構築
+    feedback = buildFeedback(score);
+  }
+
+  // 3回試しても7点未満なら最高スコアのものを返す
+  return {
+    text: bestPost!.text,
+    target,
+    benefit,
+    pattern,
+    account,
+    score: bestPost!.score,
+  };
+}
+
+/**
+ * プロンプト生成
+ */
+function buildPrompt(
+  config: typeof ACCOUNT_CONFIG.liver,
+  target: typeof ACCOUNT_CONFIG.liver.targets[0],
+  benefit: typeof ACCOUNT_CONFIG.liver.benefits[0],
+  pattern: typeof POST_PATTERNS[0],
+  feedback: string
+): string {
+  let prompt = `あなたは${config.stance}です。
 ${config.jobType}の求人で、DMからの問い合わせを獲得するための投稿を書いてください。
 
 ## お仕事内容
@@ -126,30 +178,55 @@ ${benefit.label}: ${benefit.hook}
 ## 投稿構成
 ${pattern.label}: ${pattern.structure}
 
+## 必須要素（これがないと減点）
+1. 共感フレーズ: 「ぶっちゃけ」「正直」「本当は」などの本音表現
+2. 具体的数字: 「月○万」「週○日」「時給○円」「○時間」
+3. 信頼性: 「所属の子は〜」「うちで働いてる子〜」など実績ベース
+4. CTA: 「興味あったらDMで」「気軽にメッセージして」など
+
 ## ルール
 - 200-280文字（短く刺さる）
-- 事務所スタッフの視点（「所属の子は〜」「うちで働くと〜」）
-- 具体的な数字を入れる（金額、時間、日数）
 - 2-3行ごとに空行
-- 最後に「興味ある方はDMで」などCTAを入れる
 - ハッシュタグ禁止
-- 過度な煽りNG（「絶対」「確実」「100%」禁止）
+- 過度な煽りNG（「絶対」「確実」「100%」禁止）`;
+
+  if (feedback) {
+    prompt += `
+
+## 前回の改善点（必ず反映して）
+${feedback}`;
+  }
+
+  prompt += `
 
 投稿文のみ出力。説明不要。`;
 
-  const result = await genAI.models.generateContent({
-    model: "gemini-3.0-flash-preview",
-    contents: prompt,
-  });
-  const text = result.text?.trim() || "";
+  return prompt;
+}
 
-  return {
-    text,
-    target,
-    benefit,
-    pattern,
-    account,
-  };
+/**
+ * 品質スコアからフィードバックを生成
+ */
+function buildFeedback(score: QualityScore): string {
+  const feedbacks: string[] = [];
+
+  if (score.breakdown.empathy < 2) {
+    feedbacks.push('- 共感が弱い→「ぶっちゃけ」「正直」「〜って思ってない？」を追加');
+  }
+  if (score.breakdown.benefit < 2) {
+    feedbacks.push('- 数字が足りない→「月○万」「週○日」「時給○円」を具体的に');
+  }
+  if (score.breakdown.cta < 2) {
+    feedbacks.push('- CTAが弱い→「興味あったらDMで」「気軽に相談して」を明確に');
+  }
+  if (score.breakdown.trust < 2) {
+    feedbacks.push('- 信頼性が低い→「所属の子は〜」「うちで働いてる子〜」を追加');
+  }
+  if (score.breakdown.urgency < 1) {
+    feedbacks.push('- 緊急性がない→「今なら」「募集中」などを追加');
+  }
+
+  return feedbacks.join('\n');
 }
 
 /**
@@ -220,7 +297,7 @@ ${pattern.label}: ${pattern.structure}
 投稿文のみ出力。説明不要。`;
 
   const result = await genAI.models.generateContent({
-    model: "gemini-3.0-flash-preview",
+    model: "gemini-2.0-flash",
     contents: prompt,
   });
   const text = result.text?.trim() || "";
