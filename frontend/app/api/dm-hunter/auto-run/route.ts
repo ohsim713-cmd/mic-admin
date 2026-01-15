@@ -132,7 +132,7 @@ async function runSingleAccount(account: AccountType, dryRun: boolean, startTime
 async function runAllAccounts(dryRun: boolean, startTime: number) {
   console.log('[DM Hunter] Getting posts from stock or generating...');
 
-  const accounts: AccountType[] = ['liver', 'chatre1', 'chatre2'];
+  const accounts = ['liver', 'chatre1', 'chatre2'] as const;
 
   // ストックから取得、なければ生成
   const postsWithScore = await Promise.all(

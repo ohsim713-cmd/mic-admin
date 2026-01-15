@@ -1,0 +1,56 @@
+# .dockerignore
+# Docker ビルド時に除外するファイル
+
+# 依存関係（ビルド時に再インストール）
+node_modules
+.pnp
+.pnp.js
+
+# ビルド成果物
+.next
+out
+build
+dist
+
+# テスト
+coverage
+.nyc_output
+
+# 開発用設定
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# ログ
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# データファイル（Firestore に移行）
+data/
+
+# ドキュメント
+*.md
+!README.md
+
+# Claude 設定
+.claude/

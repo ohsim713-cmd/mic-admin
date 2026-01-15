@@ -22,24 +22,14 @@ export default function AutoRunInitializer() {
 
 async function initializeAutoSystems() {
   try {
-    // 1. Auto PDCA システムを起動
-    await fetch('/api/auto-pdca/start', {
+    // スケジューラーの初期化（利用可能なAPIのみ）
+    const schedulerRes = await fetch('/api/start-scheduler', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled: true }),
-    }).catch(() => console.log('Auto PDCA API not available'));
+    }).catch(() => null);
 
-    // 2. メディア生成キューを起動
-    await fetch('/api/auto-media/start', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled: true }),
-    }).catch(() => console.log('Auto Media API not available'));
-
-    // 3. DM Hunterの自動スケジュールを確認
-    await fetch('/api/dm-hunter/schedule/start', {
-      method: 'POST',
-    }).catch(() => console.log('DM Hunter Schedule API not available'));
+    if (schedulerRes?.ok) {
+      console.log('Scheduler initialization: Scheduler started');
+    }
 
     console.log('✅ Auto-run systems initialized');
   } catch (error) {

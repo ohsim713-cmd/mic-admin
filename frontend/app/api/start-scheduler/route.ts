@@ -12,3 +12,13 @@ export async function GET() {
 
   return NextResponse.json({ message: 'Scheduler already running' });
 }
+
+export async function POST() {
+  if (!schedulerStarted) {
+    startScheduler();
+    schedulerStarted = true;
+    return NextResponse.json({ message: 'Scheduler started' });
+  }
+
+  return NextResponse.json({ message: 'Scheduler already running' });
+}

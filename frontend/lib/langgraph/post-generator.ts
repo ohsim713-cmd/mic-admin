@@ -14,10 +14,15 @@ import {
   WorkflowStep,
 } from './state';
 import { getSuccessPatterns } from '../database/success-patterns';
-import { getKnowledgeContext, getRandomHook } from './knowledge-loader';
+import { getRandomHook, buildEnrichedKnowledgeContext, buildChatladyKnowledgeContext } from './knowledge-loader';
+import { initPhoenix, tracePostGeneration, recordQualityScore } from '../phoenix/client';
 
-// ナレッジキャッシュ（同じ生成セッション内で再利用）
-let cachedKnowledge: { accountType: string; context: string } | null = null;
+// Phoenix 初期化（サーバー起動時に1回だけ）
+try {
+  initPhoenix();
+} catch {
+  // Phoenix が起動していない場合は無視
+}
 
 // Gemini モデル初期化（GEMINI_API_KEY を使用）
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
@@ -86,14 +91,15 @@ async function draftNode(
 ): Promise<Partial<PostGeneratorStateType>> {
   const { target, benefit, accountType, successPatterns, feedback } = state;
 
-  // ナレッジコンテキストを取得（キャッシュ利用）
+  // ナレッジコンテキストを取得（毎回新鮮な情報を使う - バリエーション向上のため）
   let knowledgeContext = '';
   try {
-    if (cachedKnowledge && cachedKnowledge.accountType === accountType) {
-      knowledgeContext = cachedKnowledge.context;
+    if (accountType === 'ライバー') {
+      // ライバー用はリッチなコンテキストを毎回生成（ランダム情報が含まれる）
+      knowledgeContext = await buildEnrichedKnowledgeContext();
     } else {
-      knowledgeContext = await getKnowledgeContext(accountType);
-      cachedKnowledge = { accountType, context: knowledgeContext };
+      // チャトレ用は既存のコンテキストを使用
+      knowledgeContext = await buildChatladyKnowledgeContext();
     }
   } catch {
     // ナレッジ取得失敗は無視
@@ -115,11 +121,20 @@ ${knowledgeContext}
 ${patternsText}
 ${feedbackText}
 
+【絶対に守るルール】
+- 一人称は「事務所」「当事務所」「うち」など事務所視点で書く
+- ※「私」「僕」など個人の一人称は絶対に使わない（事務所が発信している文章）
+- 所属ライバーの実績を紹介する形で書く（「うちのライバーさんが〜」「所属メンバーの○○さんは〜」など）
+
 【重要な条件】
+- ★★冒頭は必ず【今回使う冒頭フレーズ】をそのまま使う（「ぶっちゃけ」で始めない）
 - 280〜320文字（中長文で深く刺す）
-- 本音感・共感を重視（「ぶっちゃけ」「正直」など）
-- 具体的な数字を入れる（月30万、週3日、時給16,500円など）
-- 実績や事例を自然に盛り込む
+- ★上記の【今回使う具体的な情報】を必ず1つ以上盛り込む（実例、年齢戦略、収入シミュレーション、統計など）
+- 具体的な数字を入れる（バリエーションを持たせて毎回違う数字を使う）
+  例: 月20万〜50万、週2〜4日、初月10万、3ヶ月で月収○万円達成 など
+- ※「時給16,500円」は使用禁止（他の表現で収入を伝える）
+- 実績や事例を自然に盛り込む（「うちの30代のライバーさんが3ヶ月で〜」「40代で始めた方が今では〜」など具体的に）
+- プラットフォーム名（Pococha、17LIVE、IRIAM等）を自然に入れる
 - 最後に「DMで」「気軽に」などCTAを入れる
 - 絵文字は1-2個程度
 - ハッシュタグは不要
@@ -137,63 +152,117 @@ ${feedbackText}
 }
 
 /**
- * REVIEW: 品質スコアを評価
+ * REVIEW: 品質スコアを評価（LLM as a Judge - 15点満点）
  */
 async function reviewNode(
   state: PostGeneratorStateType
 ): Promise<Partial<PostGeneratorStateType>> {
   const { draftText, target, benefit } = state;
 
-  const prompt = `以下の投稿文を評価してください。
+  const prompt = `あなたは「SNSマーケティングの厳格な批評家」です。
 
-【投稿文】
+【あなたの役割】
+- 100件以上の募集投稿を分析してきたプロの目線で評価
+- 甘い評価は禁止。「まあまあ」「普通」は存在しない
+- ターゲットの立場になって「本当にDMしたくなるか？」を厳しく判断
+
+【評価の哲学】
+- 「見慣れた表現」は即減点
+- 「具体性のない約束」は信用しない
+- 「押しつけがましいCTA」は逆効果と判断
+- タイムライン上で「1秒で目に留まるか」を重視
+
+---
+
+【評価対象の投稿文】
 ${draftText}
 
 【ターゲット】${target}
 【訴求ポイント】${benefit}
 
-以下の基準で各項目を採点し、JSON形式で出力してください:
+---
+
+以下の基準で厳格に採点してください。甘い評価は禁止です。
+
+=== 既存評価項目（10点満点） ===
 
 1. empathy (共感・本音感): 0-3点
-   - 「ぶっちゃけ」「正直」など本音を感じる表現があるか
-   - ターゲットの悩みに寄り添っているか
+   - 0点: 機械的、宣伝臭い
+   - 1点: 多少の共感要素があるが表面的
+   - 2点: ターゲットの悩みに寄り添っている
+   - 3点: 「この人、分かってる」と思わせる深い共感
 
 2. benefit (メリット提示): 0-2点
-   - 具体的な数字（月30万、週3日など）があるか
-   - ターゲットにとって魅力的なベネフィットか
+   - 0点: 抽象的な約束のみ
+   - 1点: 数字はあるが具体性に欠ける
+   - 2点: 具体的で信憑性のあるメリット提示
 
 3. cta (行動喚起): 0-2点
-   - 「DMで」「気軽に」など明確なCTAがあるか
-   - 行動のハードルを下げる表現があるか
+   - 0点: CTAがない、または押しつけがましい
+   - 1点: CTAはあるがありきたり
+   - 2点: 自然にDMしたくなる導線
 
 4. credibility (信頼性): 0-2点
-   - 実績や事例の言及があるか
-   - 事務所としての信頼感があるか
+   - 0点: 怪しい、詐欺っぽい
+   - 1点: 事務所としての信頼感が薄い
+   - 2点: 実績・事例があり信頼できる
 
 5. urgency (緊急性): 0-1点
-   - 「今なら」「募集中」など行動を促す表現があるか
+   - 0点: 「いつでもいい」感
+   - 1点: 「今」行動したくなる要素がある
 
-また、8点未満の場合は改善点をfeedbackとして記載してください。
+=== 新規評価項目（5点満点）===
 
-JSONのみを出力:
+6. originality (独自性・差別化): 0-2点
+   - 0点: 「どこかで見た」感がある、テンプレート的
+   - 1点: 部分的に新しい要素がある
+   - 2点: 明確に差別化、独自の視点・エピソード
+
+7. engagement (エンゲージメント予測): 0-2点
+   - 0点: 一方的な宣伝、問いかけなし
+   - 1点: 共感要素あり、ただし会話誘発は弱い
+   - 2点: 「自分のことだ」と思わせる、リプしたくなる
+
+8. scrollStop (スクロール停止力): 0-1点
+   - 0点: 冒頭が平凡、タイムラインで流される
+   - 1点: 冒頭3-5文字で「え？」と思わせる
+
+---
+
+=== 出力形式（JSONのみ） ===
+
 {
   "empathy": 数値,
   "benefit": 数値,
   "cta": 数値,
   "credibility": 数値,
   "urgency": 数値,
-  "total": 合計値,
-  "feedback": "改善点（8点以上なら空文字）"
-}`;
+  "originality": 数値,
+  "engagement": 数値,
+  "scrollStop": 数値,
+  "total": 合計値(0-15),
+  "feedback": "12点未満の場合の具体的な改善指示",
+  "strengths": ["良い点1", "良い点2", "良い点3"],
+  "weaknesses": ["改善点1", "改善点2", "改善点3"]
+}
+
+【重要】
+- 各項目を独立して厳格に評価
+- 「なんとなく良い」は禁止。根拠を持って採点
+- feedbackは具体的に（「〇〇を△△に変えると良い」）`;
 
   const response = await reviewModel.invoke(prompt);
-  let content = response.content as string;
+  const content = response.content as string;
 
   // JSON部分を抽出
   const jsonMatch = content.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
     return {
-      score: { empathy: 2, benefit: 1, cta: 1, credibility: 1, urgency: 0, total: 5 },
+      score: {
+        empathy: 2, benefit: 1, cta: 1, credibility: 1, urgency: 0,
+        originality: 0, engagement: 0, scrollStop: 0, total: 5,
+        strengths: [], weaknesses: ['評価の解析に失敗']
+      },
       feedback: '評価の解析に失敗しました。再生成が必要です。',
       currentStep: 'revise' as WorkflowStep,
     };
@@ -207,17 +276,27 @@ JSONのみを出力:
       cta: result.cta || 0,
       credibility: result.credibility || 0,
       urgency: result.urgency || 0,
+      originality: result.originality || 0,
+      engagement: result.engagement || 0,
+      scrollStop: result.scrollStop || 0,
       total: result.total || 0,
+      strengths: result.strengths || [],
+      weaknesses: result.weaknesses || [],
     };
 
+    // 合格ライン: 12点以上（15点満点の80%）
     return {
       score,
       feedback: result.feedback || '',
-      currentStep: score.total >= 8 ? 'polish' as WorkflowStep : 'revise' as WorkflowStep,
+      currentStep: score.total >= 12 ? 'polish' as WorkflowStep : 'revise' as WorkflowStep,
     };
   } catch {
     return {
-      score: { empathy: 2, benefit: 1, cta: 1, credibility: 1, urgency: 0, total: 5 },
+      score: {
+        empathy: 2, benefit: 1, cta: 1, credibility: 1, urgency: 0,
+        originality: 0, engagement: 0, scrollStop: 0, total: 5,
+        strengths: [], weaknesses: ['JSONパースエラー']
+      },
       feedback: 'JSONパースエラー。再生成が必要です。',
       currentStep: 'revise' as WorkflowStep,
     };
@@ -332,7 +411,7 @@ export interface GenerationProgress {
 export type ProgressCallback = (progress: GenerationProgress) => void;
 
 /**
- * 単一投稿を生成
+ * 単一投稿を生成（Phoenix トレース付き）
  */
 export async function generateSinglePost(
   account: string,
@@ -347,52 +426,70 @@ export async function generateSinglePost(
   score: QualityScore;
   revisionCount: number;
 }> {
-  const graph = createPostGeneratorGraph();
+  return tracePostGeneration(
+    'generate',
+    { account, target, benefit },
+    async () => {
+      const graph = createPostGeneratorGraph();
 
-  const initialState = {
-    account,
-    accountType,
-    target: target || '',
-    benefit: benefit || '',
-  };
+      const initialState = {
+        account,
+        accountType,
+        target: target || '',
+        benefit: benefit || '',
+      };
 
-  // ストリーミング実行 - 状態を累積
-  let accumulatedState: Partial<PostGeneratorStateType> = { ...initialState };
+      // ストリーミング実行 - 状態を累積
+      let accumulatedState: Partial<PostGeneratorStateType> = { ...initialState };
 
-  for await (const event of await graph.stream(initialState)) {
-    const nodeStates = Object.values(event) as Partial<PostGeneratorStateType>[];
-    if (nodeStates.length > 0) {
-      // 各ノードの出力を累積
-      accumulatedState = { ...accumulatedState, ...nodeStates[0] };
-      if (onProgress && accumulatedState.currentStep) {
-        onProgress(accumulatedState.currentStep, accumulatedState.score);
+      for await (const event of await graph.stream(initialState)) {
+        const nodeStates = Object.values(event) as Partial<PostGeneratorStateType>[];
+        if (nodeStates.length > 0) {
+          // 各ノードの出力を累積
+          accumulatedState = { ...accumulatedState, ...nodeStates[0] };
+          if (onProgress && accumulatedState.currentStep) {
+            onProgress(accumulatedState.currentStep, accumulatedState.score);
+          }
+        }
       }
+
+      if (!accumulatedState.currentStep) {
+        throw new Error('生成に失敗しました');
+      }
+
+      const finalState = accumulatedState as PostGeneratorStateType;
+
+      // デフォルトスコア（scoreがundefinedの場合）
+      const defaultScore: QualityScore = {
+        empathy: 0,
+        benefit: 0,
+        cta: 0,
+        credibility: 0,
+        urgency: 0,
+        originality: 0,
+        engagement: 0,
+        scrollStop: 0,
+        total: 0,
+        strengths: [],
+        weaknesses: [],
+      };
+
+      const result = {
+        text: finalState.finalText || finalState.draftText || '',
+        target: finalState.target || '',
+        benefit: finalState.benefit || '',
+        score: finalState.score || defaultScore,
+        revisionCount: finalState.revisionCount || 0,
+      };
+
+      // 品質スコアをPhoenixに記録
+      if (result.score) {
+        recordQualityScore('quality-score', result.score);
+      }
+
+      return result;
     }
-  }
-
-  if (!accumulatedState.currentStep) {
-    throw new Error('生成に失敗しました');
-  }
-
-  const finalState = accumulatedState as PostGeneratorStateType;
-
-  // デフォルトスコア（scoreがundefinedの場合）
-  const defaultScore: QualityScore = {
-    empathy: 0,
-    benefit: 0,
-    cta: 0,
-    credibility: 0,
-    urgency: 0,
-    total: 0,
-  };
-
-  return {
-    text: finalState.finalText || finalState.draftText || '',
-    target: finalState.target || '',
-    benefit: finalState.benefit || '',
-    score: finalState.score || defaultScore,
-    revisionCount: finalState.revisionCount || 0,
-  };
+  );
 }
 
 /**

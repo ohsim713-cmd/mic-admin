@@ -158,11 +158,11 @@ export async function getSuccessExamplesForPrompt(
 export async function getStats(): Promise<{
   total: number;
   avgScore: number;
-  byAccount: Record<AccountType, number>;
+  byAccount: Record<'liver' | 'chatre1' | 'chatre2', number>;
 }> {
   const db = await loadDB();
 
-  const byAccount: Record<AccountType, number> = {
+  const byAccount: Record<'liver' | 'chatre1' | 'chatre2', number> = {
     liver: db.patterns.filter(p => p.account === 'liver').length,
     chatre1: db.patterns.filter(p => p.account === 'chatre1').length,
     chatre2: db.patterns.filter(p => p.account === 'chatre2').length,

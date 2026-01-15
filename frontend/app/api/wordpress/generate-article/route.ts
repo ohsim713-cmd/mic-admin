@@ -1,28 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import fs from 'fs';
-import path from 'path';
+import {
+    buildEnrichedKnowledgeContext,
+    buildChatladyKnowledgeContext,
+} from '@/lib/langgraph/knowledge-loader';
 
 const apiKey = process.env.GEMINI_API_KEY || "";
-const KNOWLEDGE_DIR = path.join(process.cwd(), 'knowledge');
-
-// ナレッジを読み込む
-function loadKnowledge(filename: string) {
-    const filePath = path.join(KNOWLEDGE_DIR, filename);
-    if (!fs.existsSync(filePath)) {
-        return null;
-    }
-    try {
-        const data = fs.readFileSync(filePath, 'utf-8');
-        return data;
-    } catch {
-        return null;
-    }
-}
 
 export async function POST(request: NextRequest) {
     try {
-        const { keyword, targetAudience, articleLength = 'medium', tone = 'professional' } = await request.json();
+        const { keyword, targetAudience, articleLength = 'medium', tone = 'professional', businessType = 'chat-lady' } = await request.json();
 
         if (!keyword) {
             return NextResponse.json(
@@ -34,9 +21,12 @@ export async function POST(request: NextRequest) {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
-        // ナレッジベースを読み込む
-        const agencyKnowledge = loadKnowledge('agency_knowledge.md');
-        const internalData = loadKnowledge('internal_data.txt');
+        // ビジネスタイプに応じたナレッジコンテキストを取得
+        const knowledgeContext = businessType === 'liver-agency'
+            ? await buildEnrichedKnowledgeContext()
+            : await buildChatladyKnowledgeContext();
+
+        const businessLabel = businessType === 'liver-agency' ? 'ライバー事務所' : 'チャットレディ事務所';
 
         // 記事の長さに応じた文字数を設定
         let charCount = '2000-2500';
@@ -53,17 +43,10 @@ export async function POST(request: NextRequest) {
             styleGuide = '行動を促す、説得力のある文体。問題提起と解決策を明確に。';
         }
 
-        // コンテキストを構築
-        let contextInfo = '';
-        if (agencyKnowledge) {
-            contextInfo += `\n【事業に関する情報】\n${agencyKnowledge.substring(0, 2000)}`;
-        }
-        if (internalData) {
-            contextInfo += `\n【内部データ】\n${internalData.substring(0, 1000)}`;
-        }
+        const prompt = `あなたは${businessLabel}の代表で、SEO最適化されたブログ記事を書くプロのライターです。
 
-        const prompt = `あなたはSEO最適化されたブログ記事を書くプロのライターです。
-${contextInfo}
+【事務所の知識・業界情報】
+${knowledgeContext}
 
 以下の情報に基づいて、SEO最適化されたブログ記事を作成してください。
 

@@ -27,14 +27,14 @@ export async function POST(request: NextRequest) {
     if (action === 'refill-all') {
       console.log('[Stock] Starting full refill (target: 5 per account)...');
 
-      const accounts: AccountType[] = ['liver', 'chatre1', 'chatre2'];
+      const accounts = ['liver', 'chatre1', 'chatre2'] as const;
       const results: Record<string, any> = {};
       let totalAdded = 0;
 
       // 各アカウントを5件まで補充
       for (const acc of accounts) {
         const status = await getStockStatus();
-        const currentCount = status.counts[acc] || 0;
+        const currentCount = status.counts[acc as 'liver' | 'chatre1' | 'chatre2'] || 0;
         const needed = NEW_STOCK_CONFIG.minStockPerAccount - currentCount;
 
         if (needed > 0) {
@@ -134,12 +134,12 @@ export async function GET(request: NextRequest) {
         maxPerAccount: NEW_STOCK_CONFIG.maxStockPerAccount,
         refillThreshold: NEW_STOCK_CONFIG.refillThreshold,
       },
-      accounts: ACCOUNTS.map(a => ({
+      accounts: ACCOUNTS.filter(a => a.id !== 'wordpress').map(a => ({
         id: a.id,
         name: a.name,
         handle: a.handle,
-        count: status.counts[a.id] || 0,
-        isLow: (status.counts[a.id] || 0) < NEW_STOCK_CONFIG.refillThreshold,
+        count: status.counts[a.id as 'liver' | 'chatre1' | 'chatre2'] || 0,
+        isLow: (status.counts[a.id as 'liver' | 'chatre1' | 'chatre2'] || 0) < NEW_STOCK_CONFIG.refillThreshold,
       })),
     });
 

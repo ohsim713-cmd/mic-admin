@@ -64,13 +64,13 @@ export async function POST(request: NextRequest) {
     console.log(`[Automation] Current slot: ${currentSlot.time} (${currentSlot.label})`);
 
     // @tt_liver のみに投稿
-    const accounts: AccountType[] = ['liver'];
+    const accounts = ['liver'] as const;
     const results: any[] = [];
 
     for (const account of accounts) {
       try {
         // ストックから投稿を取得
-        const { post, fromStock, stockRemaining } = await getPostForAccount(account);
+        const { post, fromStock, stockRemaining } = await getPostForAccount(account as 'liver' | 'chatre1' | 'chatre2');
 
         const postText = post.text;
         const target = typeof post.target === 'string' ? post.target : post.target?.label || '';

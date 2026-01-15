@@ -14,6 +14,7 @@ export type WordPressSchedule = {
   tone: string;
   publishStatus: 'draft' | 'publish';
   generateThumbnail: boolean;
+  businessType?: 'chat-lady' | 'liver-agency';
   lastRun?: string;
   nextRun?: string;
   lastPostId?: number;
@@ -62,7 +63,8 @@ export async function POST(request: NextRequest) {
       targetLength = '2000-3000',
       tone = '親しみやすく、専門的',
       publishStatus = 'draft',
-      generateThumbnail = false
+      generateThumbnail = false,
+      businessType = 'chat-lady'
     } = body;
 
     const schedules = loadSchedules();
@@ -79,6 +81,7 @@ export async function POST(request: NextRequest) {
       tone,
       publishStatus,
       generateThumbnail,
+      businessType,
       nextRun: nextRun.toISOString()
     };
 

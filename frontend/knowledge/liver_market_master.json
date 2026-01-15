@@ -1,51 +1,275 @@
 {
-    "platform_deep_dive": {
+    "market_overview_2025": {
+        "industry_size": "ライブ配信市場は拡大中、配信アプリは多様化",
+        "user_demographics": "20-40代女性が主なライバー層、視聴者は10代-50代と幅広い",
+        "trends": [
+            "顔出しなし・声だけ・アバター利用の多様化",
+            "時給制アプリの人気上昇",
+            "Vライバー市場の急成長",
+            "事務所の還元率100%以上が主流に"
+        ]
+    },
+    "platform_comparison": {
         "Pococha": {
-            "system": "ランク連動型時給報酬（時間ダイヤ）+ 盛り上がり報酬",
-            "rank_stages": "E1〜S6の19段階",
-            "hourly_rate": "30円〜16,500円",
-            "monetization_criteria": "18歳以上（高校生不可）、日本国内居住",
-            "exchange_rate": "1ダイヤ=1円（100%還元、源泉徴収あり）",
-            "payout_threshold": "5,000円から",
-            "maintenance_tips": "おやすみチケットの活用、メーター（応援ポイント）の監視"
+            "overview": "DeNAが運営する国内No.1ライブ配信アプリ",
+            "strengths": [
+                "時給制度が充実（時間ダイヤ）",
+                "課金ユーザーが多い",
+                "初心者でも稼ぎやすい"
+            ],
+            "rank_system": {
+                "stages": "E1〜S6の19段階",
+                "hourly_rates": {
+                    "E1": "30円",
+                    "D1": "50円（1位:150円）",
+                    "D2": "100円（1位:300円）",
+                    "D3": "150円（1位:450円）",
+                    "C1": "400円（1位:1,200円）",
+                    "C2": "600円（1位:1,800円）",
+                    "C3": "800円（1位:2,400円）",
+                    "B1": "1,200円（1位:3,600円）",
+                    "B2": "1,400円（1位:4,200円）",
+                    "B3": "1,600円（1位:4,800円）",
+                    "A1": "1,900円（1位:5,700円）",
+                    "A2": "2,200円（1位:6,600円）",
+                    "A3": "2,500円（1位:7,500円）",
+                    "S1": "3,000円（1位:9,000円）",
+                    "S2": "3,500円（1位:10,500円）",
+                    "S3": "4,000円（1位:12,000円）",
+                    "S4": "4,500円（1位:13,500円）",
+                    "S5": "5,000円（1位:15,000円）",
+                    "S6": "5,500円（1位:16,500円）"
+                },
+                "bonus": "メーター1位で3倍、2-3位で2倍"
+            },
+            "time_limits": {
+                "daily": "1日4時間まで",
+                "weekly": "1週間19時間まで",
+                "monthly": "1ヶ月75時間まで"
+            },
+            "exchange_rate": "1ダイヤ=1円",
+            "recommended_agency": "321.inc（Pococha No.1実績）"
         },
         "17LIVE": {
-            "system": "ギフト（投げ銭）ベースのロイヤリティ報酬",
-            "royalty_rate": "非認証:13-30%、認証:30-40%",
-            "monetization_criteria": "認証ライバーへの昇格が鍵。ライバーグレードシステム（2025導入）",
-            "unique_features": "アーミー（定額ファン）、ガーディアン（特別な支援者）"
-        },
-        "TikTok_LIVE": {
-            "system": "ギフト → ダイヤモンド → 現金（換金率 約25%〜30%）",
-            "monetization_criteria": "18歳以上、フォロワー1,000人以上（または事務所経由）",
-            "strengths": "圧倒的な若年層への拡散力、TikTok Creator Fundとの併用可能"
+            "overview": "全世界5,000万人以上が利用するグローバル配信アプリ",
+            "strengths": [
+                "最低時給保証あり",
+                "グローバルな視聴者層",
+                "多様な配信ジャンル対応"
+            ],
+            "royalty_rate": {
+                "general": "10〜30%",
+                "certified": "30〜40%"
+            },
+            "hourly_wage": "平均時給500〜3,000円",
+            "features": [
+                "アーミー（定額ファン制度）",
+                "ガーディアン（特別支援者）",
+                "ライバーグレードシステム"
+            ],
+            "recommended_agency": "カーブアウト（17LIVE公式1位、時給1,000円保証）"
         },
         "IRIAM": {
-            "system": "2Dイラスト×時給（時間ダイヤ）+ ギフト（応援ダイヤ）",
-            "hourly_rate": "最大2,300円",
-            "monetization_criteria": "10日以上配信、累計15時間、5,000pt獲得",
-            "pros": "顔出し不要、低遅延、Vライバー特化の高収益性"
+            "overview": "Vライバー特化のバーチャル配信アプリ",
+            "strengths": [
+                "顔出し不要でスマホ1台から始められる",
+                "イラスト1枚をAIが自動で動かす",
+                "低遅延・高画質のモーションライブ方式"
+            ],
+            "monetization_requirements": {
+                "streaming_hours": "累計15時間以上",
+                "streaming_days": "10日以上",
+                "points": "累計5,000pt以上"
+            },
+            "revenue_system": {
+                "types": ["応援ダイヤ（ギフト）", "時間ダイヤ（配信時間）"],
+                "rate": "1ダイヤ=1円",
+                "reduction_rate": "15〜30%"
+            },
+            "hourly_rate": "最大2,300円（Sランク時2,000円）",
+            "illustration_cost": "約3万円前後（発注の場合）"
+        },
+        "ふわっち": {
+            "overview": "2015年リリースの大人向けライブ配信アプリ",
+            "strengths": [
+                "公式・非公式の区別なく全員平等",
+                "年齢層が高く課金ユーザー多い",
+                "飲酒・喫煙OK",
+                "フリーライバーでも稼ぎやすい"
+            ],
+            "user_demographics": "20代後半〜40代が中心",
+            "reduction_rate": "約40〜50%",
+            "features": [
+                "ランキング報酬あり",
+                "視聴者数1位で毎日1万ポイント",
+                "ルーキーランキングで初心者も注目される"
+            ],
+            "note": "追い出し機能なし、匿名コメント可能で荒れやすいリスクあり"
+        },
+        "BIGO_LIVE": {
+            "overview": "世界150カ国、4億人以上が利用するグローバルアプリ",
+            "strengths": [
+                "海外視聴者へのリーチ",
+                "マルチ配信機能（最大9人）",
+                "PK機能でギフト競争",
+                "ゲーム配信対応"
+            ],
+            "reduction_rate": "20〜50%",
+            "hourly_wage": "最低ランクでも1,500円〜",
+            "note": "95%以上のライバーが事務所所属（時給報酬のため）"
+        },
+        "SHOWROOM": {
+            "overview": "アイドル・芸能関係に強い投げ銭パイオニア",
+            "reduction_rate": "約30%前後",
+            "strengths": [
+                "芸能事務所との連携",
+                "アイドルオーディション開催",
+                "投げ銭の楽しさで収益化しやすい"
+            ]
+        },
+        "TikTok_LIVE": {
+            "overview": "若年層への圧倒的拡散力を持つ配信機能",
+            "monetization_requirements": {
+                "age": "18歳以上",
+                "followers": "1,000人以上（または事務所経由）"
+            },
+            "reduction_rate": "25〜30%",
+            "strengths": [
+                "TikTokの拡散力との相乗効果",
+                "Creator Fundとの併用可能"
+            ]
         },
         "REALITY": {
-            "system": "3Dアバター×LIVEポイント換金（6,000pt〜）",
-            "pros": "イラスト不要（アプリ内でアバター作成）、3Dでの高い表現力、コラボ機能"
+            "overview": "3Dアバターで配信できるバーチャル配信アプリ",
+            "strengths": [
+                "イラスト不要（アプリ内でアバター作成）",
+                "3Dでの高い表現力",
+                "コラボ機能充実"
+            ],
+            "monetization": "LIVEポイント換金（6,000pt〜）"
         }
     },
-    "liver_business_costs": {
-        "Live2D_Model": {
-            "budget": "5万〜40万円",
-            "breakdown": "デザイン(5-15万) + パーツ分け(1-5万) + モデリング(5-20万)",
-            "merit": "初期費用安、PCスペック不問、トーク配信向き"
+    "income_statistics": {
+        "average_monthly": {
+            "all_livers": "約20万円（中央値は約10万円）",
+            "beginner": "数千円〜3万円",
+            "intermediate": "8万〜80万円",
+            "popular": "100万円以上",
+            "top": "300万〜500万円",
+            "super_top": "800万円〜1億円"
         },
-        "3D_Model": {
-            "budget": "15万〜100万円以上",
-            "breakdown": "モデリング(15-50万) + リギング + 物理演算設定",
-            "merit": "ダンス、全身の動き、高い没入感"
+        "by_experience": {
+            "casual_beginner": "月1,000〜3万円",
+            "daily_streamer": "月3万〜10万円",
+            "official_with_fans": "月10万〜60万円",
+            "top_100": "月100万円以上"
         }
     },
-    "earnings_projections": {
-        "beginner_1st_month": "〜5万円以上（事務所経由・時給制活用時）",
-        "intermediate": "15万〜30万円（固定ファンあり）",
-        "professional_top": "100万円以上（複数サイト・ファンクラブ併用）"
-    }
+    "agency_information": {
+        "total_count": "5,000以上の事務所が存在",
+        "top_agencies": {
+            "321.inc": {
+                "specialty": "Pococha、REALITY",
+                "features": [
+                    "還元率100%以上",
+                    "年間2億円以上の独自イベント",
+                    "所属ライバー満足度高い"
+                ]
+            },
+            "カーブアウト": {
+                "specialty": "17LIVE、TikTokライブ",
+                "features": [
+                    "17LIVE公式1位実績",
+                    "17LIVEで時給1,000円保証",
+                    "TikTokで時給4,000円+ボーナス",
+                    "新人育成に定評、離脱率低い"
+                ]
+            }
+        },
+        "agency_benefits": [
+            "報酬還元率100%以上（優良事務所）",
+            "専属マネージャーのサポート",
+            "機材・スタジオ貸し出し",
+            "グッズ制作支援",
+            "イベント開催",
+            "配信ノウハウ指導"
+        ],
+        "warning_signs": [
+            "スカウトDMを送ってくる事務所は避ける",
+            "還元率が低い（50%以下）",
+            "サポートがない",
+            "契約内容が不明確"
+        ]
+    },
+    "success_tips": {
+        "streaming_schedule": {
+            "recommended_hours": "月40〜50時間（1日2時間程度）",
+            "best_times": "20時〜24時（ゴールデンタイム）",
+            "alternative": "あえて競合が少ない時間帯を狙う"
+        },
+        "fan_building": {
+            "daily_streaming": "毎日決まった時間に配信",
+            "interaction": "挨拶、名前を呼ぶ、コメントに反応",
+            "consistency": "固定時間で視聴者の習慣に組み込む"
+        },
+        "profile_optimization": {
+            "thumbnail": "目を引くサムネイル画像",
+            "username": "ひらがな、短く、シンプルでキャッチー"
+        },
+        "mindset": {
+            "goals": "夢や目標を持つ（ファンは夢を応援する）",
+            "persistence": "1〜3ヶ月の山場を乗り切る",
+            "continuous": "コツコツ毎日配信がトップへの道"
+        }
+    },
+    "vtuber_business_costs": {
+        "Live2D": {
+            "total": "5万〜40万円",
+            "breakdown": {
+                "design": "5〜15万円",
+                "parting": "1〜5万円",
+                "modeling": "5〜20万円"
+            },
+            "merit": "初期費用安い、PCスペック不問、トーク配信向き"
+        },
+        "3D": {
+            "total": "15万〜100万円以上",
+            "breakdown": {
+                "modeling": "15〜50万円",
+                "rigging": "別途",
+                "physics": "別途"
+            },
+            "merit": "ダンス、全身の動き、高い没入感"
+        },
+        "IRIAM_start": {
+            "illustration": "約3万円（発注の場合）",
+            "equipment": "スマホ1台のみでOK"
+        }
+    },
+    "recruitment_talking_points": {
+        "hourly_wage": {
+            "pococha_max": "時給16,500円（S6ランク1位）",
+            "17live_guarantee": "時給1,000円保証（事務所経由）",
+            "bigo_minimum": "最低時給1,500円〜"
+        },
+        "beginner_friendly": [
+            "未経験から3ヶ月で月30万円達成も多数",
+            "時給制で初月から安定収入",
+            "顔出しなしOK（IRIAM、REALITY）",
+            "スマホ1台で始められる"
+        ],
+        "flexibility": [
+            "週3日、1日2時間からOK",
+            "好きな時間に配信できる",
+            "在宅で完結",
+            "本業との両立可能"
+        ],
+        "support": [
+            "専属マネージャーがサポート",
+            "配信ノウハウを無料で指導",
+            "機材貸し出しあり",
+            "還元率100%以上（優良事務所）"
+        ]
+    },
+    "last_updated": "2025-01-14"
 }

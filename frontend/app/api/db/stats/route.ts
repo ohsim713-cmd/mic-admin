@@ -9,10 +9,23 @@ import { getDBStats as getPatternsStats } from '../../../../lib/database/success
 
 export async function GET() {
   try {
-    const [postsStats, patternsStats] = await Promise.all([
-      getPostsStats(),
-      getPatternsStats(),
-    ]);
+    // Vercelのサーバーレス環境ではファイルシステムに書き込めないため
+    // エラー時はデフォルト値を返す
+    const postsStats = await getPostsStats().catch(() => ({
+      total: 0,
+      byStatus: {},
+      byAccount: {},
+      avgScore: 0,
+      todayGenerated: 0,
+      todayPosted: 0,
+    }));
+
+    const patternsStats = await getPatternsStats().catch(() => ({
+      totalPatterns: 0,
+      byCategory: {},
+      avgScore: 0,
+      lastUpdated: new Date().toISOString(),
+    }));
 
     return NextResponse.json({
       posts: postsStats,
@@ -21,9 +34,23 @@ export async function GET() {
     });
   } catch (error) {
     console.error('統計取得エラー:', error);
-    return NextResponse.json(
-      { error: '統計情報の取得に失敗しました' },
-      { status: 500 }
-    );
+    // エラー時でもデフォルト値を返す
+    return NextResponse.json({
+      posts: {
+        total: 0,
+        byStatus: {},
+        byAccount: {},
+        avgScore: 0,
+        todayGenerated: 0,
+        todayPosted: 0,
+      },
+      patterns: {
+        totalPatterns: 0,
+        byCategory: {},
+        avgScore: 0,
+        lastUpdated: new Date().toISOString(),
+      },
+      timestamp: new Date().toISOString(),
+    });
   }
 }

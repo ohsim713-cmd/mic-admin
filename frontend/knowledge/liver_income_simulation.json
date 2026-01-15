@@ -1,0 +1,149 @@
+{
+  "incomeSimulations": {
+    "副業パターン": [
+      {
+        "pattern": "週3日・1日2時間",
+        "weeklyHours": 6,
+        "monthlyHours": 24,
+        "estimatedIncome": {
+          "beginner": {"min": "3万円", "max": "6万円", "average": "4.5万円"},
+          "intermediate": {"min": "8万円", "max": "15万円", "average": "12万円"},
+          "experienced": {"min": "15万円", "max": "25万円", "average": "20万円"}
+        },
+        "suitableFor": "本業あり・子育て中・学生",
+        "tips": "ゴールデンタイム（21-23時）に配信を集中"
+      },
+      {
+        "pattern": "週4日・1日2-3時間",
+        "weeklyHours": 10,
+        "monthlyHours": 40,
+        "estimatedIncome": {
+          "beginner": {"min": "5万円", "max": "10万円", "average": "7.5万円"},
+          "intermediate": {"min": "12万円", "max": "22万円", "average": "17万円"},
+          "experienced": {"min": "22万円", "max": "35万円", "average": "28万円"}
+        },
+        "suitableFor": "しっかり副業したい人",
+        "tips": "配信時間を固定してファンを増やす"
+      }
+    ],
+    "本業パターン": [
+      {
+        "pattern": "週5日・1日3時間",
+        "weeklyHours": 15,
+        "monthlyHours": 60,
+        "estimatedIncome": {
+          "beginner": {"min": "8万円", "max": "15万円", "average": "12万円"},
+          "intermediate": {"min": "18万円", "max": "30万円", "average": "24万円"},
+          "experienced": {"min": "30万円", "max": "50万円", "average": "40万円"}
+        },
+        "suitableFor": "フリーター・専業主婦",
+        "tips": "ランクを上げて時給を上げていく"
+      },
+      {
+        "pattern": "週5日・1日4-5時間",
+        "weeklyHours": 22,
+        "monthlyHours": 90,
+        "estimatedIncome": {
+          "beginner": {"min": "12万円", "max": "22万円", "average": "17万円"},
+          "intermediate": {"min": "25万円", "max": "45万円", "average": "35万円"},
+          "experienced": {"min": "45万円", "max": "70万円", "average": "55万円"}
+        },
+        "suitableFor": "本気で稼ぎたい人",
+        "tips": "イベント参加で報酬を最大化"
+      }
+    ],
+    "トップ層パターン": [
+      {
+        "pattern": "週6日・1日5時間以上",
+        "weeklyHours": 30,
+        "monthlyHours": 120,
+        "estimatedIncome": {
+          "beginner": {"min": "15万円", "max": "30万円", "average": "22万円"},
+          "intermediate": {"min": "35万円", "max": "60万円", "average": "48万円"},
+          "experienced": {"min": "60万円", "max": "100万円以上", "average": "80万円"}
+        },
+        "suitableFor": "月100万円を目指す人",
+        "tips": "複数プラットフォーム活用、体調管理必須"
+      }
+    ]
+  },
+  "platformIncomeComparison": {
+    "Pococha": {
+      "system": "時間ダイヤ＋盛り上がりダイヤ",
+      "hourlyRate": {"E帯": "〜数百円", "C帯": "1,000〜2,000円", "B帯": "2,000〜4,000円", "A帯": "4,000〜6,000円", "S帯": "6,000円〜"},
+      "features": "ランク連動時給制、安定収入",
+      "bestFor": "初心者、安定重視"
+    },
+    "17LIVE": {
+      "system": "ギフト報酬＋アーミー収入",
+      "royaltyRate": {"非認証": "13-30%", "認証": "30-40%"},
+      "features": "アーミー定額、ガーディアン制度",
+      "bestFor": "ファン育成型、コミュニティ重視"
+    },
+    "IRIAM": {
+      "system": "時間ダイヤ＋応援ダイヤ",
+      "hourlyRate": "最大2,300円",
+      "features": "顔出し不要、Vライバー特化",
+      "bestFor": "プライバシー重視、イラスト持ち"
+    },
+    "REALITY": {
+      "system": "LIVEポイント換金",
+      "features": "イラスト不要、3Dアバター作成可",
+      "bestFor": "初期費用ゼロで始めたい人"
+    },
+    "TikTok LIVE": {
+      "system": "ギフト→ダイヤ→現金",
+      "exchangeRate": "約25-30%",
+      "features": "若年層に強い、拡散力",
+      "bestFor": "フォロワー1,000人以上"
+    }
+  },
+  "incomeGrowthPath": {
+    "phases": [
+      {
+        "phase": "1ヶ月目",
+        "goal": "配信に慣れる",
+        "income": "5〜10万円",
+        "focus": ["配信リズム確立", "リスナー3-5人獲得", "プロフィール完成"],
+        "mistakes": ["すぐ諦める", "不定期配信", "リスナー無視"]
+      },
+      {
+        "phase": "2-3ヶ月目",
+        "goal": "ファンを増やす",
+        "income": "10〜20万円",
+        "focus": ["常連10人以上", "ランクアップ", "配信スタイル確立"],
+        "mistakes": ["マンネリ化", "休みなく配信", "ファンサービス不足"]
+      },
+      {
+        "phase": "4-6ヶ月目",
+        "goal": "安定収入達成",
+        "income": "20〜35万円",
+        "focus": ["上位ランク維持", "イベント参加", "コアファン育成"],
+        "mistakes": ["燃え尽き", "ランク維持に固執", "新規開拓忘れ"]
+      },
+      {
+        "phase": "6ヶ月〜1年",
+        "goal": "トップライバーへ",
+        "income": "35〜60万円",
+        "focus": ["複数プラットフォーム", "ブランディング", "効率最大化"],
+        "mistakes": ["慢心", "体調管理怠り", "ファン離れ"]
+      }
+    ]
+  },
+  "realNumbers": {
+    "industryAverages": {
+      "newcomerFirstMonth": "5〜10万円",
+      "after3Months": "15〜25万円",
+      "after6Months": "20〜40万円",
+      "after1Year": "30〜60万円",
+      "top10Percent": "月50万円以上",
+      "top1Percent": "月100万円以上"
+    },
+    "timeToProfit": {
+      "first10Man": "2〜4週間",
+      "stable15Man": "1〜2ヶ月",
+      "stable30Man": "3〜6ヶ月",
+      "stable50Man": "6ヶ月〜1年"
+    }
+  }
+}

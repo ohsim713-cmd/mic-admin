@@ -1,0 +1,8 @@
+# gcloud deploy時に除外するファイル
+node_modules/
+.next/
+.git/
+*.log
+.env
+.env.local
+.env.*.local

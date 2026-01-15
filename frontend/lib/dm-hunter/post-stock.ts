@@ -190,7 +190,7 @@ export async function useFromStock(account: AccountType): Promise<StockedPost | 
 /**
  * 指定アカウントのストックを補充
  */
-export async function refillStock(account: AccountType): Promise<{
+export async function refillStock(account: TwitterAccountType): Promise<{
   added: number;
   failed: number;
   currentStock: number;
@@ -258,7 +258,7 @@ export async function refillAllStocks(): Promise<{
 /**
  * ストックから投稿を取得、なければ新規生成
  */
-export async function getPostForAccount(account: AccountType): Promise<{
+export async function getPostForAccount(account: TwitterAccountType): Promise<{
   post: StockedPost | GeneratedPost;
   fromStock: boolean;
   stockRemaining: number;
@@ -323,13 +323,13 @@ export async function deleteStock(stockId: string): Promise<boolean> {
  */
 export async function checkStockLevels(): Promise<{
   isLow: boolean;
-  lowAccounts: AccountType[];
+  lowAccounts: TwitterAccountType[];
   message: string;
 }> {
   const counts = await getStockCounts();
-  const lowAccounts: AccountType[] = [];
+  const lowAccounts: TwitterAccountType[] = [];
 
-  for (const account of ['liver', 'chatre1', 'chatre2'] as AccountType[]) {
+  for (const account of ['liver', 'chatre1', 'chatre2'] as const) {
     if (counts[account] < STOCK_CONFIG.minStockPerAccount) {
       lowAccounts.push(account);
     }

@@ -23,6 +23,7 @@ interface GeneratedPost {
   id: string;
   text: string;
   target: string;
+  benefit: string;
   score: number;
   status: string;
 }
@@ -125,6 +126,11 @@ export default function DashboardPage() {
   // 次の投稿予定（直近3件）
   const [upcomingPosts, setUpcomingPosts] = useState<GeneratedPost[]>([]);
 
+  // 選択した時間スロット
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [slotPost, setSlotPost] = useState<GeneratedPost | null>(null);
+  const [loadingSlot, setLoadingSlot] = useState(false);
+
   // コメント機能
   const [commentingPost, setCommentingPost] = useState<string | null>(null);
   const [commentText, setCommentText] = useState('');
@@ -205,6 +211,45 @@ export default function DashboardPage() {
   const clearLogs = () => {
     setLogs([]);
     logIdRef.current = 0;
+  };
+
+  // 時間スロットクリック時に投稿を取得
+  const handleSlotClick = async (slot: string) => {
+    if (selectedSlot === slot) {
+      // 同じスロットをクリックしたら閉じる
+      setSelectedSlot(null);
+      setSlotPost(null);
+      return;
+    }
+
+    setSelectedSlot(slot);
+    setLoadingSlot(true);
+    setSlotPost(null);
+
+    try {
+      // ストックから投稿を取得（プレビュー用）
+      const res = await fetch(`/api/dm-hunter/stock?view=details&account=${selectedAccount}`);
+      if (res.ok) {
+        const data = await res.json();
+        // 最初の投稿をプレビューとして表示
+        if (data.stocks && data.stocks.length > 0) {
+          const stockIndex = SLOTS.indexOf(slot) % data.stocks.length;
+          const stock = data.stocks[stockIndex];
+          setSlotPost({
+            id: stock.id,
+            text: stock.text,
+            target: stock.target || '',
+            benefit: stock.benefit || '',
+            score: stock.score || 0,
+            status: 'pending',
+          });
+        }
+      }
+    } catch (e) {
+      console.error('スロット投稿取得エラー:', e);
+    } finally {
+      setLoadingSlot(false);
+    }
   };
 
   // コメント送信（approve/reject/improve/style）
@@ -746,13 +791,41 @@ export default function DashboardPage() {
                   const now = `${currentTime.getHours().toString().padStart(2, '0')}:${currentTime.getMinutes().toString().padStart(2, '0')}`;
                   const isDone = slot < now;
                   const isCurrent = slot.slice(0, 2) === now.slice(0, 2);
+                  const isSelected = selectedSlot === slot;
                   return (
-                    <span key={slot} className={`time-chip ${isDone ? 'done' : ''} ${isCurrent ? 'current' : ''}`}>
+                    <button
+                      key={slot}
+                      className={`time-chip ${isDone ? 'done' : ''} ${isCurrent ? 'current' : ''} ${isSelected ? 'selected' : ''}`}
+                      onClick={() => handleSlotClick(slot)}
+                    >
                       {slot}
-                    </span>
+                    </button>
                   );
                 })}
               </div>
+
+              {/* 選択したスロットの投稿内容 */}
+              {selectedSlot && (
+                <div className="slot-preview">
+                  <div className="slot-preview-header">
+                    <span className="slot-preview-time">{selectedSlot} の投稿予定</span>
+                    <button className="slot-close-btn" onClick={() => { setSelectedSlot(null); setSlotPost(null); }}>×</button>
+                  </div>
+                  {loadingSlot ? (
+                    <div className="slot-loading">読み込み中...</div>
+                  ) : slotPost ? (
+                    <div className="slot-content">
+                      <div className="slot-meta">
+                        <span className="slot-score">{slotPost.score}点</span>
+                        <span className="slot-benefit">{slotPost.benefit || slotPost.target}</span>
+                      </div>
+                      <div className="slot-text">{slotPost.text}</div>
+                    </div>
+                  ) : (
+                    <div className="slot-empty">この時間の投稿はまだ準備されていません</div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* AI分析 */}
@@ -802,7 +875,7 @@ export default function DashboardPage() {
                     <div className="upcoming-item-header">
                       <span className="upcoming-num">#{index + 1}</span>
                       <span className="upcoming-score">{post.score}点</span>
-                      <span className="upcoming-target">{post.target}</span>
+                      <span className="upcoming-benefit">{post.benefit || post.target}</span>
                       <span className="upcoming-status">{post.status}</span>
                     </div>
                     <div className="upcoming-text">{post.text}</div>
@@ -1337,11 +1410,11 @@ export default function DashboardPage() {
           border-radius: 4px;
         }
 
-        .upcoming-target {
+        .upcoming-benefit {
           font-size: 0.65rem;
           padding: 0.1rem 0.3rem;
-          background: rgba(139, 92, 246, 0.2);
-          color: #a78bfa;
+          background: rgba(236, 72, 153, 0.2);
+          color: #ec4899;
           border-radius: 4px;
         }
 
@@ -1627,10 +1700,18 @@ export default function DashboardPage() {
           font-size: 0.6rem;
           padding: 0.25rem 0.3rem;
           background: rgba(255,255,255,0.08);
+          border: 1px solid transparent;
           border-radius: 4px;
           font-family: monospace;
           text-align: center;
           transition: all 0.2s;
+          cursor: pointer;
+          color: rgba(255,255,255,0.8);
+        }
+
+        .time-chip:hover {
+          background: rgba(255,255,255,0.15);
+          border-color: rgba(139, 92, 246, 0.4);
         }
 
         .time-chip.done {
@@ -1645,9 +1726,102 @@ export default function DashboardPage() {
           font-weight: 600;
         }
 
+        .time-chip.selected {
+          background: rgba(236, 72, 153, 0.35);
+          border-color: #ec4899;
+          color: #ec4899;
+          font-weight: 600;
+        }
+
         @keyframes currentSlot {
           0%, 100% { box-shadow: 0 0 8px rgba(139, 92, 246, 0.4); }
           50% { box-shadow: 0 0 2px rgba(139, 92, 246, 0.2); }
+        }
+
+        /* スロットプレビュー */
+        .slot-preview {
+          margin-top: 0.75rem;
+          padding: 0.75rem;
+          background: rgba(0,0,0,0.3);
+          border-radius: 8px;
+          border: 1px solid rgba(236, 72, 153, 0.3);
+        }
+
+        .slot-preview-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.5rem;
+        }
+
+        .slot-preview-time {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #ec4899;
+        }
+
+        .slot-close-btn {
+          background: none;
+          border: none;
+          color: rgba(255,255,255,0.5);
+          font-size: 1rem;
+          cursor: pointer;
+          padding: 0.2rem 0.4rem;
+          line-height: 1;
+        }
+
+        .slot-close-btn:hover {
+          color: white;
+        }
+
+        .slot-loading {
+          font-size: 0.75rem;
+          color: rgba(255,255,255,0.5);
+          text-align: center;
+          padding: 1rem;
+        }
+
+        .slot-content {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .slot-meta {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .slot-score {
+          font-size: 0.65rem;
+          padding: 0.1rem 0.3rem;
+          background: rgba(34, 197, 94, 0.2);
+          color: #22c55e;
+          border-radius: 4px;
+        }
+
+        .slot-benefit {
+          font-size: 0.65rem;
+          padding: 0.1rem 0.3rem;
+          background: rgba(236, 72, 153, 0.2);
+          color: #ec4899;
+          border-radius: 4px;
+        }
+
+        .slot-text {
+          font-size: 0.75rem;
+          color: rgba(255,255,255,0.9);
+          line-height: 1.5;
+          white-space: pre-wrap;
+          max-height: 150px;
+          overflow-y: auto;
+        }
+
+        .slot-empty {
+          font-size: 0.75rem;
+          color: rgba(255,255,255,0.4);
+          text-align: center;
+          padding: 1rem;
         }
 
         .analysis-item {

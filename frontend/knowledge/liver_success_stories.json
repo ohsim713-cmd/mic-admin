@@ -1,0 +1,222 @@
+{
+  "successStories": [
+    {
+      "id": "liver-001",
+      "persona": "20代OL・副業",
+      "platform": "Pococha",
+      "period": "3ヶ月",
+      "results": {
+        "initialMonth": "5万円",
+        "thirdMonth": "18万円",
+        "peakMonth": "32万円"
+      },
+      "workStyle": {
+        "hoursPerDay": "2時間",
+        "daysPerWeek": "週4日",
+        "timeSlot": "仕事終わりの21時〜23時"
+      },
+      "keyFactors": [
+        "時給制で安定収入",
+        "ランクアップで時給UP",
+        "リスナーとの会話を楽しむスタイル"
+      ],
+      "quote": "本業の収入にプラスして月15万円以上。貯金がどんどん増えてます"
+    },
+    {
+      "id": "liver-002",
+      "persona": "30代主婦・未経験",
+      "platform": "17LIVE",
+      "period": "6ヶ月",
+      "results": {
+        "initialMonth": "3万円",
+        "thirdMonth": "15万円",
+        "peakMonth": "28万円"
+      },
+      "workStyle": {
+        "hoursPerDay": "1-2時間",
+        "daysPerWeek": "週3日",
+        "timeSlot": "子供が寝た後の22時〜"
+      },
+      "keyFactors": [
+        "アーミー（定額ファン）で安定収入",
+        "主婦の日常トークが人気",
+        "ガーディアンがついて応援"
+      ],
+      "quote": "パートより時間効率が良くて、子供との時間も増えた"
+    },
+    {
+      "id": "liver-003",
+      "persona": "20代学生・Vライバー",
+      "platform": "IRIAM",
+      "period": "4ヶ月",
+      "results": {
+        "initialMonth": "8万円",
+        "thirdMonth": "22万円",
+        "peakMonth": "35万円"
+      },
+      "workStyle": {
+        "hoursPerDay": "2-3時間",
+        "daysPerWeek": "週5日",
+        "timeSlot": "夕方〜夜"
+      },
+      "keyFactors": [
+        "顔出し不要でプライバシー安心",
+        "時間ダイヤで安定",
+        "イラスト1枚で始められた"
+      ],
+      "quote": "顔出しなしで月20万円超え。バイトより断然稼げる"
+    },
+    {
+      "id": "liver-004",
+      "persona": "30代フリーター",
+      "platform": "REALITY",
+      "period": "5ヶ月",
+      "results": {
+        "initialMonth": "4万円",
+        "thirdMonth": "16万円",
+        "peakMonth": "25万円"
+      },
+      "workStyle": {
+        "hoursPerDay": "3時間",
+        "daysPerWeek": "週5日",
+        "timeSlot": "昼〜夕方"
+      },
+      "keyFactors": [
+        "アプリ内でアバター作成OK",
+        "イラスト代ゼロでスタート",
+        "コラボ配信で視聴者増加"
+      ],
+      "quote": "初期費用ゼロで始められて、今は月収20万円安定"
+    },
+    {
+      "id": "liver-005",
+      "persona": "20代・元アパレル店員",
+      "platform": "Pococha",
+      "period": "8ヶ月",
+      "results": {
+        "initialMonth": "10万円",
+        "thirdMonth": "28万円",
+        "peakMonth": "52万円"
+      },
+      "workStyle": {
+        "hoursPerDay": "3-4時間",
+        "daysPerWeek": "週5日",
+        "timeSlot": "ゴールデンタイム中心"
+      },
+      "keyFactors": [
+        "接客経験を活かしたトーク",
+        "S帯ランカーに成長",
+        "イベント入賞で報酬UP"
+      ],
+      "quote": "アパレル時代より収入2倍で、自由な時間も増えた"
+    },
+    {
+      "id": "liver-006",
+      "persona": "40代・シングルマザー",
+      "platform": "17LIVE",
+      "period": "1年",
+      "results": {
+        "initialMonth": "5万円",
+        "thirdMonth": "20万円",
+        "peakMonth": "38万円"
+      },
+      "workStyle": {
+        "hoursPerDay": "2時間",
+        "daysPerWeek": "週4日",
+        "timeSlot": "子供の就寝後"
+      },
+      "keyFactors": [
+        "大人の落ち着きが人気",
+        "認証ライバーに昇格",
+        "ロイヤリティ40%達成"
+      ],
+      "quote": "40代でも全然遅くない。むしろ落ち着いた配信が求められてる"
+    },
+    {
+      "id": "liver-007",
+      "persona": "20代・会社員副業",
+      "platform": "IRIAM",
+      "period": "6ヶ月",
+      "results": {
+        "initialMonth": "6万円",
+        "thirdMonth": "20万円",
+        "peakMonth": "30万円"
+      },
+      "workStyle": {
+        "hoursPerDay": "1-2時間",
+        "daysPerWeek": "週4日",
+        "timeSlot": "平日夜・週末"
+      },
+      "keyFactors": [
+        "本業バレなしで副業",
+        "時間ダイヤ最大2,300円",
+        "Vライバーとして活躍"
+      ],
+      "quote": "会社にバレずに月収プラス15万円。ボーナス感覚で最高"
+    },
+    {
+      "id": "liver-008",
+      "persona": "30代・元看護師",
+      "platform": "Pococha",
+      "period": "4ヶ月",
+      "results": {
+        "initialMonth": "8万円",
+        "thirdMonth": "25万円",
+        "peakMonth": "42万円"
+      },
+      "workStyle": {
+        "hoursPerDay": "2-3時間",
+        "daysPerWeek": "週4日",
+        "timeSlot": "夜勤明けや休日"
+      },
+      "keyFactors": [
+        "聞き上手スキルを活用",
+        "癒し系配信で人気",
+        "ファンとの距離感が絶妙"
+      ],
+      "quote": "夜勤のストレスから解放されて、収入も上がった"
+    }
+  ],
+  "statistics": {
+    "averageMonthlyIncome": {
+      "beginners1Month": "5-10万円",
+      "after3Months": "15-25万円",
+      "after6Months": "20-40万円",
+      "top10Percent": "50-100万円以上"
+    },
+    "successRateFactors": {
+      "regularSchedule": "配信時間を固定した人の80%が3ヶ月以内に月10万円達成",
+      "age30sPlus": "30代以上でも月20万円以上稼ぐ人が多数",
+      "vtuberStyle": "顔出しなしVライバーの約60%が月15万円以上",
+      "continuationRate": "6ヶ月継続した人の平均月収は初月の3倍以上"
+    },
+    "platformFeatures": {
+      "Pococha": "時給制で安定、初心者にオススメ",
+      "17LIVE": "アーミー・ガーディアンで固定収入",
+      "IRIAM": "顔出し不要、Vライバー特化",
+      "REALITY": "初期費用ゼロ、3Dアバター"
+    }
+  },
+  "commonSuccessPatterns": [
+    {
+      "pattern": "時給安定型",
+      "description": "Pocochaの時間ダイヤを活用して安定収入を確保",
+      "suitableFor": "初心者・副業"
+    },
+    {
+      "pattern": "Vライバー型",
+      "description": "IRIAM/REALITYで顔出しなしで配信",
+      "suitableFor": "プライバシー重視・学生"
+    },
+    {
+      "pattern": "ファンコミュニティ型",
+      "description": "17LIVEのアーミー制度で固定ファンを育成",
+      "suitableFor": "コミュニケーション好き"
+    },
+    {
+      "pattern": "イベント攻略型",
+      "description": "各プラットフォームのイベントに集中して報酬UP",
+      "suitableFor": "経験者・本気で稼ぎたい人"
+    }
+  ]
+}

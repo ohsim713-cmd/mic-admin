@@ -542,8 +542,8 @@ export default function ApprovalPage() {
               style={{
                 padding: '1rem',
                 borderLeft: `3px solid ${candidate.status === 'scheduled' ? '#4ade80' :
-                    candidate.status === 'rejected' ? '#ef4444' :
-                      '#fbbf24'
+                  candidate.status === 'rejected' ? '#ef4444' :
+                    '#fbbf24'
                   }`,
                 opacity: candidate.status === 'rejected' ? 0.6 : 1,
                 display: 'flex',
@@ -554,11 +554,13 @@ export default function ApprovalPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <span style={{
-                    padding: '0.15rem 0.5rem',
-                    borderRadius: '12px',
-                    background: 'rgba(59, 130, 246, 0.3)',
-                    fontSize: '0.7rem',
+                    padding: '0.15rem 0.6rem',
+                    borderRadius: '6px',
+                    background: 'rgba(139, 92, 246, 0.2)',
+                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                    fontSize: '0.75rem',
                     fontWeight: 'bold',
+                    color: '#a78bfa'
                   }}>
                     {candidate.theme}
                   </span>

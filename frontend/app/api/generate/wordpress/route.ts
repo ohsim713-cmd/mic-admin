@@ -1,6 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import fs from "fs";
-import path from "path";
+import {
+    buildEnrichedKnowledgeContext,
+    buildChatladyKnowledgeContext,
+} from "@/lib/langgraph/knowledge-loader";
 
 const apiKey = process.env.GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(apiKey);
@@ -15,27 +17,15 @@ export async function POST(request: Request) {
             }), { status: 400 });
         }
 
-        const knowledgeBaseDir = path.join(process.cwd(), "..", "knowledge");
-
-        // ビジネスタイプ別の知識の読み取り
-        const internalDataFile = businessType === 'liver-agency'
-            ? 'liver_agency_internal_data.txt'
-            : 'chat_lady_internal_data.txt';
-
-        let internalData = "";
-        try {
-            internalData = fs.readFileSync(path.join(knowledgeBaseDir, internalDataFile), "utf-8");
-        } catch (e) {
-            // フォールバック: 古いファイルを試す
-            try {
-                internalData = fs.readFileSync(path.join(knowledgeBaseDir, "internal_data.txt"), "utf-8");
-            } catch (e2) { }
-        }
+        // ビジネスタイプに応じたナレッジコンテキストを取得
+        const knowledgeContext = businessType === 'liver-agency'
+            ? await buildEnrichedKnowledgeContext()
+            : await buildChatladyKnowledgeContext();
 
         // ビジネスタイプに応じた用語設定
         const businessLabel = businessType === 'liver-agency' ? 'ライバー事務所' : 'チャットレディ事務所';
 
-        const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
         const prompt = `
 あなたは${businessLabel}の代表で、プロのコンテンツライターです。
@@ -47,8 +37,8 @@ ${keywords ? `キーワード: ${keywords}` : ""}
 目標文字数: ${targetLength || "2000-3000"}文字
 トーン: ${tone || "親しみやすく、専門的"}
 
-### 事務所の知識
-${internalData}
+### 事務所の知識・業界情報
+${knowledgeContext}
 
 ### 執筆ルール
 1. **構成**:

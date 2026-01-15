@@ -16,36 +16,61 @@ export const TARGETS = [
   '在宅ワーク希望',
 ] as const;
 
-// メリット（メイン軸として使用 - 1日15投稿で重複なし）
+// メリット（メイン軸として使用 - 多様なテーマで投稿）
 export const BENEFITS = [
   // 収入系
   '月30万以上可能',
   '初月から稼げる',
-  '時給換算1万円超え',
+  '時給換算高い',
   '日払い対応',
-  'ボーナス制度あり',
   // 働き方系
   'スマホ1台でOK',
   '完全在宅',
-  'ノルマなし',
   '好きな時間に働ける',
-  'シフト自由',
+  '人間関係ストレスなし',
   // サポート系
   'サポート充実',
   '未経験でも安心',
   '顔出しなしOK',
   '機材無料貸出',
-  'マンツーマン指導',
+  // ライフスタイル系
+  '子育てと両立',
+  '本業との両立',
+  '自分のペースで',
+  // 成長・やりがい系
+  'ファンができる喜び',
+  'コミュニケーション力UP',
+  '自己表現の場',
+  // 不安解消系
+  '身バレ対策万全',
+  '初めてでも大丈夫',
+  '辞めたい時に辞められる',
+  // 具体的シーン系
+  '子供が寝た後に',
+  '通勤時間ゼロ',
+  'パート代わりに',
 ] as const;
 
-// 品質スコアの詳細
+// 品質スコアの詳細（15点満点に拡張）
 export interface QualityScore {
-  empathy: number;      // 共感 (0-3)
-  benefit: number;      // メリット (0-2)
-  cta: number;          // CTA (0-2)
+  // 既存項目（10点）
+  empathy: number;      // 共感・本音感 (0-3)
+  benefit: number;      // メリット提示 (0-2)
+  cta: number;          // 行動喚起 (0-2)
   credibility: number;  // 信頼性 (0-2)
   urgency: number;      // 緊急性 (0-1)
-  total: number;        // 合計 (0-10)
+
+  // 新規項目（5点）- LLM as a Judge 強化
+  originality: number;  // 独自性・差別化 (0-2)
+  engagement: number;   // エンゲージメント予測 (0-2)
+  scrollStop: number;   // スクロール停止力 (0-1)
+
+  // 合計
+  total: number;        // 合計 (0-15)
+
+  // 詳細フィードバック
+  strengths?: string[];   // 良い点（最大3つ）
+  weaknesses?: string[];  // 改善点（最大3つ）
 }
 
 // 生成された投稿
@@ -103,7 +128,7 @@ export const PostGeneratorState = Annotation.Root({
     default: () => '',
   }),
 
-  // 品質スコア
+  // 品質スコア（15点満点）
   score: Annotation<QualityScore>({
     reducer: (_, y) => y,
     default: () => ({
@@ -112,7 +137,12 @@ export const PostGeneratorState = Annotation.Root({
       cta: 0,
       credibility: 0,
       urgency: 0,
+      originality: 0,
+      engagement: 0,
+      scrollStop: 0,
       total: 0,
+      strengths: [],
+      weaknesses: [],
     }),
   }),
 

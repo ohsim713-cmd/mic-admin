@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         post,
-        remainingStock: status.counts[account as AccountType],
+        remainingStock: status.counts[account as 'liver' | 'chatre1' | 'chatre2'],
       });
     }
 
