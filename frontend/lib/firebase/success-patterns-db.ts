@@ -269,7 +269,7 @@ export async function getDBStats(): Promise<{
 
   const byCategory: Record<string, number> = {};
   let totalScore = 0;
-  let lastUpdated = new Date(0).toISOString();
+  let lastUpdated: string = new Date(0).toISOString();
 
   for (const doc of snapshot.docs) {
     const data = doc.data() as SuccessPatternDoc;

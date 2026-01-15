@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+// import KnowledgeCoverage from '../components/KnowledgeCoverage';
 
 // アカウント情報
 const ACCOUNTS = [
@@ -91,6 +92,29 @@ interface DBStats {
   };
 }
 
+// アカウント別統計の型定義
+interface AccountStats {
+  info: { name: string; type: string; twitter: string };
+  posts: {
+    total: number;
+    pending: number;
+    approved: number;
+    posted: number;
+  };
+  stock: {
+    total: number;
+    unused: number;
+    used: number;
+  };
+  scoreAnalysis: {
+    avg: number;
+    min: number;
+    max: number;
+    distribution: { excellent: number; good: number; average: number; poor: number };
+  };
+  weaknesses: Array<{ point: string; count: number }>;
+}
+
 export default function DashboardPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedAccount, setSelectedAccount] = useState<string | null>('liver');
@@ -122,6 +146,10 @@ export default function DashboardPage() {
 
   // DB統計
   const [dbStats, setDbStats] = useState<DBStats | null>(null);
+
+  // アカウント別統計
+  const [accountAnalytics, setAccountAnalytics] = useState<Record<string, AccountStats>>({});
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   // 次の投稿予定（直近3件）
   const [upcomingPosts, setUpcomingPosts] = useState<GeneratedPost[]>([]);
@@ -171,6 +199,7 @@ export default function DashboardPage() {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000);
     loadDBStats();
     loadUpcomingPosts();
+    loadAccountAnalytics();
     return () => clearInterval(interval);
   }, []);
 
@@ -204,6 +233,22 @@ export default function DashboardPage() {
       }
     } catch (e) {
       console.error('DB統計取得エラー:', e);
+    }
+  };
+
+  // アカウント別統計を読み込み
+  const loadAccountAnalytics = async () => {
+    setAnalyticsLoading(true);
+    try {
+      const res = await fetch('/api/analytics/account');
+      if (res.ok) {
+        const data = await res.json();
+        setAccountAnalytics(data.accounts || {});
+      }
+    } catch (e) {
+      console.error('アカウント統計取得エラー:', e);
+    } finally {
+      setAnalyticsLoading(false);
     }
   };
 
@@ -707,6 +752,7 @@ export default function DashboardPage() {
             const isSelected = selectedAccount === acc.id;
             const mode = accountModes[acc.id] || 'manual';
             const isAuto = mode === 'auto';
+            const stats = accountAnalytics[acc.id];
 
             return (
               <div
@@ -733,6 +779,67 @@ export default function DashboardPage() {
                     <span key={p} className="platform-badge">{p}</span>
                   ))}
                 </div>
+
+                {/* アカウント統計情報 */}
+                {stats && (
+                  <div className="account-stats">
+                    <div className="stats-row">
+                      <div className="stat-item">
+                        <span className="stat-value">{stats.posts.total}</span>
+                        <span className="stat-label">投稿</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-value" style={{ color: '#10b981' }}>{stats.posts.pending}</span>
+                        <span className="stat-label">待機</span>
+                      </div>
+                      <div className="stat-item">
+                        <span className="stat-value" style={{ color: '#3b82f6' }}>{stats.posts.posted}</span>
+                        <span className="stat-label">済</span>
+                      </div>
+                    </div>
+                    <div className="stats-row">
+                      <div className="stat-item wide">
+                        <span className="stat-label">平均スコア</span>
+                        <span className={`stat-score ${stats.scoreAnalysis.avg >= 10 ? 'high' : stats.scoreAnalysis.avg >= 8 ? 'mid' : 'low'}`}>
+                          {stats.scoreAnalysis.avg.toFixed(1)}
+                        </span>
+                      </div>
+                      <div className="stat-item wide">
+                        <span className="stat-label">ストック</span>
+                        <span className="stat-value">{stats.stock.unused}</span>
+                      </div>
+                    </div>
+                    {/* スコア分布バー */}
+                    <div className="score-distribution-mini">
+                      <div
+                        className="dist-bar excellent"
+                        style={{ width: `${Math.max(5, (stats.scoreAnalysis.distribution.excellent / Math.max(1, stats.posts.total)) * 100)}%` }}
+                        title={`優秀: ${stats.scoreAnalysis.distribution.excellent}`}
+                      />
+                      <div
+                        className="dist-bar good"
+                        style={{ width: `${Math.max(5, (stats.scoreAnalysis.distribution.good / Math.max(1, stats.posts.total)) * 100)}%` }}
+                        title={`良好: ${stats.scoreAnalysis.distribution.good}`}
+                      />
+                      <div
+                        className="dist-bar average"
+                        style={{ width: `${Math.max(5, (stats.scoreAnalysis.distribution.average / Math.max(1, stats.posts.total)) * 100)}%` }}
+                        title={`普通: ${stats.scoreAnalysis.distribution.average}`}
+                      />
+                      <div
+                        className="dist-bar poor"
+                        style={{ width: `${Math.max(5, (stats.scoreAnalysis.distribution.poor / Math.max(1, stats.posts.total)) * 100)}%` }}
+                        title={`要改善: ${stats.scoreAnalysis.distribution.poor}`}
+                      />
+                    </div>
+                  </div>
+                )}
+                {analyticsLoading && !stats && (
+                  <div className="account-stats loading">
+                    <span className="loading-text">読み込み中...</span>
+                  </div>
+                )}
+
                 {isAuto && (
                   <div className="auto-badge">
                     <span className="auto-dot" />
@@ -1078,6 +1185,12 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      {/* ナレッジカバレッジ - 一時的に無効化
+      <section className="section knowledge-section">
+        <KnowledgeCoverage />
+      </section>
+      */}
+
       <style jsx>{`
         .dashboard {
           padding: 1rem;
@@ -1166,7 +1279,7 @@ export default function DashboardPage() {
 
         .account-card {
           flex: 0 0 auto;
-          min-width: 120px;
+          min-width: 160px;
           padding: 0.75rem;
           background: rgba(255,255,255,0.03);
           border: 2px solid transparent;
@@ -1222,6 +1335,100 @@ export default function DashboardPage() {
           border: 2px dashed rgba(255,255,255,0.2);
           color: rgba(255,255,255,0.4);
           font-size: 0.85rem;
+        }
+
+        /* アカウント統計スタイル */
+        .account-stats {
+          margin-top: 0.75rem;
+          padding-top: 0.75rem;
+          border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .account-stats.loading {
+          text-align: center;
+          padding: 0.5rem 0;
+        }
+
+        .loading-text {
+          font-size: 0.65rem;
+          color: rgba(255,255,255,0.4);
+        }
+
+        .stats-row {
+          display: flex;
+          justify-content: space-between;
+          gap: 0.25rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .stat-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          flex: 1;
+        }
+
+        .stat-item.wide {
+          flex-direction: row;
+          justify-content: space-between;
+          gap: 0.25rem;
+        }
+
+        .stat-value {
+          font-size: 0.9rem;
+          font-weight: 700;
+          color: rgba(255,255,255,0.9);
+        }
+
+        .stat-label {
+          font-size: 0.55rem;
+          color: rgba(255,255,255,0.4);
+          text-transform: uppercase;
+        }
+
+        .stat-score {
+          font-size: 0.85rem;
+          font-weight: 700;
+        }
+
+        .stat-score.high {
+          color: #10b981;
+        }
+
+        .stat-score.mid {
+          color: #f59e0b;
+        }
+
+        .stat-score.low {
+          color: #ef4444;
+        }
+
+        .score-distribution-mini {
+          display: flex;
+          height: 4px;
+          border-radius: 2px;
+          overflow: hidden;
+          gap: 1px;
+        }
+
+        .dist-bar {
+          transition: width 0.3s ease;
+        }
+
+        .dist-bar.excellent {
+          background: linear-gradient(90deg, #10b981, #059669);
+        }
+
+        .dist-bar.good {
+          background: linear-gradient(90deg, #3b82f6, #2563eb);
+        }
+
+        .dist-bar.average {
+          background: linear-gradient(90deg, #f59e0b, #d97706);
+        }
+
+        .dist-bar.poor {
+          background: linear-gradient(90deg, #ef4444, #dc2626);
         }
 
         /* モード切替スイッチ */

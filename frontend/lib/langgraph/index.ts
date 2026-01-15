@@ -7,9 +7,8 @@ export { createPostGraph, runPostGraph, streamPostGraph } from './graph';
 export {
   generateSinglePost,
   generateMultiplePosts,
-  GenerationProgress,
-  ProgressCallback,
 } from './post-generator';
+export type { GenerationProgress, ProgressCallback } from './post-generator';
 
 export {
   generateSinglePostHybrid,

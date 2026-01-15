@@ -13,7 +13,7 @@ import {
   QualityScore,
   WorkflowStep,
 } from './state';
-import { getSuccessPatterns } from '../database/success-patterns';
+import { getSuccessPatterns } from '../database/success-patterns-db';
 import { getRandomHook, buildEnrichedKnowledgeContext, buildChatladyKnowledgeContext } from './knowledge-loader';
 import { initPhoenix, tracePostGeneration, recordQualityScore } from '../phoenix/client';
 

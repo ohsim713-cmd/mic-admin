@@ -1,5 +1,5 @@
 # Cloud Build 設定
-# GitHub から自動デプロイする場合に使用
+# 手動ビルド用（gcloud builds submit）
 
 steps:
   # Docker イメージをビルド
@@ -8,17 +8,10 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/mic-admin/app:$COMMIT_SHA'
-      - '-t'
       - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/mic-admin/app:latest'
       - '.'
 
   # Artifact Registry にプッシュ
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/mic-admin/app:$COMMIT_SHA'
-
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
@@ -32,7 +25,7 @@ steps:
       - 'deploy'
       - 'mic-admin'
       - '--image'
-      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/mic-admin/app:$COMMIT_SHA'
+      - 'asia-northeast1-docker.pkg.dev/$PROJECT_ID/mic-admin/app:latest'
       - '--region'
       - 'asia-northeast1'
       - '--platform'

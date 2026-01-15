@@ -68,6 +68,7 @@ function getTwitterClient(account: AccountType): TwitterApi | null {
       apiSecret = process.env.TWITTER_API_SECRET_TT_LIVER;
       accessToken = process.env.TWITTER_ACCESS_TOKEN_TT_LIVER;
       accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET_TT_LIVER;
+      console.log(`[Twitter] liver auth check - apiKey: ${apiKey ? apiKey.substring(0, 5) + '...' : 'NONE'}, accessToken: ${accessToken ? accessToken.substring(0, 10) + '...' : 'NONE'}`);
       break;
     case 'chatre1':
       apiKey = process.env.TWITTER_API_KEY_MIC_CHAT;
@@ -338,4 +339,111 @@ export async function checkWordPressStatus(): Promise<{
   } catch (error: any) {
     return { connected: false, error: error.message };
   }
+}
+
+// ========== エンゲージメント取得 ==========
+
+export interface TweetMetrics {
+  tweetId: string;
+  text: string;
+  createdAt: string;
+  metrics: {
+    impressions: number;
+    likes: number;
+    retweets: number;
+    replies: number;
+    quotes: number;
+    bookmarks: number;
+  };
+}
+
+/**
+ * 指定アカウントの最近のツイートのエンゲージメントを取得
+ */
+export async function getTweetMetrics(
+  account: AccountType,
+  maxResults: number = 10
+): Promise<TweetMetrics[]> {
+  if (account === 'wordpress') {
+    return [];
+  }
+
+  try {
+    const client = getTwitterClient(account);
+    if (!client) {
+      console.error(`[Metrics] ${account}: 認証情報なし`);
+      return [];
+    }
+
+    // 自分のユーザーIDを取得
+    const me = await client.v2.me();
+    const userId = me.data.id;
+
+    // 最近のツイートを取得（メトリクス付き）
+    const tweets = await client.v2.userTimeline(userId, {
+      max_results: maxResults,
+      'tweet.fields': ['created_at', 'public_metrics', 'non_public_metrics', 'organic_metrics'],
+    });
+
+    const results: TweetMetrics[] = [];
+
+    for (const tweet of tweets.data?.data || []) {
+      // public_metricsは常に取得可能
+      const publicMetrics: Record<string, number> = (tweet.public_metrics || {}) as Record<string, number>;
+      // non_public_metricsはツイート作成者のみ取得可能（impressions含む）
+      const nonPublicMetrics: Record<string, number> = ((tweet as any).non_public_metrics || {}) as Record<string, number>;
+
+      results.push({
+        tweetId: tweet.id,
+        text: tweet.text,
+        createdAt: tweet.created_at || '',
+        metrics: {
+          impressions: nonPublicMetrics['impression_count'] || 0,
+          likes: publicMetrics['like_count'] || 0,
+          retweets: publicMetrics['retweet_count'] || 0,
+          replies: publicMetrics['reply_count'] || 0,
+          quotes: publicMetrics['quote_count'] || 0,
+          bookmarks: publicMetrics['bookmark_count'] || 0,
+        },
+      });
+    }
+
+    return results;
+  } catch (error: any) {
+    console.error(`[Metrics] ${account}: エラー -`, error.message);
+    return [];
+  }
+}
+
+/**
+ * 全アカウントのエンゲージメントを取得
+ */
+export async function getAllAccountsMetrics(
+  maxResults: number = 10
+): Promise<{ account: AccountType; metrics: TweetMetrics[] }[]> {
+  const twitterAccounts = ACCOUNTS.filter(a => a.platform === 'twitter');
+
+  const results = await Promise.all(
+    twitterAccounts.map(async (acc) => ({
+      account: acc.id,
+      metrics: await getTweetMetrics(acc.id, maxResults),
+    }))
+  );
+
+  return results;
+}
+
+/**
+ * エンゲージメント率を計算
+ */
+export function calculateEngagementRate(metrics: TweetMetrics): number {
+  if (metrics.metrics.impressions === 0) return 0;
+
+  const engagements =
+    metrics.metrics.likes +
+    metrics.metrics.retweets +
+    metrics.metrics.replies +
+    metrics.metrics.quotes;
+
+  return (engagements / metrics.metrics.impressions) * 100;
 }

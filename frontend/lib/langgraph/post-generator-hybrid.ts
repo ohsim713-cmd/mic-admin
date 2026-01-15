@@ -17,7 +17,7 @@ import {
   QualityScore,
   WorkflowStep,
 } from './state';
-import { getSuccessPatterns } from '../database/success-patterns';
+import { getSuccessPatterns } from '../database/success-patterns-db';
 import { getRandomHook, buildEnrichedKnowledgeContext, buildChatladyKnowledgeContext } from './knowledge-loader';
 import { sendClaudeMessage } from '../claude/client';
 

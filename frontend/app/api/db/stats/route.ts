@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { getStats as getPostsStats } from '../../../../lib/database/generated-posts';
-import { getDBStats as getPatternsStats } from '../../../../lib/database/success-patterns';
+import { getDBStats as getPatternsStats } from '../../../../lib/database/success-patterns-db';
 
 export async function GET() {
   try {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import Link from 'next/link';
 
 interface AccountStats {
@@ -96,7 +96,7 @@ export default function AccountAnalyticsPage() {
     return 'text-red-600';
   }
 
-  function getDistributionBar(value: number, total: number, color: string): JSX.Element {
+  function getDistributionBar(value: number, total: number, color: string): ReactNode {
     const percentage = total > 0 ? (value / total) * 100 : 0;
     return (
       <div className="flex items-center gap-2">

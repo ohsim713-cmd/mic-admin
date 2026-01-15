@@ -13,7 +13,12 @@
       "Bash(git push:*)",
       "Bash(powershell -Command \"Invoke-WebRequest -Uri ''http://localhost:3000/api/dm-hunter/stock'' -Method POST -ContentType ''application/json'' -Body ''{\"\"action\"\": \"\"refill\"\", \"\"account\"\": \"\"liver\"\"}'' -UseBasicParsing | Select-Object -ExpandProperty Content\")",
       "Bash(powershell -Command \"Invoke-WebRequest -Uri ''http://localhost:3000/api/dm-hunter/stock?view=details&account=liver'' -UseBasicParsing | Select-Object -ExpandProperty Content\")",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(vercel --version:*)",
+      "Bash(vercel env:*)",
+      "Bash(npx tsc:*)",
+      "Bash(dir \"c:\\\\Users\\\\user\\\\.gemini\\\\antigravity\\\\playground\\\\charged-tyson\\\\frontend\\\\knowledge\" /b)",
+      "Bash(timeout /t 3 /nobreak)"
     ]
   }
 }

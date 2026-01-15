@@ -3,7 +3,7 @@ import {
   getTodaySchedule,
   getWeeklyStats,
   getMonthlyStats,
-} from '@/lib/automation/schedule-db';
+} from '@/lib/database/schedule-db';
 import { getStockStatus } from '@/lib/dm-hunter/post-stock';
 import { TARGETS, POSTING_SCHEDULE } from '@/lib/automation/scheduler';
 import { ACCOUNTS } from '@/lib/dm-hunter/sns-adapter';

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { TwitterApi } from 'twitter-api-v2';
 import { AccountType, ACCOUNTS } from '@/lib/dm-hunter/sns-adapter';
-import { updateImpressions, getRecentSchedules } from '@/lib/automation/schedule-db';
+import { updateImpressions, getRecentSchedules } from '@/lib/database/schedule-db';
 
 // Twitter クライアントを取得
 function getTwitterClient(account: AccountType): TwitterApi | null {

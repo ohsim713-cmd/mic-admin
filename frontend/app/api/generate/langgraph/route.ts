@@ -11,7 +11,7 @@ import {
   GenerationProgress,
 } from '../../../../lib/langgraph/post-generator';
 import { addPosts } from '../../../../lib/database/generated-posts';
-import { learnFromPost } from '../../../../lib/database/success-patterns';
+import { learnFromPost } from '../../../../lib/database/success-patterns-db';
 import { ACCOUNTS } from '../../../../lib/dm-hunter/sns-adapter';
 
 export const runtime = 'nodejs';
