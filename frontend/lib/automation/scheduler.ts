@@ -1,41 +1,42 @@
 /**
  * 完全自動化スケジューラー
- * 目標: 1日45投稿（3アカウント×15回）、平均インプレッション1000、月9件DM
+ * 目標: 1日15投稿、平均インプレッション1000、月3件DM
  *
- * スケジュール:
- * - @tt_liver (ライバー事務所) × 15回/日
- * - @mic_chat_ (チャトレ事務所①) × 15回/日
- * - @ms_stripchat (チャトレ事務所②) × 15回/日
+ * スケジュール: @tt_liver × 15回/日
+ *
+ * チャトレアカウントは後で有効化:
+ * - @mic_chat_ (チャトレ事務所①)
+ * - @ms_stripchat (チャトレ事務所②)
  */
 
 import { AccountType, ACCOUNTS } from '../dm-hunter/sns-adapter';
 
-// 全アカウント
-const ALL_ACCOUNTS: AccountType[] = ['liver', 'chatre1', 'chatre2'];
+// アクティブアカウント（@tt_liverのみ稼働中）
+// チャトレアカウントを有効化するには: ['liver', 'chatre1', 'chatre2']
+const ACTIVE_ACCOUNTS: AccountType[] = ['liver'];
 
 // 投稿スケジュール（JST）
-// 3アカウント同時投稿
 export const POSTING_SCHEDULE = {
   slots: [
-    { time: '07:00', label: '早朝', accounts: ALL_ACCOUNTS },
-    { time: '08:00', label: '朝活層', accounts: ALL_ACCOUNTS },
-    { time: '09:00', label: '通勤時間', accounts: ALL_ACCOUNTS },
-    { time: '10:00', label: '午前', accounts: ALL_ACCOUNTS },
-    { time: '11:00', label: '昼前', accounts: ALL_ACCOUNTS },
-    { time: '12:00', label: '昼休み', accounts: ALL_ACCOUNTS },
-    { time: '13:00', label: '午後', accounts: ALL_ACCOUNTS },
-    { time: '14:00', label: '午後2', accounts: ALL_ACCOUNTS },
-    { time: '15:00', label: 'おやつ時', accounts: ALL_ACCOUNTS },
-    { time: '16:00', label: '夕方前', accounts: ALL_ACCOUNTS },
-    { time: '17:00', label: '退勤前', accounts: ALL_ACCOUNTS },
-    { time: '18:00', label: '退勤時間', accounts: ALL_ACCOUNTS },
-    { time: '20:00', label: '夜', accounts: ALL_ACCOUNTS },
-    { time: '22:00', label: 'ゴールデンタイム', accounts: ALL_ACCOUNTS },
-    { time: '23:00', label: '夜更かし層', accounts: ALL_ACCOUNTS },
+    { time: '07:00', label: '早朝', accounts: ACTIVE_ACCOUNTS },
+    { time: '08:00', label: '朝活層', accounts: ACTIVE_ACCOUNTS },
+    { time: '09:00', label: '通勤時間', accounts: ACTIVE_ACCOUNTS },
+    { time: '10:00', label: '午前', accounts: ACTIVE_ACCOUNTS },
+    { time: '11:00', label: '昼前', accounts: ACTIVE_ACCOUNTS },
+    { time: '12:00', label: '昼休み', accounts: ACTIVE_ACCOUNTS },
+    { time: '13:00', label: '午後', accounts: ACTIVE_ACCOUNTS },
+    { time: '14:00', label: '午後2', accounts: ACTIVE_ACCOUNTS },
+    { time: '15:00', label: 'おやつ時', accounts: ACTIVE_ACCOUNTS },
+    { time: '16:00', label: '夕方前', accounts: ACTIVE_ACCOUNTS },
+    { time: '17:00', label: '退勤前', accounts: ACTIVE_ACCOUNTS },
+    { time: '18:00', label: '退勤時間', accounts: ACTIVE_ACCOUNTS },
+    { time: '20:00', label: '夜', accounts: ACTIVE_ACCOUNTS },
+    { time: '22:00', label: 'ゴールデンタイム', accounts: ACTIVE_ACCOUNTS },
+    { time: '23:00', label: '夜更かし層', accounts: ACTIVE_ACCOUNTS },
   ],
 
-  // 合計: 15スロット × 3アカウント = 45投稿/日
-  totalPostsPerDay: 45,
+  // 合計: 15スロット × 1アカウント = 15投稿/日
+  totalPostsPerDay: 15,
   postsPerAccount: 15,
 };
 
