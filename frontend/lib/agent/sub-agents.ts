@@ -12,11 +12,20 @@
  */
 
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import Anthropic from '@anthropic-ai/sdk';
 import fs from 'fs';
 import path from 'path';
 
-const apiKey = process.env.GEMINI_API_KEY || '';
-const genAI = new GoogleGenerativeAI(apiKey);
+const geminiApiKey = process.env.GEMINI_API_KEY || '';
+const genAI = new GoogleGenerativeAI(geminiApiKey);
+
+// Claude Haiku用クライアント
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY || '',
+});
+
+// サブエージェントに使用するモデル（Geminiが不安定な場合はClaudeを使用）
+const USE_CLAUDE_FOR_AGENTS = true; // trueでClaude Haiku、falseでGemini
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const KNOWLEDGE_DIR = path.join(process.cwd(), 'knowledge');
@@ -1186,15 +1195,43 @@ async function runAgent(
 ): Promise<TaskResult> {
   const startTime = Date.now();
 
+  const systemPrompt = `${agent.directive}\n\nあなたの名前: ${agent.name}\n性格: ${agent.personality}`;
+  const prompt = context
+    ? `【コンテキスト】\n${context}\n\n【タスク】\n${task}`
+    : task;
+
+  // Claude Haikuを使用
+  if (USE_CLAUDE_FOR_AGENTS && process.env.ANTHROPIC_API_KEY) {
+    try {
+      const message = await anthropic.messages.create({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 2048,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: prompt }],
+      });
+
+      const response = message.content[0].type === 'text'
+        ? message.content[0].text
+        : '';
+
+      return {
+        agent: agent.id,
+        success: true,
+        output: response,
+        duration: Date.now() - startTime,
+      };
+    } catch (e: any) {
+      console.error(`[${agent.id}] Claude error:`, e.message);
+      // Claudeが失敗したらGeminiにフォールバック
+    }
+  }
+
+  // Geminiを使用（フォールバック）
   try {
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.0-flash',
-      systemInstruction: `${agent.directive}\n\nあなたの名前: ${agent.name}\n性格: ${agent.personality}`,
+      systemInstruction: systemPrompt,
     });
-
-    const prompt = context
-      ? `【コンテキスト】\n${context}\n\n【タスク】\n${task}`
-      : task;
 
     const result = await model.generateContent(prompt);
     const response = result.response.text();
@@ -2067,10 +2104,7 @@ ${JSON.stringify(incomingBaton.insights, null, 2)}
 `;
   }
 
-  try {
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
-      systemInstruction: `${agent.directive}
+  const systemPrompt = `${agent.directive}
 
 あなたの名前: ${agent.name}
 性格: ${agent.personality}
@@ -2078,12 +2112,67 @@ ${JSON.stringify(incomingBaton.insights, null, 2)}
 【重要】あなたの出力は次のエージェントに「バトン」として渡されます。
 - JSON形式で構造化されたデータを出力してください
 - 次のエージェントが使いやすいように情報を整理してください
-- 曖昧な表現を避け、具体的に書いてください`,
-    });
+- 曖昧な表現を避け、具体的に書いてください`;
 
-    const prompt = batonContext
-      ? `${batonContext}\n\n【あなたへのタスク】\n${task}`
-      : task;
+  const prompt = batonContext
+    ? `${batonContext}\n\n【あなたへのタスク】\n${task}`
+    : task;
+
+  // Claude Haikuを使用
+  if (USE_CLAUDE_FOR_AGENTS && process.env.ANTHROPIC_API_KEY) {
+    try {
+      const message = await anthropic.messages.create({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 2048,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: prompt }],
+      });
+
+      const response = message.content[0].type === 'text'
+        ? message.content[0].text
+        : '';
+
+      // レスポンスからJSON部分を抽出
+      let insights: Record<string, any> = {};
+      try {
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          insights = JSON.parse(jsonMatch[0]);
+        }
+      } catch (e) {
+        insights = { rawText: response };
+      }
+
+      const baton: BatonData = {
+        phase: task.slice(0, 50),
+        timestamp: new Date().toISOString(),
+        fromAgent: agent.id,
+        insights,
+        rawOutput: response,
+      };
+
+      return {
+        result: {
+          agent: agent.id,
+          success: true,
+          output: response,
+          data: insights,
+          duration: Date.now() - startTime,
+        },
+        baton,
+      };
+    } catch (e: any) {
+      console.error(`[${agent.id}] Claude baton error:`, e.message);
+      // Claudeが失敗したらGeminiにフォールバック
+    }
+  }
+
+  // Geminiを使用（フォールバック）
+  try {
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash',
+      systemInstruction: systemPrompt,
+    });
 
     const result = await model.generateContent(prompt);
     const response = result.response.text();
