@@ -222,7 +222,7 @@ export default function OrganizationDashboard() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen w-full bg-stone-50 flex items-center justify-center">
+      <div className="min-h-screen w-full bg-stone-50 flex items-center justify-center md:ml-[280px]">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
           <p className="text-stone-500 text-sm">読み込み中...</p>
@@ -232,7 +232,7 @@ export default function OrganizationDashboard() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-stone-50 text-stone-800 flex flex-col">
+    <div className="min-h-screen w-full bg-stone-50 text-stone-800 flex flex-col md:ml-[280px]">
       {/* Header */}
       <header className="bg-white border-b border-stone-200 px-6 py-4">
         <div className="flex items-center justify-between">
