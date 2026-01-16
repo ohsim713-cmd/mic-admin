@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { learnFromPost } from '@/lib/database/success-patterns-db';
 
 const POSTS_HISTORY_FILE = path.join(process.cwd(), 'knowledge', 'posts_history.json');
 const PAST_POSTS_FILE = path.join(process.cwd(), 'knowledge', 'past_posts.txt');
@@ -176,14 +177,28 @@ JSON形式で以下のように回答してください:
         // 優秀な投稿をpast_posts.txtに追加
         appendToPastPosts(excellentPosts);
 
-        console.log('AI learning completed:', learningLog);
+        // 成功パターンDBに学習（高インプレッション投稿からパターンを抽出）
+        let dbLearnedCount = 0;
+        for (const post of excellentPosts) {
+          try {
+            // インプレッションに基づいてスコアを計算（8.0〜9.5の範囲）
+            const impScore = Math.min(9.5, 8.0 + ((post.impressions || 0) / avgImpressions - 1) * 0.5);
+            await learnFromPost(post.text, impScore, false);
+            dbLearnedCount++;
+          } catch (e) {
+            console.error('Failed to learn pattern from post:', e);
+          }
+        }
+
+        console.log('AI learning completed:', { ...learningLog, dbLearnedCount });
 
         return NextResponse.json({
             success: true,
             message: 'AI学習が完了しました',
             learningLog,
             avgImpressions: Math.round(avgImpressions),
-            excellentPostsCount: excellentPosts.length
+            excellentPostsCount: excellentPosts.length,
+            dbLearnedCount,
         });
     } catch (error) {
         console.error('Failed to run AI learning:', error);

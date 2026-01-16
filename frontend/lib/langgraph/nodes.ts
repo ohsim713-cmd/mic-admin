@@ -219,23 +219,45 @@ export async function postToXNode(state: PostState): Promise<Partial<PostState>>
     }
   }
 
-  try {
-    // 認証情報読み込み
-    if (!fs.existsSync(SETTINGS_FILE)) {
-      throw new Error('Twitter credentials not found');
-    }
+  // 認証情報読み込み（環境変数優先）
+  function loadCredentials(account: string = 'liver') {
+    const accountMap: Record<string, string> = {
+      'liver': 'TT_LIVER',
+      'chatre1': 'MIC_CHAT',
+      'chatre2': 'MS_STRIPCHAT',
+    };
+    const envSuffix = accountMap[account] || 'TT_LIVER';
 
-    const data = fs.readFileSync(SETTINGS_FILE, 'utf-8');
-    const parsed = JSON.parse(data);
-    const credentials = {
-      apiKey: parsed.apiKey ? decrypt(parsed.apiKey) : '',
-      apiSecret: parsed.apiSecret ? decrypt(parsed.apiSecret) : '',
-      accessToken: parsed.accessToken ? decrypt(parsed.accessToken) : '',
-      accessSecret: parsed.accessSecret ? decrypt(parsed.accessSecret) : '',
+    const envCredentials = {
+      apiKey: process.env[`TWITTER_API_KEY_${envSuffix}`] || '',
+      apiSecret: process.env[`TWITTER_API_SECRET_${envSuffix}`] || '',
+      accessToken: process.env[`TWITTER_ACCESS_TOKEN_${envSuffix}`] || '',
+      accessSecret: process.env[`TWITTER_ACCESS_TOKEN_SECRET_${envSuffix}`] || '',
     };
 
-    if (!credentials.apiKey || !credentials.accessToken) {
-      throw new Error('Twitter credentials incomplete');
+    if (envCredentials.apiKey && envCredentials.accessToken) {
+      return envCredentials;
+    }
+
+    // フォールバック: ファイルから
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const data = fs.readFileSync(SETTINGS_FILE, 'utf-8');
+      const parsed = JSON.parse(data);
+      return {
+        apiKey: parsed.apiKey ? decrypt(parsed.apiKey) : '',
+        apiSecret: parsed.apiSecret ? decrypt(parsed.apiSecret) : '',
+        accessToken: parsed.accessToken ? decrypt(parsed.accessToken) : '',
+        accessSecret: parsed.accessSecret ? decrypt(parsed.accessSecret) : '',
+      };
+    }
+    return null;
+  }
+
+  try {
+    const credentials = loadCredentials(state.account || 'liver');
+
+    if (!credentials || !credentials.apiKey || !credentials.accessToken) {
+      throw new Error('Twitter credentials not found or incomplete');
     }
 
     // 投稿

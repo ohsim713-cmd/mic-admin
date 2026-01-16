@@ -70,6 +70,69 @@ export async function getSuccessPatterns(
 }
 
 /**
+ * カテゴリ別に成功パターンを取得（重み付け選択用）
+ * スコアが高いパターンほど選ばれやすい
+ */
+export async function getWeightedPatternsByCategory(): Promise<{
+  hooks: Array<{ text: string; score: number }>;
+  ctas: Array<{ text: string; score: number }>;
+  benefits: Array<{ text: string; score: number }>;
+}> {
+  await ensureDefaultPatterns();
+
+  const { data, error } = await supabase
+    .from('success_patterns')
+    .select('text, target, score')
+    .gte('score', 7.5) // 7.5点以上のみ
+    .order('score', { ascending: false });
+
+  if (error || !data) {
+    return { hooks: [], ctas: [], benefits: [] };
+  }
+
+  const hooks: Array<{ text: string; score: number }> = [];
+  const ctas: Array<{ text: string; score: number }> = [];
+  const benefits: Array<{ text: string; score: number }> = [];
+
+  for (const row of data) {
+    const item = { text: row.text, score: row.score || 0 };
+    switch (row.target) {
+      case 'hook':
+        hooks.push(item);
+        break;
+      case 'cta':
+        ctas.push(item);
+        break;
+      case 'benefit':
+        benefits.push(item);
+        break;
+    }
+  }
+
+  return { hooks, ctas, benefits };
+}
+
+/**
+ * 重み付けでランダム選択
+ * スコアが高いほど選ばれやすい
+ */
+export function selectWeighted<T extends { score: number }>(items: T[]): T | null {
+  if (items.length === 0) return null;
+
+  // スコアを重みに変換（スコア7.5以上を想定、最小1）
+  const weights = items.map(item => Math.max(1, item.score - 6));
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+
+  let random = Math.random() * totalWeight;
+  for (let i = 0; i < items.length; i++) {
+    random -= weights[i];
+    if (random <= 0) return items[i];
+  }
+
+  return items[items.length - 1];
+}
+
+/**
  * 成功パターンの詳細を取得
  */
 export async function getPatternDetails(): Promise<SuccessPattern[]> {

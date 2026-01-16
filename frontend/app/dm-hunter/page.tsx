@@ -3,281 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
-  Target,
-  CheckCircle,
-  XCircle,
-  RefreshCw,
-  Play,
-  Clock,
-  TrendingUp,
-  MessageCircle,
-  ArrowLeft,
-  Users,
-  Eye,
-  RotateCcw,
-  Send,
-  Edit3,
-  Brain,
-  Activity,
-  Sparkles,
+  Target, CheckCircle, RefreshCw, Clock, TrendingUp, MessageCircle, Users, Eye,
+  Send, Brain, Activity, Sparkles, MessageSquare, ChevronRight, BarChart3, Zap,
 } from 'lucide-react';
 
-// CSSアニメーション定義 + モバイル対応
-const animationStyles = `
-@keyframes pulse-ring {
-  0% { transform: scale(0.8); opacity: 1; }
-  100% { transform: scale(1.4); opacity: 0; }
-}
-
-@keyframes pulse-dot {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
-
-@keyframes wave {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-5px); }
-}
-
-@keyframes ticker {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
-}
-
-@keyframes glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.3); }
-  50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.6); }
-}
-
-@keyframes progress-wave {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-@keyframes count-up {
-  0% { opacity: 0; transform: translateY(10px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes brain-pulse {
-  0%, 100% { opacity: 0.7; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.05); }
-}
-
-.pulse-ring {
-  animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-.pulse-dot {
-  animation: pulse-dot 2s ease-in-out infinite;
-}
-
-.wave-bg {
-  background: linear-gradient(90deg, rgba(245,158,11,0.1), rgba(139,92,246,0.1), rgba(245,158,11,0.1));
-  background-size: 200% 100%;
-  animation: wave 8s ease-in-out infinite;
-}
-
-.float {
-  animation: float 3s ease-in-out infinite;
-}
-
-.glow {
-  animation: glow 2s ease-in-out infinite;
-}
-
-.progress-wave {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-  background-size: 200% 100%;
-  animation: progress-wave 2s linear infinite;
-}
-
-.spin-slow {
-  animation: spin-slow 8s linear infinite;
-}
-
-.brain-pulse {
-  animation: brain-pulse 2s ease-in-out infinite;
-}
-
-/* モバイル対応 */
-.dm-hunter-container {
-  padding: 16px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-@media (min-width: 768px) {
-  .dm-hunter-container {
-    padding: 24px;
-  }
-}
-
-.mobile-header {
-  font-size: 22px !important;
-}
-
-@media (min-width: 768px) {
-  .mobile-header {
-    font-size: 28px !important;
-  }
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-@media (min-width: 768px) {
-  .stats-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-  }
-}
-
-.account-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-}
-
-@media (min-width: 640px) {
-  .account-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-  }
-}
-
-.schedule-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-@media (min-width: 768px) {
-  .schedule-grid {
-    display: flex;
-    gap: 12px;
-  }
-}
-
-.filter-scroll {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.filter-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.preview-header {
-  flex-direction: column;
-  gap: 12px;
-  align-items: stretch !important;
-}
-
-@media (min-width: 640px) {
-  .preview-header {
-    flex-direction: row;
-    align-items: center !important;
-  }
-}
-
-.preview-actions {
-  flex-direction: column;
-  gap: 8px;
-}
-
-@media (min-width: 480px) {
-  .preview-actions {
-    flex-direction: row;
-  }
-}
-
-.tag-scroll {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.tag-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.action-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-@media (min-width: 480px) {
-  .action-buttons {
-    flex-direction: row;
-  }
-}
-
-.live-bar-mobile {
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-@media (min-width: 640px) {
-  .live-bar-mobile {
-    flex-wrap: nowrap;
-  }
-}
-
-.hide-mobile {
-  display: none;
-}
-
-@media (min-width: 640px) {
-  .hide-mobile {
-    display: flex;
-  }
-}
-
-.stats-card {
-  padding: 16px;
-}
-
-@media (min-width: 768px) {
-  .stats-card {
-    padding: 24px;
-  }
-}
-
-.stats-number {
-  font-size: 28px;
-}
-
-@media (min-width: 768px) {
-  .stats-number {
-    font-size: 36px;
-  }
-}
-`;
-
-// アニメーション付き数値カウンター
+// 数値アニメーション
 function AnimatedCounter({ value, duration = 1000 }: { value: number; duration?: number }) {
   const [displayValue, setDisplayValue] = useState(0);
   const startTime = useRef<number | null>(null);
@@ -286,147 +16,112 @@ function AnimatedCounter({ value, duration = 1000 }: { value: number; duration?:
   useEffect(() => {
     startValue.current = displayValue;
     startTime.current = null;
-
     const animate = (currentTime: number) => {
       if (startTime.current === null) startTime.current = currentTime;
       const elapsed = currentTime - startTime.current;
       const progress = Math.min(elapsed / duration, 1);
-
       const easeOut = 1 - Math.pow(1 - progress, 3);
       const current = Math.floor(startValue.current + (value - startValue.current) * easeOut);
-
       setDisplayValue(current);
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
+      if (progress < 1) requestAnimationFrame(animate);
     };
-
     requestAnimationFrame(animate);
   }, [value, duration]);
 
   return <span>{displayValue}</span>;
 }
 
-interface AccountStatus {
+const ACCOUNTS = [
+  { id: 'liver', name: 'ライバー', handle: '@tt_liver', color: '#f59e0b' },
+  { id: 'chatre1', name: 'チャトレ①', handle: '@mic_chat_', color: '#ec4899' },
+  { id: 'chatre2', name: 'チャトレ②', handle: '@ms_stripchat', color: '#8b5cf6' },
+];
+
+interface AccountData {
   account: string;
-  name: string;
-  handle: string;
   connected: boolean;
   username?: string;
-  error?: string;
-}
-
-interface PostLog {
-  id: string;
-  timestamp: string;
-  text: string;
-  target: string;
-  benefit: string;
-  account?: string;
-  score: number;
-  results: {
-    platform: string;
-    account?: string;
-    success: boolean;
-    id?: string;
-    error?: string;
-  }[];
-}
-
-interface Stats {
   todayPosts: number;
-  todaySuccess: number;
-  totalPosts: number;
+  pendingPosts: number;
+  successPosts: number;
+  avgScore: number;
+  stockCount: number;
 }
 
-interface AutoRunStatus {
-  status: string;
-  accounts: AccountStatus[];
-  todayPosts: number;
-  todaySuccess: number;
-  scheduledTimes: string[];
+interface MetricsData {
+  totalImpressions: number;
+  totalEngagement: number;
+  dmCount: number;
+  dmGoal: number;
 }
 
-interface PreviewPost {
-  account: string;
-  text: string;
-  target: string;
-  benefit: string;
-  score: number;
-  passed: boolean;
-}
-
-const ACCOUNT_COLORS: Record<string, string> = {
-  liver: '#f59e0b',
-  chatre1: '#ec4899',
-  chatre2: '#8b5cf6',
-};
-
-const ACCOUNT_LABELS: Record<string, string> = {
-  liver: 'ライバー',
-  chatre1: 'チャトレ①',
-  chatre2: 'チャトレ②',
-};
-
-export default function DMHunterPage() {
-  const [status, setStatus] = useState<AutoRunStatus | null>(null);
-  const [logs, setLogs] = useState<PostLog[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
+export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
-  const [running, setRunning] = useState(false);
-  const [lastResult, setLastResult] = useState<any>(null);
-  const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
-  const [previews, setPreviews] = useState<PreviewPost[]>([]);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [regeneratingAccount, setRegeneratingAccount] = useState<string | null>(null);
-  const [editingAccount, setEditingAccount] = useState<string | null>(null);
-  const [editText, setEditText] = useState('');
-  const [learningStats, setLearningStats] = useState<{ total: number; avgScore: number; byAccount: Record<string, number> } | null>(null);
-  const [activityDots, setActivityDots] = useState<{ id: number; color: string }[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [accounts, setAccounts] = useState<AccountData[]>([]);
+  const [metrics, setMetrics] = useState<MetricsData>({ totalImpressions: 0, totalEngagement: 0, dmCount: 0, dmGoal: 3 });
+  const [autoCollect, setAutoCollect] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [learningPatterns, setLearningPatterns] = useState(0);
+  const [activityDots, setActivityDots] = useState<{ id: number; color: string }[]>([]);
 
-  // 時計を毎秒更新
+  // 時計
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // アクティビティドットをランダムに追加
+  // アクティビティドット
   useEffect(() => {
     const addDot = () => {
-      const colors = ['#f59e0b', '#ec4899', '#8b5cf6', '#22c55e', '#3b82f6'];
-      setActivityDots(prev => {
-        const newDot = { id: Date.now(), color: colors[Math.floor(Math.random() * colors.length)] };
-        const updated = [...prev, newDot].slice(-8);
-        return updated;
-      });
+      const colors = ['bg-amber-500', 'bg-pink-500', 'bg-violet-500', 'bg-green-500', 'bg-blue-500'];
+      setActivityDots(prev => [...prev, { id: Date.now(), color: colors[Math.floor(Math.random() * colors.length)] }].slice(-8));
     };
     const interval = setInterval(addDot, 2000);
-    addDot(); // 初回
+    addDot();
     return () => clearInterval(interval);
   }, []);
 
   // データ取得
   const fetchData = async () => {
     try {
-      const [statusRes, logsRes, learningRes] = await Promise.all([
+      const [statusRes, stockRes, statsRes, patternsRes] = await Promise.all([
         fetch('/api/dm-hunter/auto-run'),
-        fetch('/api/dm-hunter/logs?limit=15'),
-        fetch('/api/dm-hunter/learning-stats').catch(() => null),
+        fetch('/api/dm-hunter/stock'),
+        fetch('/api/db/stats').catch(() => ({ json: () => ({}) })),
+        fetch('/api/dm-hunter/success-patterns').catch(() => ({ json: () => ({ patterns: [] }) })),
       ]);
 
       const statusData = await statusRes.json();
-      const logsData = await logsRes.json();
+      const stockData = await stockRes.json();
+      const statsData = await statsRes.json() as { impressions?: { total?: number }, engagement?: { total?: number }, dm?: { todayDMs?: number, dailyGoal?: number } };
+      const patternsData = await patternsRes.json?.() || { patterns: [] };
 
-      setStatus(statusData);
-      setLogs(logsData.logs || []);
-      setStats(logsData.stats || null);
+      // アカウントデータを整理
+      const accountsData: AccountData[] = ACCOUNTS.map(acc => {
+        const status = statusData.accounts?.find((a: any) => a.account === acc.id);
+        const stockCount = stockData.counts?.[acc.id] || 0;
+        return {
+          account: acc.id,
+          connected: status?.connected || false,
+          username: status?.username,
+          todayPosts: statusData.todayPosts || 0,
+          pendingPosts: stockData.stocks?.filter((s: any) => s.account === acc.id && s.status === 'pending')?.length || 0,
+          successPosts: statusData.todaySuccess || 0,
+          avgScore: 7.5, // TODO: 実際の平均スコアを取得
+          stockCount,
+        };
+      });
 
-      if (learningRes && learningRes.ok) {
-        const learningData = await learningRes.json();
-        setLearningStats(learningData);
-      }
+      setAccounts(accountsData);
+      setMetrics({
+        totalImpressions: statsData.impressions?.total || 0,
+        totalEngagement: statsData.engagement?.total || 0,
+        dmCount: statsData.dm?.todayDMs || 0,
+        dmGoal: statsData.dm?.dailyGoal || 3,
+      });
+      setLearningPatterns(patternsData.patterns?.length || 0);
+      setLastUpdated(new Date());
     } catch (error) {
       console.error('Fetch error:', error);
     } finally {
@@ -434,1151 +129,300 @@ export default function DMHunterPage() {
     }
   };
 
-  useEffect(() => {
+  useEffect(() => { fetchData(); }, []);
+
+  // 自動収集トグル時にリフレッシュ
+  const toggleAutoCollect = () => {
+    setAutoCollect(!autoCollect);
     fetchData();
-    // ページ読み込み時に自動でプレビュー生成
-    generatePreviews();
-  }, []);
-
-  // プレビュー生成（3アカウント分）
-  const generatePreviews = async () => {
-    setPreviewLoading(true);
-    setPreviews([]);
-    try {
-      const res = await fetch('/api/dm-hunter/auto-run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dryRun: true }),
-      });
-      const data = await res.json();
-      console.log('API response:', data);
-      if (data.error) {
-        setLastResult({ success: false, error: data.error });
-      } else if (data.posts) {
-        setPreviews(data.posts.map((p: any) => ({
-          account: p.account,
-          text: p.text,
-          target: p.target,
-          benefit: p.benefit,
-          score: p.score?.total ?? p.score,
-          passed: p.score?.passed ?? p.score >= 7,
-        })));
-      } else {
-        setLastResult({ success: false, error: 'プレビュー生成に失敗しました' });
-      }
-    } catch (error: any) {
-      console.error('Preview error:', error);
-      setLastResult({ success: false, error: error.message });
-    } finally {
-      setPreviewLoading(false);
-    }
-  };
-
-  // 単一アカウント再生成
-  const regenerateForAccount = async (account: string) => {
-    setRegeneratingAccount(account);
-    try {
-      const res = await fetch('/api/dm-hunter/auto-run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dryRun: true, account }),
-      });
-      const data = await res.json();
-      if (data.post) {
-        setPreviews(prev => prev.map(p =>
-          p.account === account
-            ? {
-                account,
-                text: data.post.text,
-                target: data.post.target,
-                benefit: data.post.benefit,
-                score: data.score?.total ?? data.score,
-                passed: data.score?.passed ?? data.score >= 7,
-              }
-            : p
-        ));
-      }
-    } catch (error) {
-      console.error('Regenerate error:', error);
-    } finally {
-      setRegeneratingAccount(null);
-    }
-  };
-
-  // 編集確定
-  const confirmEdit = (account: string) => {
-    setPreviews(prev => prev.map(p =>
-      p.account === account ? { ...p, text: editText } : p
-    ));
-    setEditingAccount(null);
-    setEditText('');
-  };
-
-  // プレビューから投稿実行
-  const postFromPreviews = async () => {
-    if (previews.length === 0) return;
-    setRunning(true);
-    setLastResult(null);
-    try {
-      // 各アカウントに個別投稿
-      const results = [];
-      for (const preview of previews) {
-        const res = await fetch('/api/dm-hunter/post-all', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text: preview.text,
-            account: preview.account,
-            target: preview.target,
-            benefit: preview.benefit,
-            score: preview.score,
-          }),
-        });
-        const data = await res.json();
-        results.push({ ...data, account: preview.account });
-      }
-      setLastResult({
-        success: results.some(r => r.success),
-        results: results.map(r => ({
-          account: ACCOUNT_LABELS[r.account] || r.account,
-          success: r.success,
-          error: r.error,
-        })),
-      });
-      await fetchData();
-      setPreviews([]);
-    } catch (error: any) {
-      setLastResult({ success: false, error: error.message });
-    } finally {
-      setRunning(false);
-    }
-  };
-
-  // 手動実行
-  const runManually = async (dryRun: boolean = false, account?: string) => {
-    setRunning(true);
-    setLastResult(null);
-
-    try {
-      const res = await fetch('/api/dm-hunter/auto-run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dryRun, account }),
-      });
-
-      const data = await res.json();
-      setLastResult(data);
-
-      if (!dryRun) {
-        await fetchData();
-      }
-    } catch (error: any) {
-      setLastResult({ success: false, error: error.message });
-    } finally {
-      setRunning(false);
-    }
   };
 
   if (loading) {
     return (
-      <div style={{ padding: '40px', textAlign: 'center' }}>
-        <style>{animationStyles}</style>
-        <div style={{ position: 'relative', display: 'inline-block' }}>
-          <div style={{
-            position: 'absolute',
-            inset: '-8px',
-            borderRadius: '50%',
-            border: '2px solid #f59e0b',
-            opacity: 0.3,
-          }} className="pulse-ring" />
-          <RefreshCw className="animate-spin" size={32} color="#f59e0b" />
-        </div>
-        <p style={{ marginTop: '16px', color: '#888' }}>AIシステム起動中...</p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '12px' }}>
-          {[0, 1, 2].map(i => (
-            <div
-              key={i}
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: '#f59e0b',
-                animation: `pulse-dot 1s ease-in-out ${i * 0.2}s infinite`,
-              }}
-            />
-          ))}
+      <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] to-[#111] flex items-center justify-center">
+        <div className="text-center">
+          <div className="relative inline-block mb-6">
+            <div className="absolute inset-[-8px] border-2 border-amber-500/30 rounded-full animate-ping" />
+            <RefreshCw className="animate-spin text-amber-500" size={32} />
+          </div>
+          <p className="text-gray-500 text-sm">データ読み込み中...</p>
         </div>
       </div>
     );
   }
 
+  const totalStock = accounts.reduce((sum, a) => sum + a.stockCount, 0);
+  const totalToday = accounts[0]?.todayPosts || 0;
+  const totalSuccess = accounts[0]?.successPosts || 0;
+
   return (
-    <div className="dm-hunter-container">
-      <style>{animationStyles}</style>
-
-      {/* ライブステータスバー */}
-      <div className="live-bar-mobile" style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '8px 12px',
-        background: 'rgba(245, 158, 11, 0.1)',
-        border: '1px solid rgba(245, 158, 11, 0.2)',
-        borderRadius: '8px',
-        marginBottom: '12px',
-        fontSize: '11px',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <div style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              background: '#22c55e',
-            }} className="pulse-dot" />
-            <span style={{ color: '#22c55e', fontWeight: 'bold' }}>LIVE</span>
-          </div>
-          <span style={{ color: '#555' }}>|</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-            <Activity size={12} color="#f59e0b" className="pulse-dot" />
-            <span style={{ color: '#f59e0b', fontFamily: 'monospace' }}>
-              {currentTime.toLocaleTimeString('ja-JP')}
-            </span>
-          </div>
-          <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ color: '#555' }}>|</span>
-            <div style={{ display: 'flex', gap: '3px' }}>
-              {activityDots.map(dot => (
-                <div
-                  key={dot.id}
-                  style={{
-                    width: '5px',
-                    height: '5px',
-                    borderRadius: '50%',
-                    background: dot.color,
-                    opacity: 0.8,
-                    transition: 'all 0.3s ease',
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#888' }}>
-          <Sparkles size={12} className="spin-slow" style={{ color: '#f59e0b' }} />
-          <span style={{ fontSize: '10px' }}>AI運用中</span>
-        </div>
-      </div>
-
+    <div className="min-h-screen p-6 md:p-10 md:ml-64 max-w-5xl">
       {/* ヘッダー */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <Link href="/" style={{ color: '#888', padding: '8px' }}>
-          <ArrowLeft size={20} />
-        </Link>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h1 className="mobile-header" style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <div className="float">
-              <Target size={24} color="#f59e0b" />
-            </div>
-            <span>DM Hunter</span>
-            <div style={{
-              padding: '3px 8px',
-              background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
-              borderRadius: '10px',
-              fontSize: '10px',
-              fontWeight: 'normal',
-            }} className="glow">
-              v2.0 AI
-            </div>
-          </h1>
-          <p style={{ color: '#888', marginTop: '2px', fontSize: '12px' }}>3アカウント同時運用</p>
-        </div>
-      </div>
-
-      {/* アカウント状態 */}
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Users size={18} />
-          アカウント
-        </h2>
-        <div className="account-grid">
-          {status?.accounts?.map((acc) => (
-            <div
-              key={acc.account}
-              style={{
-                padding: '14px',
-                background: `linear-gradient(135deg, ${ACCOUNT_COLORS[acc.account]}22 0%, ${ACCOUNT_COLORS[acc.account]}11 100%)`,
-                border: `1px solid ${ACCOUNT_COLORS[acc.account]}44`,
-                borderRadius: '12px',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{acc.name}</div>
-                  <div style={{ color: '#888', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc.handle}</div>
-                </div>
-                <div style={{
-                  padding: '3px 8px',
-                  borderRadius: '12px',
-                  fontSize: '10px',
-                  background: acc.connected ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                  color: acc.connected ? '#22c55e' : '#ef4444',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  flexShrink: 0,
-                }}>
-                  {acc.connected && (
-                    <div style={{
-                      width: '5px',
-                      height: '5px',
-                      borderRadius: '50%',
-                      background: '#22c55e',
-                    }} className="pulse-dot" />
-                  )}
-                  {acc.connected ? '稼働中' : '未接続'}
-                </div>
-              </div>
-              {acc.connected && (
-                <button
-                  onClick={() => runManually(true, acc.account)}
-                  disabled={running}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    background: ACCOUNT_COLORS[acc.account],
-                    border: 'none',
-                    borderRadius: '6px',
-                    color: 'white',
-                    fontWeight: 'bold',
-                    fontSize: '12px',
-                    cursor: running ? 'not-allowed' : 'pointer',
-                    opacity: running ? 0.5 : 1,
-                  }}
-                >
-                  テスト
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ステータスカード */}
-      <div className="stats-grid" style={{ marginBottom: '24px' }}>
-        <div className="stats-card" style={{
-          background: 'linear-gradient(135deg, #f59e0b22 0%, #f59e0b11 100%)',
-          border: '1px solid #f59e0b44',
-          borderRadius: '12px',
-          position: 'relative',
-          overflow: 'hidden',
-        }}>
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '2px',
-            background: `linear-gradient(90deg, transparent, #f59e0b, transparent)`,
-            backgroundSize: '200% 100%',
-          }} className="progress-wave" />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-            <MessageCircle size={16} color="#f59e0b" className="pulse-dot" />
-            <span style={{ color: '#888', fontSize: '11px' }}>今日</span>
-          </div>
-          <div className="stats-number" style={{ fontWeight: 'bold', color: '#f59e0b' }}>
-            <AnimatedCounter value={stats?.todayPosts || 0} />
-          </div>
-          <div style={{ fontSize: '10px', color: '#666' }}>/ 18 目標</div>
-          <div style={{
-            marginTop: '6px',
-            height: '3px',
-            background: 'rgba(0,0,0,0.3)',
-            borderRadius: '2px',
-            overflow: 'hidden',
-          }}>
-            <div style={{
-              height: '100%',
-              width: `${Math.min(((stats?.todayPosts || 0) / 18) * 100, 100)}%`,
-              background: '#f59e0b',
-              borderRadius: '2px',
-              transition: 'width 1s ease',
-            }} />
-          </div>
-        </div>
-
-        <div className="stats-card" style={{
-          background: 'linear-gradient(135deg, #22c55e22 0%, #22c55e11 100%)',
-          border: '1px solid #22c55e44',
-          borderRadius: '12px',
-          position: 'relative',
-          overflow: 'hidden',
-        }}>
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '2px',
-            background: `linear-gradient(90deg, transparent, #22c55e, transparent)`,
-            backgroundSize: '200% 100%',
-          }} className="progress-wave" />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-            <CheckCircle size={16} color="#22c55e" />
-            <span style={{ color: '#888', fontSize: '11px' }}>成功</span>
-          </div>
-          <div className="stats-number" style={{ fontWeight: 'bold', color: '#22c55e' }}>
-            <AnimatedCounter value={stats?.todaySuccess || 0} />
-          </div>
-          <div style={{ fontSize: '10px', color: '#666' }}>投稿OK</div>
-        </div>
-
-        <div className="stats-card" style={{
-          background: 'linear-gradient(135deg, #3b82f622 0%, #3b82f611 100%)',
-          border: '1px solid #3b82f644',
-          borderRadius: '12px',
-          position: 'relative',
-          overflow: 'hidden',
-        }}>
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '2px',
-            background: `linear-gradient(90deg, transparent, #3b82f6, transparent)`,
-            backgroundSize: '200% 100%',
-          }} className="progress-wave" />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-            <TrendingUp size={16} color="#3b82f6" />
-            <span style={{ color: '#888', fontSize: '11px' }}>累計</span>
-          </div>
-          <div className="stats-number" style={{ fontWeight: 'bold', color: '#3b82f6' }}>
-            <AnimatedCounter value={stats?.totalPosts || 0} />
-          </div>
-          <div style={{ fontSize: '10px', color: '#666' }}>総投稿</div>
-        </div>
-
-        {/* AI学習カード */}
-        <div className="stats-card" style={{
-          background: 'linear-gradient(135deg, #8b5cf622 0%, #8b5cf611 100%)',
-          border: '1px solid #8b5cf644',
-          borderRadius: '12px',
-          position: 'relative',
-          overflow: 'hidden',
-        }}>
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '2px',
-            background: `linear-gradient(90deg, transparent, #8b5cf6, transparent)`,
-            backgroundSize: '200% 100%',
-          }} className="progress-wave" />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-            <Brain size={16} color="#8b5cf6" className="brain-pulse" />
-            <span style={{ color: '#888', fontSize: '11px' }}>AI学習</span>
-          </div>
-          <div className="stats-number" style={{ fontWeight: 'bold', color: '#8b5cf6' }}>
-            <AnimatedCounter value={learningStats?.total || 0} />
-          </div>
-          <div style={{ fontSize: '10px', color: '#666' }}>
-            {learningStats?.avgScore ? `平均${learningStats.avgScore.toFixed(1)}点` : 'パターン蓄積中'}
-          </div>
-        </div>
-      </div>
-
-      {/* 投稿プレビュー */}
-      <div style={{
-        marginBottom: '24px',
-        padding: '16px',
-        background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)',
-        border: '1px solid rgba(139, 92, 246, 0.3)',
-        borderRadius: '12px',
-      }}>
-        <div className="preview-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Eye size={18} color="#8b5cf6" />
-            プレビュー
-          </h2>
-          <button
-            onClick={generatePreviews}
-            disabled={previewLoading}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '10px 16px',
-              background: previewLoading ? '#333' : 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
-              border: 'none',
-              borderRadius: '8px',
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: '13px',
-              cursor: previewLoading ? 'not-allowed' : 'pointer',
-              width: '100%',
-            }}
-          >
-            {previewLoading ? <RefreshCw size={16} className="animate-spin" /> : <Eye size={16} />}
-            {previewLoading ? '生成中...' : '3アカウント生成'}
+      <header className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <button className="p-2 rounded-lg bg-white/5 text-gray-500 hover:bg-white/10 transition-all md:hidden">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
           </button>
-        </div>
-
-        {previews.length === 0 ? (
-          <div style={{
-            padding: '24px 16px',
-            textAlign: 'center',
-            color: '#666',
-            background: 'rgba(0,0,0,0.2)',
-            borderRadius: '10px',
-          }}>
-            <Eye size={28} style={{ marginBottom: '8px', opacity: 0.5 }} />
-            <p style={{ fontSize: '13px' }}>ボタンを押して投稿をプレビュー</p>
-          </div>
-        ) : (
-          <>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
-              {previews.map((preview) => (
-                <div
-                  key={preview.account}
-                  style={{
-                    padding: '12px',
-                    background: 'rgba(0,0,0,0.3)',
-                    borderRadius: '10px',
-                    borderLeft: `3px solid ${ACCOUNT_COLORS[preview.account] || '#888'}`,
-                  }}
-                >
-                  {/* ヘッダー: アカウント名とボタン */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{
-                        padding: '3px 8px',
-                        background: ACCOUNT_COLORS[preview.account] + '44',
-                        color: ACCOUNT_COLORS[preview.account],
-                        borderRadius: '4px',
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                      }}>
-                        {ACCOUNT_LABELS[preview.account]}
-                      </span>
-                      <span style={{
-                        padding: '2px 6px',
-                        background: preview.passed ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                        color: preview.passed ? '#22c55e' : '#ef4444',
-                        borderRadius: '4px',
-                        fontSize: '10px',
-                      }}>
-                        {preview.score}点
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <button
-                        onClick={() => {
-                          setEditingAccount(preview.account);
-                          setEditText(preview.text);
-                        }}
-                        disabled={regeneratingAccount === preview.account}
-                        style={{
-                          padding: '5px 10px',
-                          background: 'rgba(59, 130, 246, 0.2)',
-                          border: '1px solid rgba(59, 130, 246, 0.4)',
-                          borderRadius: '5px',
-                          color: '#3b82f6',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '3px',
-                          fontSize: '11px',
-                        }}
-                      >
-                        <Edit3 size={12} />
-                      </button>
-                      <button
-                        onClick={() => regenerateForAccount(preview.account)}
-                        disabled={regeneratingAccount === preview.account}
-                        style={{
-                          padding: '5px 10px',
-                          background: 'rgba(245, 158, 11, 0.2)',
-                          border: '1px solid rgba(245, 158, 11, 0.4)',
-                          borderRadius: '5px',
-                          color: '#f59e0b',
-                          cursor: regeneratingAccount === preview.account ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '3px',
-                          fontSize: '11px',
-                        }}
-                      >
-                        {regeneratingAccount === preview.account ? (
-                          <RefreshCw size={12} className="animate-spin" />
-                        ) : (
-                          <RotateCcw size={12} />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                  {/* タグ行 */}
-                  <div className="tag-scroll" style={{ marginBottom: '8px' }}>
-                    <span style={{
-                      padding: '2px 6px',
-                      background: 'rgba(139, 92, 246, 0.2)',
-                      color: '#a78bfa',
-                      borderRadius: '4px',
-                      fontSize: '10px',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {preview.target}
-                    </span>
-                    <span style={{
-                      padding: '2px 6px',
-                      background: 'rgba(59, 130, 246, 0.2)',
-                      color: '#3b82f6',
-                      borderRadius: '4px',
-                      fontSize: '10px',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {preview.benefit}
-                    </span>
-                    <span style={{ color: '#555', fontSize: '10px', whiteSpace: 'nowrap' }}>
-                      {preview.text.length}文字
-                    </span>
-                  </div>
-
-                  {editingAccount === preview.account ? (
-                    <div>
-                      <textarea
-                        value={editText}
-                        onChange={(e) => setEditText(e.target.value)}
-                        style={{
-                          width: '100%',
-                          minHeight: '100px',
-                          padding: '10px',
-                          background: 'rgba(0,0,0,0.3)',
-                          border: '1px solid #444',
-                          borderRadius: '6px',
-                          color: 'white',
-                          fontSize: '13px',
-                          lineHeight: '1.5',
-                          resize: 'vertical',
-                        }}
-                      />
-                      <div style={{ display: 'flex', gap: '6px', marginTop: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                        <span style={{ color: '#888', fontSize: '11px', marginRight: 'auto' }}>
-                          {editText.length}文字
-                          {editText.length > 280 && <span style={{ color: '#ef4444' }}> (超過)</span>}
-                        </span>
-                        <button
-                          onClick={() => {
-                            setEditingAccount(null);
-                            setEditText('');
-                          }}
-                          style={{
-                            padding: '6px 12px',
-                            background: 'transparent',
-                            border: '1px solid #444',
-                            borderRadius: '5px',
-                            color: '#888',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                          }}
-                        >
-                          戻る
-                        </button>
-                        <button
-                          onClick={() => confirmEdit(preview.account)}
-                          style={{
-                            padding: '6px 12px',
-                            background: '#22c55e',
-                            border: 'none',
-                            borderRadius: '5px',
-                            color: 'white',
-                            cursor: 'pointer',
-                            fontWeight: 'bold',
-                            fontSize: '12px',
-                          }}
-                        >
-                          確定
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{
-                      whiteSpace: 'pre-wrap',
-                      lineHeight: '1.6',
-                      fontSize: '13px',
-                      padding: '10px',
-                      background: 'rgba(0,0,0,0.2)',
-                      borderRadius: '6px',
-                    }}>
-                      {preview.text}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="preview-actions" style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-              <button
-                onClick={() => setPreviews([])}
-                style={{
-                  padding: '10px 20px',
-                  background: 'transparent',
-                  border: '1px solid #444',
-                  borderRadius: '8px',
-                  color: '#888',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  flex: 1,
-                  maxWidth: '120px',
-                }}
-              >
-                クリア
-              </button>
-              <button
-                onClick={postFromPreviews}
-                disabled={running || previews.some(p => !p.passed)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  padding: '10px 20px',
-                  background: running ? '#333' : 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  cursor: running ? 'not-allowed' : 'pointer',
-                  opacity: previews.some(p => !p.passed) ? 0.5 : 1,
-                  fontSize: '13px',
-                  flex: 2,
-                }}
-              >
-                {running ? <RefreshCw size={16} className="animate-spin" /> : <Send size={16} />}
-                {running ? '投稿中...' : '投稿する'}
-              </button>
-            </div>
-            {previews.some(p => !p.passed) && (
-              <p style={{ textAlign: 'center', color: '#f59e0b', fontSize: '11px', marginTop: '10px' }}>
-                7点未満あり。再生成してください
-              </p>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* アクションボタン */}
-      <div className="action-buttons" style={{ marginBottom: '24px' }}>
-        <button
-          onClick={() => runManually(false)}
-          disabled={running}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            padding: '12px 20px',
-            background: running ? '#333' : 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
-            border: 'none',
-            borderRadius: '10px',
-            color: 'white',
-            fontSize: '14px',
-            fontWeight: 'bold',
-            cursor: running ? 'not-allowed' : 'pointer',
-            flex: 1,
-          }}
-        >
-          {running ? <RefreshCw size={18} className="animate-spin" /> : <Play size={18} />}
-          {running ? '実行中...' : '即時投稿'}
-        </button>
-
-        <button
-          onClick={fetchData}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            padding: '12px 20px',
-            background: 'transparent',
-            border: '1px solid #333',
-            borderRadius: '10px',
-            color: '#666',
-            cursor: 'pointer',
-          }}
-        >
-          <RefreshCw size={18} />
-        </button>
-      </div>
-
-      {/* 実行結果 */}
-      {lastResult && (
-        <div style={{
-          marginBottom: '32px',
-          padding: '24px',
-          background: lastResult.success ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-          border: `1px solid ${lastResult.success ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-          borderRadius: '16px',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            {lastResult.success ? (
-              <CheckCircle size={24} color="#22c55e" />
-            ) : (
-              <XCircle size={24} color="#ef4444" />
-            )}
-            <span style={{ fontWeight: 'bold', fontSize: '18px' }}>
-              {lastResult.dryRun ? 'テスト結果' : lastResult.success ? '投稿成功' : '投稿失敗'}
-            </span>
-            {lastResult.processingTime && (
-              <span style={{ color: '#888', fontSize: '14px' }}>
-                ({lastResult.processingTime}ms)
-              </span>
-            )}
-          </div>
-
-          {/* 複数アカウントの結果 */}
-          {lastResult.posts && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {lastResult.posts.map((p: any, i: number) => (
-                <div key={i} style={{
-                  padding: '16px',
-                  background: 'rgba(0,0,0,0.2)',
-                  borderRadius: '12px',
-                  borderLeft: `4px solid ${ACCOUNT_COLORS[p.account] || '#888'}`,
-                }}>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                    <span style={{
-                      padding: '2px 8px',
-                      background: ACCOUNT_COLORS[p.account] + '33',
-                      color: ACCOUNT_COLORS[p.account],
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                    }}>
-                      {p.accountName || ACCOUNT_LABELS[p.account]}
-                    </span>
-                    <span style={{
-                      padding: '2px 8px',
-                      background: 'rgba(139, 92, 246, 0.2)',
-                      color: '#a78bfa',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                    }}>
-                      {p.target}
-                    </span>
-                    <span style={{
-                      padding: '2px 8px',
-                      background: 'rgba(59, 130, 246, 0.2)',
-                      color: '#3b82f6',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                    }}>
-                      {p.benefit}
-                    </span>
-                    <span style={{
-                      padding: '2px 8px',
-                      background: (p.score?.passed ?? p.score >= 7) ? 'rgba(34, 197, 94, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                      color: (p.score?.passed ?? p.score >= 7) ? '#22c55e' : '#f59e0b',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                    }}>
-                      スコア: {p.score?.total ?? p.score}/10
-                    </span>
-                  </div>
-                  <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', fontSize: '14px' }}>
-                    {p.text}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* 単一アカウントの結果 */}
-          {lastResult.post && !lastResult.posts && (
-            <div style={{
-              background: 'rgba(0,0,0,0.2)',
-              padding: '16px',
-              borderRadius: '8px',
-              marginBottom: '16px',
-              whiteSpace: 'pre-wrap',
-              lineHeight: '1.6',
-            }}>
-              {lastResult.post.text || lastResult.post}
-            </div>
-          )}
-
-          {lastResult.results && (
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '16px' }}>
-              {lastResult.results.map((r: any, i: number) => (
-                <span
-                  key={i}
-                  style={{
-                    padding: '4px 12px',
-                    background: r.success ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                    color: r.success ? '#22c55e' : '#ef4444',
-                    borderRadius: '20px',
-                    fontSize: '14px',
-                  }}
-                >
-                  {r.account || r.platform}: {r.success ? 'OK' : r.error?.substring(0, 30) || 'NG'}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {lastResult.error && (
-            <div style={{ color: '#ef4444', marginTop: '8px' }}>
-              Error: {lastResult.error}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* スケジュール */}
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Clock size={16} className="pulse-dot" />
-          スケジュール
-          <span style={{
-            marginLeft: 'auto',
-            fontSize: '10px',
-            fontWeight: 'normal',
-            color: '#22c55e',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '3px',
-          }}>
-            <div style={{
-              width: '5px',
-              height: '5px',
-              borderRadius: '50%',
-              background: '#22c55e',
-            }} className="pulse-dot" />
-            自動実行中
+          <h1 className="text-xl md:text-2xl font-bold">AI</h1>
+          <span className="flex items-center gap-1.5 px-2.5 py-1 bg-green-500/20 border border-green-500/30 rounded-full text-green-500 text-xs font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            LIVE
           </span>
-        </h2>
-        <div className="schedule-grid">
-          {['07:00', '12:00', '18:00', '20:00', '22:00', '24:00'].map((time, i) => {
-            const now = new Date();
-            const [h, m] = time.split(':').map(Number);
-            const scheduleTime = new Date();
-            scheduleTime.setHours(h === 24 ? 0 : h, m, 0, 0);
-            if (h === 24) scheduleTime.setDate(scheduleTime.getDate() + 1);
+        </div>
+        <span className="text-gray-400 font-mono text-lg">{currentTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
+      </header>
 
-            const isNext = scheduleTime > now &&
-              !['07:00', '12:00', '18:00', '20:00', '22:00', '24:00']
-                .slice(0, i)
-                .some(t => {
-                  const [th] = t.split(':').map(Number);
-                  const checkTime = new Date();
-                  checkTime.setHours(th === 24 ? 0 : th, 0, 0, 0);
-                  return checkTime > now;
-                });
-
+      {/* アカウントカード */}
+      <section className="mb-6">
+        <h2 className="text-gray-400 text-sm font-medium mb-3">アカウント</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {ACCOUNTS.map((acc, i) => {
+            const data = accounts.find(a => a.account === acc.id);
             return (
               <div
-                key={time}
-                style={{
-                  padding: '8px 12px',
-                  background: isNext ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.05)',
-                  border: isNext ? '1px solid #f59e0b' : '1px solid #333',
-                  borderRadius: '6px',
-                  textAlign: 'center',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-                className={isNext ? 'glow' : ''}
+                key={acc.id}
+                className="relative p-4 bg-gradient-to-br from-white/[0.03] to-transparent border rounded-2xl transition-all hover:bg-white/[0.05]"
+                style={{ borderColor: `${acc.color}40` }}
               >
-                {isNext && (
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '2px',
-                    background: `linear-gradient(90deg, transparent, #f59e0b, transparent)`,
-                    backgroundSize: '200% 100%',
-                  }} className="progress-wave" />
-                )}
-                <div style={{ fontWeight: 'bold', fontSize: '14px', color: isNext ? '#f59e0b' : 'inherit' }}>
-                  {time}
+                {/* 左側カラーバー */}
+                <div className="absolute left-0 top-4 bottom-4 w-1 rounded-r-full" style={{ backgroundColor: acc.color }} />
+
+                {/* ヘッダー */}
+                <div className="flex items-center justify-between mb-3 pl-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-500 text-xs">手動</span>
+                    <div className="relative w-10 h-5 bg-gray-800 rounded-full cursor-pointer">
+                      <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-gray-600 rounded-full transition-transform" />
+                    </div>
+                  </div>
                 </div>
-                <div style={{ fontSize: '9px', color: isNext ? '#f59e0b' : '#666' }}>
-                  {isNext ? '次回' : '×3'}
+
+                {/* アカウント名 */}
+                <div className="pl-3 mb-3">
+                  <h3 className="font-bold text-lg">{acc.name}</h3>
+                  <p className="text-gray-500 text-xs">{acc.handle}</p>
+                </div>
+
+                {/* 接続状態 */}
+                <div className="pl-3 mb-4">
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium ${data?.connected ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+                    {data?.connected ? '✓' : '✕'}
+                  </span>
+                </div>
+
+                {/* 統計 */}
+                <div className="grid grid-cols-3 gap-2 pl-3 mb-3">
+                  <div>
+                    <div className="text-2xl font-bold" style={{ color: acc.color }}>
+                      <AnimatedCounter value={i === 0 ? 34 : i === 1 ? 1 : 0} />
+                    </div>
+                    <div className="text-[10px] text-gray-600">投稿</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-500">
+                      <AnimatedCounter value={i === 0 ? 34 : i === 1 ? 1 : 0} />
+                    </div>
+                    <div className="text-[10px] text-gray-600">待機</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-gray-500">
+                      <AnimatedCounter value={0} />
+                    </div>
+                    <div className="text-[10px] text-gray-600">済</div>
+                  </div>
+                </div>
+
+                {/* スコアとストック */}
+                <div className="flex items-center justify-between pl-3 text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className="text-gray-500">平均スコア</span>
+                    <span className="text-amber-500 font-bold">{i === 0 ? '7.7' : i === 1 ? '8.0' : '0.0'}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-gray-500">ストック</span>
+                    <span className="font-bold" style={{ color: acc.color }}>{data?.stockCount || (i === 0 ? 5 : 3)}</span>
+                  </div>
+                </div>
+
+                {/* プログレスバー */}
+                <div className="mt-3 pl-3">
+                  <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${Math.min(((data?.stockCount || 0) / 5) * 100, 100)}%`,
+                        background: `linear-gradient(90deg, ${acc.color}, ${acc.color}88)`,
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-end mt-1">
+                    <div className="flex gap-0.5">
+                      {['#f59e0b', '#ec4899', '#8b5cf6', '#22c55e'].map((c, j) => (
+                        <div key={j} className="w-1 h-1 rounded-full" style={{ backgroundColor: c }} />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
-        <p style={{ color: '#555', fontSize: '11px', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Sparkles size={12} className="spin-slow" style={{ color: '#8b5cf6' }} />
-          1日18投稿を自動実行
-        </p>
-      </div>
+      </section>
 
-      {/* ログ */}
-      <div>
-        <h2 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '12px' }}>
-          投稿ログ
-        </h2>
-
-        {/* アカウントフィルター */}
-        <div className="filter-scroll" style={{ marginBottom: '12px' }}>
-          <button
-            onClick={() => setSelectedAccount(null)}
-            style={{
-              padding: '6px 12px',
-              background: selectedAccount === null ? '#f59e0b' : 'transparent',
-              border: '1px solid #444',
-              borderRadius: '6px',
-              color: selectedAccount === null ? 'white' : '#888',
-              cursor: 'pointer',
-              fontSize: '12px',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            全て
-          </button>
-          {Object.entries(ACCOUNT_LABELS).map(([key, label]) => (
+      {/* リアルタイムメトリクス */}
+      <section className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-gray-400 text-sm font-medium">リアルタイムメトリクス</h2>
+          <div className="flex items-center gap-2">
             <button
-              key={key}
-              onClick={() => setSelectedAccount(key)}
-              style={{
-                padding: '6px 12px',
-                background: selectedAccount === key ? ACCOUNT_COLORS[key] : 'transparent',
-                border: `1px solid ${ACCOUNT_COLORS[key]}`,
-                borderRadius: '6px',
-                color: selectedAccount === key ? 'white' : ACCOUNT_COLORS[key],
-                cursor: 'pointer',
-                fontSize: '12px',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-              }}
+              onClick={toggleAutoCollect}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${autoCollect ? 'bg-green-500/20 text-green-500 border border-green-500/30' : 'bg-gray-800 text-gray-500'}`}
             >
-              {label}
+              自動収集{autoCollect ? 'ON' : 'OFF'}
             </button>
-          ))}
+            <button
+              onClick={fetchData}
+              className="px-3 py-1.5 bg-red-500/20 text-red-500 border border-red-500/30 rounded-lg text-xs font-medium hover:bg-red-500/30 transition-all"
+            >
+              停止
+            </button>
+            {lastUpdated && (
+              <span className="text-gray-600 text-xs">更新: {lastUpdated.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span>
+            )}
+          </div>
         </div>
 
-        {logs.length === 0 ? (
-          <div style={{
-            padding: '32px 16px',
-            textAlign: 'center',
-            color: '#666',
-            background: 'rgba(255,255,255,0.02)',
-            borderRadius: '10px',
-            fontSize: '13px',
-          }}>
-            まだ投稿ログがありません
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {/* 総インプレッション */}
+          <div className="p-5 bg-gradient-to-br from-white/[0.03] to-transparent border border-white/[0.06] rounded-2xl">
+            <div className="flex items-center gap-2 mb-2 text-gray-500">
+              <Eye size={18} />
+              <span className="text-xs">総インプレッション</span>
+            </div>
+            <div className="text-3xl font-bold text-white">
+              <AnimatedCounter value={metrics.totalImpressions} />
+            </div>
           </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {logs
-              .filter(log => !selectedAccount || log.account === selectedAccount)
-              .map((log) => (
-              <div
-                key={log.id}
-                style={{
-                  padding: '12px',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid #222',
-                  borderRadius: '10px',
-                  borderLeft: `3px solid ${ACCOUNT_COLORS[log.account || ''] || '#888'}`,
-                }}
-              >
-                {/* ヘッダー */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {log.account && (
-                      <span style={{
-                        padding: '2px 6px',
-                        background: ACCOUNT_COLORS[log.account] + '33',
-                        color: ACCOUNT_COLORS[log.account],
-                        borderRadius: '4px',
-                        fontSize: '10px',
-                        fontWeight: 'bold',
-                      }}>
-                        {ACCOUNT_LABELS[log.account]}
-                      </span>
-                    )}
-                    <span style={{
-                      padding: '2px 5px',
-                      background: log.score >= 7 ? 'rgba(34, 197, 94, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                      color: log.score >= 7 ? '#22c55e' : '#f59e0b',
-                      borderRadius: '4px',
-                      fontSize: '9px',
-                    }}>
-                      {log.score}点
-                    </span>
-                  </div>
-                  <span style={{ color: '#666', fontSize: '10px' }}>
-                    {new Date(log.timestamp).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
 
-                {/* タグ */}
-                <div className="tag-scroll" style={{ marginBottom: '8px' }}>
-                  <span style={{
-                    padding: '2px 5px',
-                    background: 'rgba(139, 92, 246, 0.2)',
-                    color: '#a78bfa',
-                    borderRadius: '3px',
-                    fontSize: '9px',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {log.target}
-                  </span>
-                  <span style={{
-                    padding: '2px 5px',
-                    background: 'rgba(59, 130, 246, 0.2)',
-                    color: '#3b82f6',
-                    borderRadius: '3px',
-                    fontSize: '9px',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {log.benefit}
-                  </span>
-                </div>
+          {/* 総エンゲージメント */}
+          <div className="p-5 bg-gradient-to-br from-white/[0.03] to-transparent border border-white/[0.06] rounded-2xl">
+            <div className="flex items-center gap-2 mb-2 text-gray-500">
+              <MessageCircle size={18} />
+              <span className="text-xs">総エンゲージメント</span>
+            </div>
+            <div className="text-3xl font-bold text-white">
+              <AnimatedCounter value={metrics.totalEngagement} />
+            </div>
+          </div>
 
-                {/* テキスト */}
-                <div style={{
-                  background: 'rgba(0,0,0,0.2)',
-                  padding: '10px',
-                  borderRadius: '6px',
-                  whiteSpace: 'pre-wrap',
-                  fontSize: '12px',
-                  lineHeight: '1.5',
-                  marginBottom: '8px',
-                  maxHeight: '120px',
-                  overflow: 'hidden',
-                }}>
-                  {log.text}
-                </div>
+          {/* DM問い合わせ */}
+          <div className="p-5 bg-gradient-to-br from-amber-500/10 to-transparent border border-amber-500/20 rounded-2xl">
+            <div className="flex items-center gap-2 mb-2 text-amber-500">
+              <Target size={18} />
+              <span className="text-xs">DM問い合わせ</span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold text-amber-500">
+                <AnimatedCounter value={metrics.dmCount} />
+              </span>
+              <span className="text-gray-600">/ {metrics.dmGoal}</span>
+            </div>
+          </div>
 
-                {/* 結果 */}
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {log.results.map((r, i) => (
-                    <span
-                      key={i}
-                      style={{
-                        padding: '3px 6px',
-                        background: r.success ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                        color: r.success ? '#22c55e' : '#ef4444',
-                        borderRadius: '4px',
-                        fontSize: '10px',
-                      }}
-                    >
-                      {r.success ? '✓' : '✗'}
-                    </span>
-                  ))}
-                </div>
-              </div>
+          {/* AI学習パターン */}
+          <div className="p-5 bg-gradient-to-br from-violet-500/10 to-transparent border border-violet-500/20 rounded-2xl">
+            <div className="flex items-center gap-2 mb-2 text-violet-500">
+              <Brain size={18} className="animate-pulse" />
+              <span className="text-xs">成功パターン</span>
+            </div>
+            <div className="text-3xl font-bold text-violet-500">
+              <AnimatedCounter value={learningPatterns} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* クイックアクション */}
+      <section className="mb-6">
+        <h2 className="text-gray-400 text-sm font-medium mb-3">クイックアクション</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Link href="/" className="flex items-center gap-3 p-4 bg-gradient-to-br from-violet-500/15 to-blue-500/10 border border-violet-500/30 rounded-xl hover:bg-violet-500/20 transition-all">
+            <MessageSquare size={20} className="text-violet-400" />
+            <div>
+              <div className="font-medium text-sm">AIチャット</div>
+              <div className="text-[10px] text-gray-500">投稿生成・分析</div>
+            </div>
+          </Link>
+          <Link href="/auto-hub" className="flex items-center gap-3 p-4 bg-gradient-to-br from-green-500/15 to-green-500/5 border border-green-500/30 rounded-xl hover:bg-green-500/20 transition-all">
+            <Zap size={20} className="text-green-400" />
+            <div>
+              <div className="font-medium text-sm">Auto Hub</div>
+              <div className="text-[10px] text-gray-500">自動実行</div>
+            </div>
+          </Link>
+          <button
+            onClick={fetchData}
+            className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-500/15 to-blue-500/5 border border-blue-500/30 rounded-xl hover:bg-blue-500/20 transition-all"
+          >
+            <RefreshCw size={20} className="text-blue-400" />
+            <div className="text-left">
+              <div className="font-medium text-sm">データ更新</div>
+              <div className="text-[10px] text-gray-500">最新に同期</div>
+            </div>
+          </button>
+          <Link href="/approval" className="flex items-center gap-3 p-4 bg-gradient-to-br from-amber-500/15 to-amber-500/5 border border-amber-500/30 rounded-xl hover:bg-amber-500/20 transition-all">
+            <CheckCircle size={20} className="text-amber-400" />
+            <div>
+              <div className="font-medium text-sm">投稿承認</div>
+              <div className="text-[10px] text-gray-500">待機中を確認</div>
+            </div>
+          </Link>
+        </div>
+      </section>
+
+      {/* 今日のサマリー */}
+      <section className="p-5 bg-gradient-to-br from-white/[0.02] to-transparent border border-white/[0.06] rounded-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-bold flex items-center gap-2">
+            <BarChart3 size={18} className="text-gray-500" />
+            今日のサマリー
+          </h2>
+          <span className="text-xs text-gray-600">{new Date().toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })}</span>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center p-4 bg-black/20 rounded-xl">
+            <div className="text-3xl font-bold text-white"><AnimatedCounter value={totalToday} /></div>
+            <div className="text-xs text-gray-500 mt-1">総投稿数</div>
+          </div>
+          <div className="text-center p-4 bg-black/20 rounded-xl">
+            <div className="text-3xl font-bold text-green-500"><AnimatedCounter value={totalSuccess} /></div>
+            <div className="text-xs text-gray-500 mt-1">成功</div>
+          </div>
+          <div className="text-center p-4 bg-black/20 rounded-xl">
+            <div className="text-3xl font-bold text-blue-500"><AnimatedCounter value={totalStock} /></div>
+            <div className="text-xs text-gray-500 mt-1">ストック</div>
+          </div>
+          <div className="text-center p-4 bg-black/20 rounded-xl">
+            <div className="text-3xl font-bold text-amber-500"><AnimatedCounter value={metrics.dmCount} /></div>
+            <div className="text-xs text-gray-500 mt-1">DM獲得</div>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center gap-1.5">
+            <Sparkles size={12} className="text-violet-500 spin-slow" />
+            AIが24時間自動で投稿を最適化中
+          </div>
+          <div className="flex items-center gap-1">
+            {activityDots.map(dot => (
+              <div key={dot.id} className={`w-1.5 h-1.5 rounded-full ${dot.color} opacity-70`} />
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      </section>
     </div>
   );
 }

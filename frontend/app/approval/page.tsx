@@ -24,7 +24,6 @@ interface ChatMessage {
   content: string;
 }
 
-// ローカルストレージキー
 const STORAGE_KEY = 'mic_admin_candidates';
 const CHAT_STORAGE_KEY = 'mic_admin_chat_history';
 
@@ -36,25 +35,21 @@ export default function ApprovalPage() {
   const [generateCount, setGenerateCount] = useState(1);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
-  const [generatedCount, setGeneratedCount] = useState(0); // 生成進捗
+  const [generatedCount, setGeneratedCount] = useState(0);
 
-  // 壁打ちチャット
   const [chatOpen, setChatOpen] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<Record<string, ChatMessage[]>>({});
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // 予約設定
   const [schedulingId, setSchedulingId] = useState<string | null>(null);
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('');
   const [selectedAccount] = useState('account1');
 
-  // フィルター
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'scheduled' | 'rejected'>('all');
 
-  // ローカルストレージから読み込み
   useEffect(() => {
     const savedCandidates = localStorage.getItem(STORAGE_KEY);
     const savedChat = localStorage.getItem(CHAT_STORAGE_KEY);
@@ -76,7 +71,6 @@ export default function ApprovalPage() {
     }
   }, []);
 
-  // ローカルストレージに保存
   useEffect(() => {
     if (candidates.length > 0) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(candidates));
@@ -89,13 +83,11 @@ export default function ApprovalPage() {
     }
   }, [chatMessages]);
 
-  // 複数候補を一括生成（並列化）
   const generateCandidates = async () => {
     setIsGenerating(true);
     setGeneratedCount(0);
     const newCandidates: PostCandidate[] = [];
 
-    // 並列で生成（最大3つ同時）
     const batchSize = 3;
     for (let batch = 0; batch < Math.ceil(generateCount / batchSize); batch++) {
       const promises = [];
@@ -120,7 +112,6 @@ export default function ApprovalPage() {
     showToast(`${newCandidates.length}件の投稿を生成しました`, 'success');
   };
 
-  // 単一投稿生成
   const generateSinglePost = async (index: number): Promise<PostCandidate | null> => {
     try {
       const response = await fetch('/api/generate', {
@@ -146,7 +137,6 @@ export default function ApprovalPage() {
         }
       }
 
-      // メタ情報を抽出
       const metaMatch = fullPost.match(/<!--META:(.*?)-->/);
       let meta = { target: '自動選択', theme: '自動選択', confidence: 3 };
       if (metaMatch) {
@@ -172,7 +162,6 @@ export default function ApprovalPage() {
     }
   };
 
-  // 投稿を承認して予約
   const approveAndSchedule = async (id: string) => {
     const candidate = candidates.find(c => c.id === id);
     if (!candidate || !scheduleDate || !scheduleTime) return;
@@ -191,7 +180,6 @@ export default function ApprovalPage() {
         }),
       });
 
-      // 良い例として保存
       await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -206,7 +194,6 @@ export default function ApprovalPage() {
         }),
       });
 
-      // 壁打ちがあった場合、フィードバックルールを抽出
       const postChatHistory = chatMessages[id];
       if (postChatHistory && postChatHistory.length > 0) {
         await fetch('/api/feedback/extract', {
@@ -235,17 +222,14 @@ export default function ApprovalPage() {
     }
   };
 
-  // 投稿を却下
   const rejectPost = (id: string) => {
     setCandidates(prev => prev.map(c =>
       c.id === id ? { ...c, status: 'rejected' } : c
     ));
   };
 
-  // 投稿を削除
   const deletePost = (id: string) => {
     setCandidates(prev => prev.filter(c => c.id !== id));
-    // チャット履歴も削除
     setChatMessages(prev => {
       const newMessages = { ...prev };
       delete newMessages[id];
@@ -253,7 +237,6 @@ export default function ApprovalPage() {
     });
   };
 
-  // 全データをクリア
   const clearAllData = () => {
     if (confirm('すべてのデータを削除しますか？この操作は取り消せません。')) {
       setCandidates([]);
@@ -264,7 +247,6 @@ export default function ApprovalPage() {
     }
   };
 
-  // 編集を保存
   const saveEdit = (id: string) => {
     setCandidates(prev => prev.map(c =>
       c.id === id ? { ...c, content: editContent } : c
@@ -273,7 +255,6 @@ export default function ApprovalPage() {
     setEditContent('');
   };
 
-  // コピー
   const copyToClipboard = async (content: string) => {
     try {
       await navigator.clipboard.writeText(content);
@@ -283,7 +264,6 @@ export default function ApprovalPage() {
     }
   };
 
-  // 壁打ちチャット送信
   const sendChatMessage = async (postId: string) => {
     if (!chatInput.trim()) return;
 
@@ -324,7 +304,6 @@ export default function ApprovalPage() {
         [postId]: [...(prev[postId] || []), assistantMessage]
       }));
 
-      // 修正された投稿で更新
       if (data.refinedPost) {
         setCandidates(prev => prev.map(c =>
           c.id === postId ? { ...c, content: data.refinedPost } : c
@@ -338,12 +317,10 @@ export default function ApprovalPage() {
     }
   };
 
-  // チャット末尾にスクロール
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  // フィルタリング
   const filteredCandidates = candidates.filter(c => {
     if (statusFilter === 'all') return true;
     return c.status === statusFilter;
@@ -355,48 +332,27 @@ export default function ApprovalPage() {
   const totalCount = candidates.length;
 
   return (
-    <main style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto' }}>
-      {/* Header - コンパクト化 */}
-      <header style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+    <main className="p-6 md:p-10 md:ml-64 max-w-6xl">
+      {/* Header */}
+      <header className="mb-4 flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 style={{
-            fontSize: '1.5rem',
-            marginBottom: '0.25rem',
-            background: 'var(--gradient-main)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
+          <h1 className="text-xl md:text-2xl mb-1 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent flex items-center gap-2">
             <Zap size={24} />
             壁打ちスタジオ
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+          <p className="text-white/60 text-sm">
             大量生成→選別→改善のサイクルを高速回転
           </p>
         </div>
 
-        {/* データ管理 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+        <div className="flex items-center gap-2">
+          <span className="text-white/60 text-xs flex items-center gap-1">
             <Database size={14} />
             {totalCount}件保存中
           </span>
           <button
             onClick={clearAllData}
-            style={{
-              padding: '0.4rem 0.8rem',
-              borderRadius: '6px',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#ef4444',
-              fontSize: '0.75rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem'
-            }}
+            className="px-3 py-1.5 rounded-md bg-red-500/10 border border-red-500/30 text-red-400 text-xs cursor-pointer flex items-center gap-1 hover:bg-red-500/20 transition-colors"
           >
             <Trash2 size={12} />
             全削除
@@ -404,41 +360,36 @@ export default function ApprovalPage() {
         </div>
       </header>
 
-      {/* 生成コントロール - 2行構成 */}
-      <section className="glass" style={{ padding: '1rem', marginBottom: '1rem' }}>
-        {/* 1行目: Stats + Filter + Generate */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.75rem' }}>
+      {/* Control Panel */}
+      <section className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
+        <div className="flex items-center justify-between flex-wrap gap-4 mb-3">
           {/* Stats */}
-          <div style={{ display: 'flex', gap: '1.5rem' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fbbf24' }}>{pendingCount}</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>待機</div>
+          <div className="flex gap-6">
+            <div className="text-center">
+              <div className="text-xl font-bold text-amber-400">{pendingCount}</div>
+              <div className="text-white/60 text-xs">待機</div>
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#4ade80' }}>{scheduledCount}</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>予約</div>
+            <div className="text-center">
+              <div className="text-xl font-bold text-green-400">{scheduledCount}</div>
+              <div className="text-white/60 text-xs">予約</div>
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#ef4444' }}>{rejectedCount}</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>却下</div>
+            <div className="text-center">
+              <div className="text-xl font-bold text-red-400">{rejectedCount}</div>
+              <div className="text-white/60 text-xs">却下</div>
             </div>
           </div>
 
           {/* Filter */}
-          <div style={{ display: 'flex', gap: '0.25rem' }}>
+          <div className="flex gap-1">
             {(['all', 'pending', 'scheduled', 'rejected'] as const).map(filter => (
               <button
                 key={filter}
                 onClick={() => setStatusFilter(filter)}
-                style={{
-                  padding: '0.4rem 0.75rem',
-                  borderRadius: '6px',
-                  background: statusFilter === filter ? 'var(--gradient-main)' : 'rgba(255,255,255,0.05)',
-                  border: statusFilter === filter ? 'none' : '1px solid var(--glass-border)',
-                  color: 'white',
-                  fontSize: '0.75rem',
-                  cursor: 'pointer',
-                }}
+                className={`px-3 py-1.5 rounded-md text-xs cursor-pointer transition-colors ${
+                  statusFilter === filter
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                    : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'
+                }`}
               >
                 {filter === 'all' ? '全て' : filter === 'pending' ? '待機' : filter === 'scheduled' ? '予約' : '却下'}
               </button>
@@ -446,18 +397,11 @@ export default function ApprovalPage() {
           </div>
 
           {/* Generate */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="flex items-center gap-2">
             <select
               value={generateCount}
               onChange={(e) => setGenerateCount(Number(e.target.value))}
-              style={{
-                padding: '0.5rem 0.75rem',
-                borderRadius: '8px',
-                background: 'rgba(255,255,255,0.1)',
-                border: '1px solid var(--glass-border)',
-                color: 'white',
-                fontSize: '0.85rem',
-              }}
+              className="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-white text-sm"
             >
               {[1, 3, 5, 10, 20, 30].map(n => (
                 <option key={n} value={n}>{n}件</option>
@@ -467,26 +411,13 @@ export default function ApprovalPage() {
             <button
               onClick={generateCandidates}
               disabled={isGenerating}
-              style={{
-                padding: '0.6rem 1.25rem',
-                borderRadius: '10px',
-                border: 'none',
-                background: 'var(--gradient-main)',
-                color: 'white',
-                fontSize: '0.9rem',
-                fontWeight: 'bold',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                cursor: isGenerating ? 'not-allowed' : 'pointer',
-                opacity: isGenerating ? 0.7 : 1,
-                minWidth: '140px',
-                justifyContent: 'center',
-              }}
+              className={`px-5 py-2.5 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold flex items-center gap-2 min-w-[140px] justify-center transition-opacity ${
+                isGenerating ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer hover:opacity-90'
+              }`}
             >
               {isGenerating ? (
                 <>
-                  <RefreshCw size={16} className="spin" />
+                  <RefreshCw size={16} className="animate-spin" />
                   {generatedCount}/{generateCount}
                 </>
               ) : (
@@ -499,22 +430,16 @@ export default function ApprovalPage() {
           </div>
         </div>
 
-        {/* 生成進捗バー */}
+        {/* Progress Bar */}
         {isGenerating && (
-          <div style={{ marginTop: '0.75rem' }}>
+          <div className="mt-3">
             <ProgressBar
               progress={(generatedCount / generateCount) * 100}
               showPercent={false}
               height={6}
               animated={true}
             />
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginTop: '0.25rem',
-              fontSize: '0.75rem',
-              color: 'var(--text-muted)'
-            }}>
+            <div className="flex justify-between mt-1 text-xs text-white/60">
               <span>AI生成中...</span>
               <span>{generatedCount} / {generateCount} 件完了</span>
             </div>
@@ -522,59 +447,35 @@ export default function ApprovalPage() {
         )}
       </section>
 
-      {/* Candidates Grid - カード形式 */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-        gap: '1rem'
-      }}>
+      {/* Candidates Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {filteredCandidates.length === 0 ? (
-          <div className="glass" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)', gridColumn: '1 / -1' }}>
-            <Zap size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+          <div className="backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-12 text-center text-white/60 col-span-full">
+            <Zap size={48} className="mx-auto mb-4 opacity-30" />
             <p>投稿候補がありません</p>
-            <p style={{ fontSize: '0.85rem' }}>上の「一括生成」で投稿を大量生成しましょう</p>
+            <p className="text-sm mt-1">上の「一括生成」で投稿を大量生成しましょう</p>
           </div>
         ) : (
           filteredCandidates.map((candidate) => (
             <div
               key={candidate.id}
-              className="glass"
+              className={`backdrop-blur-md bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col ${
+                candidate.status === 'rejected' ? 'opacity-60' : ''
+              }`}
               style={{
-                padding: '1rem',
-                borderLeft: `3px solid ${candidate.status === 'scheduled' ? '#4ade80' :
-                  candidate.status === 'rejected' ? '#ef4444' :
-                    '#fbbf24'
-                  }`,
-                opacity: candidate.status === 'rejected' ? 0.6 : 1,
-                display: 'flex',
-                flexDirection: 'column',
+                borderLeftWidth: '3px',
+                borderLeftColor: candidate.status === 'scheduled' ? '#4ade80' :
+                  candidate.status === 'rejected' ? '#ef4444' : '#fbbf24'
               }}
             >
               {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <span style={{
-                    padding: '0.15rem 0.6rem',
-                    borderRadius: '6px',
-                    background: 'rgba(139, 92, 246, 0.2)',
-                    border: '1px solid rgba(139, 92, 246, 0.3)',
-                    fontSize: '0.75rem',
-                    fontWeight: 'bold',
-                    color: '#a78bfa'
-                  }}>
-                    {candidate.theme}
-                  </span>
-                </div>
+              <div className="flex justify-between items-start mb-2">
+                <span className="px-2.5 py-0.5 rounded-md bg-purple-500/20 border border-purple-500/30 text-xs font-bold text-purple-300">
+                  {candidate.theme}
+                </span>
                 <button
                   onClick={() => deletePost(candidate.id)}
-                  style={{
-                    padding: '0.25rem',
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer',
-                    opacity: 0.5,
-                  }}
+                  className="p-1 bg-transparent border-none text-white/40 cursor-pointer hover:text-white/70 transition-colors"
                 >
                   <X size={14} />
                 </button>
@@ -582,157 +483,80 @@ export default function ApprovalPage() {
 
               {/* Content */}
               {editingId === candidate.id ? (
-                <div style={{ marginBottom: '0.75rem', flex: 1 }}>
+                <div className="mb-3 flex-1">
                   <textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    style={{
-                      width: '100%',
-                      minHeight: '120px',
-                      padding: '0.75rem',
-                      borderRadius: '6px',
-                      background: 'rgba(0,0,0,0.3)',
-                      border: '1px solid var(--glass-border)',
-                      color: 'white',
-                      fontSize: '0.85rem',
-                      lineHeight: '1.6',
-                      resize: 'vertical',
-                    }}
+                    className="w-full min-h-[120px] p-3 rounded-md bg-black/30 border border-white/10 text-white text-sm leading-relaxed resize-y"
                   />
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <div className="flex gap-2 mt-2">
                     <button
                       onClick={() => saveEdit(candidate.id)}
-                      style={{
-                        padding: '0.4rem 0.75rem',
-                        borderRadius: '6px',
-                        background: '#4ade80',
-                        border: 'none',
-                        color: 'black',
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                      }}
+                      className="px-3 py-1.5 rounded-md bg-green-400 border-none text-black text-xs cursor-pointer hover:bg-green-300 transition-colors"
                     >
                       保存
                     </button>
                     <button
                       onClick={() => setEditingId(null)}
-                      style={{
-                        padding: '0.4rem 0.75rem',
-                        borderRadius: '6px',
-                        background: 'rgba(255,255,255,0.1)',
-                        border: '1px solid var(--glass-border)',
-                        color: 'white',
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                      }}
+                      className="px-3 py-1.5 rounded-md bg-white/10 border border-white/10 text-white text-xs cursor-pointer hover:bg-white/20 transition-colors"
                     >
                       取消
                     </button>
                   </div>
                 </div>
               ) : (
-                <div style={{
-                  whiteSpace: 'pre-wrap',
-                  fontSize: '0.85rem',
-                  lineHeight: '1.6',
-                  marginBottom: '0.75rem',
-                  padding: '0.75rem',
-                  background: 'rgba(0,0,0,0.2)',
-                  borderRadius: '6px',
-                  flex: 1,
-                  maxHeight: '150px',
-                  overflowY: 'auto',
-                }}>
+                <div className="whitespace-pre-wrap text-sm leading-relaxed mb-3 p-3 bg-black/20 rounded-md flex-1 max-h-[150px] overflow-y-auto scrollbar-thin">
                   {candidate.content}
                 </div>
               )}
 
-              {/* 予約済み表示 */}
+              {/* Scheduled Badge */}
               {candidate.status === 'scheduled' && candidate.scheduledTime && (
-                <div style={{
-                  padding: '0.5rem',
-                  background: 'rgba(74, 222, 128, 0.1)',
-                  borderRadius: '6px',
-                  marginBottom: '0.5rem',
-                  fontSize: '0.75rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  color: '#4ade80'
-                }}>
+                <div className="p-2 bg-green-400/10 rounded-md mb-2 text-xs flex items-center gap-2 text-green-400">
                   <Clock size={12} />
                   {new Date(candidate.scheduledTime).toLocaleString('ja-JP')}
                 </div>
               )}
 
-              {/* 壁打ちチャット */}
+              {/* Chat Panel */}
               {chatOpen === candidate.id && (
-                <div style={{
-                  marginBottom: '0.75rem',
-                  padding: '0.75rem',
-                  background: 'rgba(0,0,0,0.3)',
-                  borderRadius: '6px',
-                }}>
-                  <div style={{
-                    maxHeight: '150px',
-                    overflowY: 'auto',
-                    marginBottom: '0.5rem',
-                  }}>
+                <div className="mb-3 p-3 bg-black/30 rounded-md">
+                  <div className="max-h-[150px] overflow-y-auto mb-2 scrollbar-thin">
                     {(chatMessages[candidate.id] || []).map((msg, i) => (
                       <div
                         key={i}
-                        style={{
-                          padding: '0.5rem',
-                          marginBottom: '0.25rem',
-                          borderRadius: '6px',
-                          background: msg.role === 'user'
-                            ? 'rgba(139, 92, 246, 0.2)'
-                            : 'rgba(59, 130, 246, 0.2)',
-                          marginLeft: msg.role === 'user' ? '1.5rem' : '0',
-                          marginRight: msg.role === 'assistant' ? '1.5rem' : '0',
-                        }}
+                        className={`p-2 mb-1 rounded-md ${
+                          msg.role === 'user'
+                            ? 'bg-purple-500/20 ml-6'
+                            : 'bg-blue-500/20 mr-6'
+                        }`}
                       >
-                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>
+                        <div className="text-[10px] text-white/60 mb-0.5">
                           {msg.role === 'user' ? 'あなた' : 'AI'}
                         </div>
-                        <div style={{ fontSize: '0.8rem', whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                        <div className="text-xs whitespace-pre-wrap">{msg.content}</div>
                       </div>
                     ))}
                     {isChatLoading && (
-                      <div style={{ padding: '0.5rem' }}>
+                      <div className="p-2">
                         <TypingIndicator text="修正案を作成中" />
                       </div>
                     )}
                     <div ref={chatEndRef} />
                   </div>
-                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                  <div className="flex gap-1">
                     <input
                       type="text"
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendChatMessage(candidate.id)}
                       placeholder="修正指示..."
-                      style={{
-                        flex: 1,
-                        padding: '0.5rem',
-                        borderRadius: '6px',
-                        background: 'rgba(0,0,0,0.3)',
-                        border: '1px solid var(--glass-border)',
-                        color: 'white',
-                        fontSize: '0.8rem',
-                      }}
+                      className="flex-1 px-2 py-1.5 rounded-md bg-black/30 border border-white/10 text-white text-xs"
                     />
                     <button
                       onClick={() => sendChatMessage(candidate.id)}
                       disabled={isChatLoading}
-                      style={{
-                        padding: '0.5rem',
-                        borderRadius: '6px',
-                        background: 'var(--gradient-main)',
-                        border: 'none',
-                        color: 'white',
-                        cursor: 'pointer',
-                      }}
+                      className="p-1.5 rounded-md bg-gradient-to-r from-purple-500 to-pink-500 border-none text-white cursor-pointer disabled:opacity-50"
                     >
                       <Send size={14} />
                     </button>
@@ -740,70 +564,34 @@ export default function ApprovalPage() {
                 </div>
               )}
 
-              {/* 予約設定 */}
+              {/* Schedule Panel */}
               {schedulingId === candidate.id && (
-                <div style={{
-                  marginBottom: '0.75rem',
-                  padding: '0.75rem',
-                  background: 'rgba(74, 222, 128, 0.1)',
-                  borderRadius: '6px',
-                  border: '1px solid rgba(74, 222, 128, 0.2)',
-                }}>
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                <div className="mb-3 p-3 bg-green-400/10 rounded-md border border-green-400/20">
+                  <div className="flex gap-2 flex-wrap items-end">
                     <input
                       type="date"
                       value={scheduleDate}
                       onChange={(e) => setScheduleDate(e.target.value)}
-                      style={{
-                        padding: '0.4rem',
-                        borderRadius: '6px',
-                        background: 'rgba(0,0,0,0.3)',
-                        border: '1px solid var(--glass-border)',
-                        color: 'white',
-                        fontSize: '0.8rem',
-                      }}
+                      className="px-2 py-1.5 rounded-md bg-black/30 border border-white/10 text-white text-xs"
                     />
                     <input
                       type="time"
                       value={scheduleTime}
                       onChange={(e) => setScheduleTime(e.target.value)}
-                      style={{
-                        padding: '0.4rem',
-                        borderRadius: '6px',
-                        background: 'rgba(0,0,0,0.3)',
-                        border: '1px solid var(--glass-border)',
-                        color: 'white',
-                        fontSize: '0.8rem',
-                      }}
+                      className="px-2 py-1.5 rounded-md bg-black/30 border border-white/10 text-white text-xs"
                     />
                     <button
                       onClick={() => approveAndSchedule(candidate.id)}
                       disabled={!scheduleDate || !scheduleTime}
-                      style={{
-                        padding: '0.4rem 0.75rem',
-                        borderRadius: '6px',
-                        background: '#4ade80',
-                        border: 'none',
-                        color: 'black',
-                        fontWeight: 'bold',
-                        fontSize: '0.75rem',
-                        cursor: !scheduleDate || !scheduleTime ? 'not-allowed' : 'pointer',
-                        opacity: !scheduleDate || !scheduleTime ? 0.5 : 1,
-                      }}
+                      className={`px-3 py-1.5 rounded-md bg-green-400 border-none text-black font-bold text-xs ${
+                        !scheduleDate || !scheduleTime ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-green-300'
+                      }`}
                     >
                       確定
                     </button>
                     <button
                       onClick={() => setSchedulingId(null)}
-                      style={{
-                        padding: '0.4rem 0.75rem',
-                        borderRadius: '6px',
-                        background: 'rgba(255,255,255,0.1)',
-                        border: '1px solid var(--glass-border)',
-                        color: 'white',
-                        fontSize: '0.75rem',
-                        cursor: 'pointer',
-                      }}
+                      className="px-3 py-1.5 rounded-md bg-white/10 border border-white/10 text-white text-xs cursor-pointer hover:bg-white/20"
                     >
                       取消
                     </button>
@@ -811,23 +599,16 @@ export default function ApprovalPage() {
                 </div>
               )}
 
-              {/* Actions - コンパクト */}
+              {/* Actions */}
               {candidate.status === 'pending' && (
-                <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                <div className="flex gap-1 flex-wrap">
                   <button
                     onClick={() => setChatOpen(chatOpen === candidate.id ? null : candidate.id)}
-                    style={{
-                      padding: '0.4rem 0.6rem',
-                      borderRadius: '6px',
-                      background: chatOpen === candidate.id ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.15)',
-                      border: '1px solid rgba(139, 92, 246, 0.3)',
-                      color: 'white',
-                      fontSize: '0.75rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.25rem',
-                      cursor: 'pointer',
-                    }}
+                    className={`px-2.5 py-1.5 rounded-md border text-xs flex items-center gap-1 cursor-pointer transition-colors ${
+                      chatOpen === candidate.id
+                        ? 'bg-purple-500/30 border-purple-500/30'
+                        : 'bg-purple-500/15 border-purple-500/30 hover:bg-purple-500/25'
+                    }`}
                   >
                     <MessageCircle size={12} />
                     壁打ち
@@ -837,71 +618,27 @@ export default function ApprovalPage() {
                       setEditingId(candidate.id);
                       setEditContent(candidate.content);
                     }}
-                    style={{
-                      padding: '0.4rem 0.6rem',
-                      borderRadius: '6px',
-                      background: 'rgba(59, 130, 246, 0.15)',
-                      border: '1px solid rgba(59, 130, 246, 0.3)',
-                      color: 'white',
-                      fontSize: '0.75rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.25rem',
-                      cursor: 'pointer',
-                    }}
+                    className="px-2.5 py-1.5 rounded-md bg-blue-500/15 border border-blue-500/30 text-white text-xs flex items-center gap-1 cursor-pointer hover:bg-blue-500/25 transition-colors"
                   >
                     <Edit3 size={12} />
                     編集
                   </button>
                   <button
                     onClick={() => copyToClipboard(candidate.content)}
-                    style={{
-                      padding: '0.4rem 0.6rem',
-                      borderRadius: '6px',
-                      background: 'rgba(255,255,255,0.1)',
-                      border: '1px solid var(--glass-border)',
-                      color: 'white',
-                      fontSize: '0.75rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.25rem',
-                      cursor: 'pointer',
-                    }}
+                    className="px-2.5 py-1.5 rounded-md bg-white/10 border border-white/10 text-white text-xs flex items-center gap-1 cursor-pointer hover:bg-white/20 transition-colors"
                   >
                     <Copy size={12} />
                   </button>
                   <button
                     onClick={() => setSchedulingId(candidate.id)}
-                    style={{
-                      padding: '0.4rem 0.6rem',
-                      borderRadius: '6px',
-                      background: 'rgba(74, 222, 128, 0.15)',
-                      border: '1px solid rgba(74, 222, 128, 0.3)',
-                      color: '#4ade80',
-                      fontSize: '0.75rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.25rem',
-                      cursor: 'pointer',
-                    }}
+                    className="px-2.5 py-1.5 rounded-md bg-green-400/15 border border-green-400/30 text-green-400 text-xs flex items-center gap-1 cursor-pointer hover:bg-green-400/25 transition-colors"
                   >
                     <Check size={12} />
                     予約
                   </button>
                   <button
                     onClick={() => rejectPost(candidate.id)}
-                    style={{
-                      padding: '0.4rem 0.6rem',
-                      borderRadius: '6px',
-                      background: 'rgba(239, 68, 68, 0.15)',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
-                      color: '#ef4444',
-                      fontSize: '0.75rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.25rem',
-                      cursor: 'pointer',
-                    }}
+                    className="px-2.5 py-1.5 rounded-md bg-red-500/15 border border-red-500/30 text-red-400 text-xs flex items-center gap-1 cursor-pointer hover:bg-red-500/25 transition-colors"
                   >
                     <X size={12} />
                   </button>
@@ -911,16 +648,6 @@ export default function ApprovalPage() {
           ))
         )}
       </div>
-
-      <style jsx>{`
-        .spin {
-          animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </main>
   );
 }

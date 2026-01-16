@@ -1,366 +1,226 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Zap, FileText, Image, Video, Activity } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Menu, X, MessageSquare, LayoutDashboard,
+  Zap, Settings, CheckCircle, User, Search, Sparkles, Heart
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-// シンプル化 - ダッシュボード1つに統合
 const menuItems = [
+  {
+    id: 'chat',
+    label: 'チャット',
+    sublabel: 'AIと対話',
+    icon: MessageSquare,
+    href: '/',
+  },
   {
     id: 'dashboard',
     label: 'ダッシュボード',
-    sublabel: '全体状況・投稿管理・分析',
-    icon: Activity,
-    href: '/automation',
-    isMain: true,
-    gradient: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+    sublabel: '全データ一覧',
+    icon: LayoutDashboard,
+    href: '/dashboard',
+  },
+  {
+    id: 'settings',
+    label: '設定',
+    sublabel: 'API連携',
+    icon: Settings,
+    href: '/settings',
   },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const [pulsePhase, setPulsePhase] = useState(0);
-
-  // アニメーション用の位相更新
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPulsePhase(p => (p + 1) % 100);
-    }, 50);
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <>
-      {/* ハンバーガーボタン（モバイル用） */}
-      <button
+      {/* Mobile Menu Button */}
+      <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="mobile-menu-btn"
-        style={{
-          position: 'fixed',
-          top: '1rem',
-          left: '1rem',
-          zIndex: 1001,
-          width: '48px',
-          height: '48px',
-          borderRadius: '14px',
-          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2))',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(139, 92, 246, 0.3)',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          boxShadow: '0 4px 20px rgba(139, 92, 246, 0.2)',
-        }}
+        className="fixed top-6 left-6 z-modal w-12 h-12 rounded-2xl glass flex items-center justify-center md:hidden"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
       >
-        {isOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
+        <AnimatePresence mode="wait">
+          {isOpen ? (
+            <motion.div
+              key="close"
+              initial={{ rotate: -90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: 90, opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              <X size={22} className="text-white/90" />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="menu"
+              initial={{ rotate: 90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: -90, opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              <Menu size={22} className="text-white/90" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.button>
 
-      {/* オーバーレイ */}
-      {isOpen && (
-        <div
-          onClick={() => setIsOpen(false)}
-          className="sidebar-overlay"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.7)',
-            backdropFilter: 'blur(4px)',
-            zIndex: 999,
-          }}
-        />
-      )}
+      {/* Overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-overlay md:hidden"
+          />
+        )}
+      </AnimatePresence>
 
-      {/* サイドバー - 先進的デザイン */}
-      <aside style={{
-        width: '280px',
-        height: '100vh',
-        background: 'linear-gradient(180deg, rgba(15, 15, 25, 0.98) 0%, rgba(10, 10, 20, 0.99) 100%)',
-        backdropFilter: 'blur(20px)',
-        borderRight: '1px solid rgba(139, 92, 246, 0.15)',
-        padding: '1.5rem 1rem',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'fixed',
-        left: isOpen ? 0 : '-280px',
-        top: 0,
-        zIndex: 1000,
-        transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        overflowY: 'auto',
-        overflowX: 'hidden',
-      }}
-        className="sidebar-desktop-open"
+      {/* Sidebar */}
+      <motion.aside
+        initial={false}
+        animate={{ x: isOpen ? 0 : -280 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className={cn(
+          "w-[280px] h-screen fixed top-0 left-0 z-modal",
+          "flex flex-col p-6",
+          "bg-[var(--ink-950)]/95 backdrop-blur-xl",
+          "border-r border-white/[0.06]",
+          "md:translate-x-0"
+        )}
       >
-        {/* ロゴエリア - 先進的 */}
-        <div style={{
-          marginBottom: '2rem',
-          padding: '1.5rem',
-          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.1))',
-          borderRadius: '16px',
-          border: '1px solid rgba(139, 92, 246, 0.2)',
-          position: 'relative',
-          overflow: 'hidden',
-        }}>
-          {/* 動くグラデーション背景 */}
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: `linear-gradient(${pulsePhase * 3.6}deg, rgba(139, 92, 246, 0.1), transparent, rgba(236, 72, 153, 0.1))`,
-            transition: 'background 0.1s linear',
-          }} />
-
-          <div style={{ position: 'relative', textAlign: 'center' }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              marginBottom: '0.5rem',
-            }}>
-              <Activity
-                size={24}
-                style={{
-                  color: '#8b5cf6',
-                  filter: 'drop-shadow(0 0 8px rgba(139, 92, 246, 0.5))',
-                }}
-              />
-              <h1 style={{
-                fontSize: '1.4rem',
-                fontWeight: '800',
-                background: 'linear-gradient(135deg, #a78bfa, #ec4899, #8b5cf6)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                letterSpacing: '-0.02em',
-              }}>
-                MIC AI
-              </h1>
+        {/* Logo */}
+        <motion.div
+          className="mb-10 px-2"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[var(--violet-500)] to-[var(--violet-600)] flex items-center justify-center shadow-lg shadow-[var(--violet-500)]/25">
+              <Sparkles size={20} className="text-white" />
             </div>
-            <p style={{
-              fontSize: '0.7rem',
-              color: 'rgba(167, 139, 250, 0.8)',
-              fontWeight: '500',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-            }}>
-              Autonomous System
-            </p>
-
-            {/* ライブインジケーター */}
-            <div style={{
-              marginTop: '0.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-            }}>
-              <span style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: '#22c55e',
-                boxShadow: '0 0 10px rgba(34, 197, 94, 0.6)',
-                animation: 'pulse 1.5s ease-in-out infinite',
-              }} />
-              <span style={{
-                fontSize: '0.65rem',
-                color: '#22c55e',
-                fontWeight: '600',
-                letterSpacing: '0.05em',
-              }}>
-                LIVE • 自動運用中
-              </span>
+            <div>
+              <h1 className="text-lg font-semibold text-white/95">
+                MIC
+              </h1>
+              <p className="text-[11px] text-white/40">
+                あなたのアシスタント
+              </p>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* メニューアイテム - ミニマル&先進的 */}
-        <nav style={{ flex: 1 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto scrollbar-thin -mx-2 px-2">
+          <div className="flex flex-col gap-1">
             {menuItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
-              const isMain = item.isMain;
 
               return (
-                <Link
+                <motion.div
                   key={item.id}
-                  href={item.href}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1rem',
-                    padding: isMain ? '1rem 1.25rem' : '0.85rem 1.25rem',
-                    borderRadius: '14px',
-                    textDecoration: 'none',
-                    background: isActive
-                      ? `linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.15))`
-                      : isMain
-                        ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(236, 72, 153, 0.05))'
-                        : 'rgba(255, 255, 255, 0.02)',
-                    border: isActive
-                      ? '1px solid rgba(139, 92, 246, 0.4)'
-                      : isMain
-                        ? '1px solid rgba(139, 92, 246, 0.2)'
-                        : '1px solid rgba(255, 255, 255, 0.05)',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                  }}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.05 * index }}
                 >
-                  {/* アイコン背景 */}
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '12px',
-                    background: isActive ? item.gradient : 'rgba(255, 255, 255, 0.05)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.3s',
-                    boxShadow: isActive ? `0 4px 15px rgba(139, 92, 246, 0.3)` : 'none',
-                  }}>
-                    <Icon
-                      size={20}
-                      color={isActive ? 'white' : '#9ca3af'}
-                      style={{
-                        filter: isActive ? 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.5))' : 'none',
-                      }}
-                    />
-                  </div>
-
-                  {/* テキスト */}
-                  <div style={{ flex: 1 }}>
-                    <div style={{
-                      fontSize: '0.95rem',
-                      fontWeight: isActive ? '700' : '500',
-                      color: isActive ? 'white' : 'rgba(255, 255, 255, 0.85)',
-                      marginBottom: '0.15rem',
-                    }}>
-                      {item.label}
+                  <Link
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      "group flex items-center gap-4 px-4 py-3.5 rounded-xl",
+                      "transition-all duration-200",
+                      isActive
+                        ? "bg-[var(--violet-500)]/10 border border-[var(--violet-500)]/20"
+                        : "hover:bg-white/[0.03] border border-transparent"
+                    )}
+                  >
+                    {/* Icon */}
+                    <div
+                      className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center",
+                        "transition-all duration-200",
+                        isActive
+                          ? "bg-gradient-to-br from-[var(--violet-500)] to-[var(--violet-600)] shadow-lg shadow-[var(--violet-500)]/25"
+                          : "bg-white/[0.04] group-hover:bg-white/[0.08]"
+                      )}
+                    >
+                      <Icon
+                        size={18}
+                        className={cn(
+                          "transition-colors duration-200",
+                          isActive
+                            ? "text-white"
+                            : "text-[var(--muted-foreground)] group-hover:text-white/80"
+                        )}
+                      />
                     </div>
-                    <div style={{
-                      fontSize: '0.7rem',
-                      color: isActive ? 'rgba(167, 139, 250, 0.9)' : 'rgba(156, 163, 175, 0.7)',
-                      fontWeight: '400',
-                    }}>
-                      {item.sublabel}
-                    </div>
-                  </div>
 
-                  {/* AUTO バッジ (メインアイテムのみ) */}
-                  {isMain && (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '4px 8px',
-                      background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.3))',
-                      border: '1px solid rgba(139, 92, 246, 0.4)',
-                      borderRadius: '8px',
-                      fontSize: '9px',
-                      color: '#a78bfa',
-                      fontWeight: '700',
-                      letterSpacing: '0.05em',
-                    }}>
-                      <span style={{
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: '50%',
-                        background: '#8b5cf6',
-                        animation: 'pulse 1.5s ease-in-out infinite',
-                      }} />
-                      AUTO
+                    {/* Text */}
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className={cn(
+                          "text-sm font-medium truncate",
+                          "transition-colors duration-200",
+                          isActive
+                            ? "text-white"
+                            : "text-white/70 group-hover:text-white/90"
+                        )}
+                      >
+                        {item.label}
+                      </div>
+                      <div
+                        className={cn(
+                          "text-[11px] truncate",
+                          "transition-colors duration-200",
+                          isActive
+                            ? "text-[var(--violet-400)]"
+                            : "text-[var(--muted-foreground)] group-hover:text-white/50"
+                        )}
+                      >
+                        {item.sublabel}
+                      </div>
                     </div>
-                  )}
 
-                  {/* アクティブ時のグロー効果 */}
-                  {isActive && (
-                    <div style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      background: `linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.1), transparent)`,
-                      animation: 'shimmer 2s infinite',
-                      pointerEvents: 'none',
-                    }} />
-                  )}
-                </Link>
+                    {/* Active Indicator */}
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeIndicator"
+                        className="w-1 h-8 rounded-full bg-[var(--violet-500)]"
+                        transition={{ type: 'spring', damping: 25, stiffness: 400 }}
+                      />
+                    )}
+                  </Link>
+                </motion.div>
               );
             })}
           </div>
         </nav>
 
-        {/* ステータス表示 */}
-        <div style={{
-          padding: '1rem',
-          background: 'rgba(34, 197, 94, 0.08)',
-          borderRadius: '12px',
-          border: '1px solid rgba(34, 197, 94, 0.2)',
-          marginTop: '1rem',
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            marginBottom: '0.5rem',
-          }}>
-            <span style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: '#22c55e',
-              animation: 'pulse 2s ease-in-out infinite',
-            }} />
-            <span style={{
-              fontSize: '0.75rem',
-              fontWeight: '600',
-              color: '#22c55e',
-            }}>
-              システム稼働中
-            </span>
+        {/* Footer */}
+        <motion.div
+          className="pt-6 mt-auto border-t border-white/[0.04]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="px-2 py-3 flex items-center justify-center gap-1.5">
+            <span className="text-[11px] text-white/25">v1.0</span>
+            <Heart size={10} className="text-[var(--violet-500)]/50" />
           </div>
-          <div style={{
-            fontSize: '0.65rem',
-            color: 'rgba(156, 163, 175, 0.8)',
-            lineHeight: '1.5',
-          }}>
-            AI が自律的にコンテンツを生成・最適化しています
-          </div>
-        </div>
-
-        {/* フッター */}
-        <div style={{
-          padding: '1rem 0 0',
-          marginTop: '1rem',
-          borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-          fontSize: '0.65rem',
-          color: 'rgba(156, 163, 175, 0.5)',
-          textAlign: 'center',
-        }}>
-          Powered by AI Automation
-        </div>
-
-        <style jsx>{`
-          @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(0.95); }
-          }
-          @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-          }
-        `}</style>
-      </aside>
+        </motion.div>
+      </motion.aside>
     </>
   );
 }

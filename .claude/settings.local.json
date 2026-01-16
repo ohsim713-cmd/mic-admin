@@ -21,7 +21,9 @@
       "Bash(timeout /t 3 /nobreak)",
       "Bash(powershell -Command:*)",
       "Bash(node:*)",
-      "Bash(chcp:*)"
+      "Bash(chcp:*)",
+      "Bash(wc:*)",
+      "Bash(timeout /t 1)"
     ]
   }
 }

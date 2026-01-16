@@ -1,0 +1,178 @@
+{
+  "platform": "stripchat",
+  "lastUpdated": "2025-01-16",
+  "categories": {
+    "revenue_optimization": {
+      "title": "収益最大化戦略",
+      "strategies": [
+        {
+          "name": "ゴールデンタイム配信",
+          "description": "視聴者が最も多い時間帯に配信",
+          "peakTimes": {
+            "weekday": ["21:00-24:00", "01:00-03:00"],
+            "weekend": ["20:00-02:00"],
+            "timezone": "Asia/Tokyo"
+          },
+          "tips": [
+            "ピーク前15分に配信開始でウォームアップ",
+            "週末は海外視聴者も増えるため英語対応が効果的"
+          ]
+        },
+        {
+          "name": "チップメニュー最適化",
+          "description": "価格設定と内容のバランス",
+          "priceRanges": {
+            "low": { "range": "10-50 tokens", "purpose": "エンゲージメント増" },
+            "medium": { "range": "50-200 tokens", "purpose": "主要収益源" },
+            "high": { "range": "200-1000 tokens", "purpose": "スペシャルコンテンツ" }
+          },
+          "tips": [
+            "低価格帯は参加しやすさを重視",
+            "中価格帯は満足度とコスパのバランス",
+            "高価格帯は希少性とプレミアム感"
+          ]
+        },
+        {
+          "name": "ゴール設定戦略",
+          "description": "配信中のゴール達成で盛り上がりを創出",
+          "tips": [
+            "達成可能な目標を複数設定",
+            "ゴール達成時のリワードを明確に",
+            "進捗を頻繁にアナウンス"
+          ]
+        }
+      ]
+    },
+    "engagement_techniques": {
+      "title": "エンゲージメント技術",
+      "techniques": [
+        {
+          "name": "新規視聴者対応",
+          "actions": [
+            "入室挨拶を個別に",
+            "簡単な自己紹介を毎回",
+            "質問を投げかけて会話を促進"
+          ]
+        },
+        {
+          "name": "常連ファン育成",
+          "actions": [
+            "名前を覚えて呼びかけ",
+            "好みや話題を記録",
+            "限定コンテンツやファンクラブ特典"
+          ]
+        },
+        {
+          "name": "プライベートショー誘導",
+          "tips": [
+            "パブリックで雰囲気づくり",
+            "プライベートの魅力を伝える",
+            "適切なタイミングで提案"
+          ]
+        }
+      ]
+    },
+    "content_creation": {
+      "title": "コンテンツ制作",
+      "types": [
+        {
+          "type": "SNS投稿",
+          "platforms": ["Twitter/X", "Instagram", "TikTok"],
+          "frequency": "1日3-5投稿",
+          "content": [
+            "配信告知（開始2時間前、直前）",
+            "日常の切り取り",
+            "ティーザー映像",
+            "ファンへの感謝"
+          ]
+        },
+        {
+          "type": "録画コンテンツ",
+          "types": [
+            "ショート動画（15-60秒）",
+            "舞台裏・メイキング",
+            "Q&Aセッション"
+          ]
+        }
+      ]
+    },
+    "sns_marketing": {
+      "title": "SNSマーケティング",
+      "platforms": {
+        "twitter": {
+          "purpose": "リアルタイム告知・ファン交流",
+          "tips": [
+            "配信リンクを固定ツイート",
+            "ハッシュタグは3-5個程度",
+            "リプライには必ず返信"
+          ],
+          "hashtags": ["#Stripchat", "#配信", "#ライブ", "#cam"]
+        },
+        "instagram": {
+          "purpose": "ビジュアルブランディング",
+          "tips": [
+            "統一感のあるフィード",
+            "ストーリーズで日常を共有",
+            "リールでリーチ拡大"
+          ]
+        },
+        "tiktok": {
+          "purpose": "新規ファン獲得",
+          "tips": [
+            "トレンドに乗った動画",
+            "配信へのリンク誘導",
+            "ギャップのある一面を見せる"
+          ]
+        }
+      }
+    },
+    "analytics_kpis": {
+      "title": "分析指標",
+      "metrics": [
+        {
+          "name": "平均視聴者数",
+          "target": "配信時間帯により変動",
+          "improve": "サムネイル最適化、配信タイトル改善"
+        },
+        {
+          "name": "チップ転換率",
+          "formula": "チップした視聴者数 / 総視聴者数",
+          "target": "5-15%",
+          "improve": "エンゲージメント向上、メニュー最適化"
+        },
+        {
+          "name": "プライベート率",
+          "formula": "プライベート収益 / 総収益",
+          "target": "30-50%",
+          "improve": "誘導テクニック、プライベートの質向上"
+        },
+        {
+          "name": "リピート率",
+          "formula": "リピーター数 / 総視聴者数",
+          "target": "20-40%",
+          "improve": "ファン育成、スケジュール固定"
+        }
+      ]
+    }
+  },
+  "templates": {
+    "stream_titles": [
+      "💕 一緒に楽しい時間を過ごそう #goal",
+      "🔥 今夜は特別な夜...♡",
+      "✨ 新しいコスチュームお披露目！",
+      "🎁 ゴール達成でスペシャルshow！"
+    ],
+    "bio_examples": [
+      "Welcome to my room! 💕\n🇯🇵 Japanese girl\n⏰ Schedule: Mon-Fri 22:00 JST\n🎁 Check my tip menu!\n💫 Let's have fun together!",
+      "Hey there! I'm [Name] ♡\nLet's make beautiful memories together ✨\nI love chatting and making new friends!\nDon't be shy, say hi! 💋"
+    ],
+    "tip_menu_items": [
+      { "name": "Kiss 💋", "price": 15 },
+      { "name": "Flash ⚡", "price": 50 },
+      { "name": "Dance 💃", "price": 30 },
+      { "name": "Song Request 🎵", "price": 20 },
+      { "name": "Your Name on Body ✍️", "price": 100 },
+      { "name": "Control Toy 1min 🎮", "price": 25 }
+    ]
+  }
+}

@@ -955,3 +955,85 @@ export async function listAllKnowledgeFiles(): Promise<string[]> {
 export async function getKnowledgeFileContent(filename: string): Promise<any | null> {
   return loadJson<any>(filename);
 }
+
+// ========================================
+// ユーザー気づきローダー
+// ========================================
+
+interface UserInsight {
+  id: string;
+  timestamp: string;
+  category: 'competitor' | 'marketing' | 'product' | 'trend' | 'idea' | 'other';
+  title: string;
+  content: string;
+  source: 'brainstorm' | 'manual';
+  tags: string[];
+  actionable: boolean;
+  priority: 'high' | 'medium' | 'low';
+  applied: boolean;
+}
+
+interface UserInsightsDB {
+  insights: UserInsight[];
+  lastUpdated: string;
+}
+
+/**
+ * ユーザーの気づきを読み込み
+ */
+export async function loadUserInsights(): Promise<UserInsight[]> {
+  const data = await loadJson<UserInsightsDB>('user_insights.json');
+  return data?.insights || [];
+}
+
+/**
+ * 未適用の気づきを取得（投稿生成に使用）
+ */
+export async function getUnappliedInsights(limit: number = 5): Promise<UserInsight[]> {
+  const insights = await loadUserInsights();
+  return insights
+    .filter(i => !i.applied && i.actionable)
+    .sort((a, b) => {
+      // 優先度でソート
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      return priorityOrder[a.priority] - priorityOrder[b.priority];
+    })
+    .slice(0, limit);
+}
+
+/**
+ * 気づきを投稿生成用のコンテキストに変換
+ */
+export async function buildInsightsContext(): Promise<string | null> {
+  const insights = await getUnappliedInsights(3);
+  if (insights.length === 0) return null;
+
+  const categoryLabels: Record<string, string> = {
+    competitor: '競合分析',
+    marketing: 'マーケティング',
+    product: 'サービス改善',
+    trend: 'トレンド',
+    idea: 'アイデア',
+    other: 'その他',
+  };
+
+  const formatted = insights.map(i =>
+    `- [${categoryLabels[i.category]}] ${i.title}: ${i.content}`
+  ).join('\n');
+
+  return `
+【ユーザーの最新気づき（これらを参考に投稿を作成）】
+${formatted}
+`;
+}
+
+/**
+ * ランダムな気づきを1つ取得
+ */
+export async function getRandomInsight(): Promise<string | null> {
+  const insights = await getUnappliedInsights(10);
+  if (insights.length === 0) return null;
+
+  const insight = insights[Math.floor(Math.random() * insights.length)];
+  return `【社長の気づき】${insight.title}: ${insight.content}`;
+}

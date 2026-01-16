@@ -6,6 +6,8 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { AccountType } from './sns-adapter';
+import { loadPostsHistory, PostHistoryEntry } from '@/lib/analytics/posts-history';
+import { learnFromPost } from '@/lib/database/success-patterns-db';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'dm_tracking.json');
 
@@ -294,26 +296,45 @@ export async function getHistoricalStats(days: number = 7): Promise<{
 
 /**
  * 投稿とDMの相関を分析
+ * 投稿履歴と連携して、どの投稿パターンがDMを生んでいるか分析
  */
 export async function analyzePostPerformance(): Promise<{
   topPerformingPosts: {
     postId: string;
     dmCount: number;
     conversionCount: number;
+    text?: string;
+    target?: string;
+    benefit?: string;
   }[];
   byTarget: Record<string, number>;
   byBenefit: Record<string, number>;
   byAccount: Record<'liver' | 'chatre1' | 'chatre2', { dms: number; conversions: number }>;
+  dmGeneratingPatterns: string[];
 }> {
   const db = await loadDB();
 
+  // 投稿履歴を読み込んでマッピング
+  const postsHistory = loadPostsHistory();
+  const postsMap = new Map<string, PostHistoryEntry>();
+  for (const post of postsHistory.posts) {
+    if (post.tweetId) {
+      postsMap.set(post.tweetId, post);
+    }
+    postsMap.set(post.id, post);
+  }
+
   // 投稿IDごとのDM数
-  const postDMs: Record<string, { dms: number; conversions: number }> = {};
+  const postDMs: Record<string, { dms: number; conversions: number; post?: PostHistoryEntry }> = {};
 
   for (const entry of db.entries) {
     if (entry.linkedPostId) {
       if (!postDMs[entry.linkedPostId]) {
-        postDMs[entry.linkedPostId] = { dms: 0, conversions: 0 };
+        postDMs[entry.linkedPostId] = {
+          dms: 0,
+          conversions: 0,
+          post: postsMap.get(entry.linkedPostId),
+        };
       }
       postDMs[entry.linkedPostId].dms++;
       if (entry.status === 'converted') {
@@ -327,9 +348,25 @@ export async function analyzePostPerformance(): Promise<{
       postId,
       dmCount: data.dms,
       conversionCount: data.conversions,
+      text: data.post?.text?.substring(0, 100),
+      target: data.post?.target,
+      benefit: data.post?.benefit,
     }))
     .sort((a, b) => b.dmCount - a.dmCount)
     .slice(0, 10);
+
+  // ターゲット別・メリット別のDM数
+  const byTarget: Record<string, number> = {};
+  const byBenefit: Record<string, number> = {};
+
+  for (const [, data] of Object.entries(postDMs)) {
+    if (data.post?.target) {
+      byTarget[data.post.target] = (byTarget[data.post.target] || 0) + data.dms;
+    }
+    if (data.post?.benefit) {
+      byBenefit[data.post.benefit] = (byBenefit[data.post.benefit] || 0) + data.dms;
+    }
+  }
 
   // アカウント別の成績
   const byAccount: Record<'liver' | 'chatre1' | 'chatre2', { dms: number; conversions: number }> = {
@@ -347,11 +384,29 @@ export async function analyzePostPerformance(): Promise<{
     }
   }
 
+  // DMを生んだ投稿のパターンを抽出（成功パターンDBに学習）
+  const dmGeneratingPatterns: string[] = [];
+  for (const post of topPerformingPosts) {
+    if (post.dmCount >= 2 && post.text) {
+      dmGeneratingPatterns.push(post.text);
+      // DMを2件以上生んだ投稿は成功パターンとして学習
+      try {
+        const fullPost = postsMap.get(post.postId);
+        if (fullPost?.text) {
+          await learnFromPost(fullPost.text, 9.0, true); // DM獲得投稿は高スコア
+        }
+      } catch (e) {
+        console.error('[DMTracker] Failed to learn from DM-generating post:', e);
+      }
+    }
+  }
+
   return {
     topPerformingPosts,
-    byTarget: {}, // 投稿ログと連携して実装
-    byBenefit: {}, // 投稿ログと連携して実装
+    byTarget,
+    byBenefit,
     byAccount,
+    dmGeneratingPatterns,
   };
 }
 

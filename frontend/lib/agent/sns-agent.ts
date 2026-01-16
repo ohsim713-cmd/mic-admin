@@ -1129,6 +1129,100 @@ async function executeTool(name: string, input: Record<string, unknown>): Promis
         }, null, 2);
       }
 
+      // ========================================
+      // 自動化サブエージェント
+      // ========================================
+
+      case 'scraper_analyze_profile': {
+        const { executeSubAgentTool } = await import('./sub-agents/index');
+        const result = await executeSubAgentTool('scraper_analyze_profile', {
+          platform: input.platform,
+          analysisType: input.analysisType,
+        });
+        return JSON.stringify(result, null, 2);
+      }
+
+      case 'scraper_get_trending': {
+        const { executeSubAgentTool } = await import('./sub-agents/index');
+        const result = await executeSubAgentTool('scraper_get_trending', {
+          platform: input.platform,
+          category: input.category,
+        });
+        return JSON.stringify(result, null, 2);
+      }
+
+      case 'chrome_scrape_page': {
+        const { executeSubAgentTool } = await import('./sub-agents/index');
+        const result = await executeSubAgentTool('chrome_scrape_page', {
+          url: input.url,
+          selector: input.selector,
+        });
+        return JSON.stringify(result, null, 2);
+      }
+
+      case 'chrome_take_screenshot': {
+        const { executeSubAgentTool } = await import('./sub-agents/index');
+        const result = await executeSubAgentTool('chrome_take_screenshot', {
+          url: input.url,
+          fullPage: input.fullPage,
+        });
+        return JSON.stringify(result, null, 2);
+      }
+
+      case 'chrome_schedule_scrape': {
+        const { executeSubAgentTool } = await import('./sub-agents/index');
+        const result = await executeSubAgentTool('chrome_schedule_scrape', {
+          url: input.url,
+          interval: input.interval,
+          selector: input.selector,
+        });
+        return JSON.stringify(result, null, 2);
+      }
+
+      case 'analytics_generate_report': {
+        const { executeSubAgentTool } = await import('./sub-agents/index');
+        const result = await executeSubAgentTool('analytics_generate_report', {
+          period: input.period,
+          metrics: input.metrics,
+        });
+        return JSON.stringify(result, null, 2);
+      }
+
+      case 'analytics_get_insights': {
+        const { executeSubAgentTool } = await import('./sub-agents/index');
+        const result = await executeSubAgentTool('analytics_get_insights', {
+          category: input.category,
+        });
+        return JSON.stringify(result, null, 2);
+      }
+
+      case 'automation_create_schedule': {
+        const { executeSubAgentTool } = await import('./sub-agents/index');
+        const result = await executeSubAgentTool('automation_create_schedule', {
+          account: input.account,
+          times: input.times,
+          postsPerDay: input.postsPerDay,
+        });
+        return JSON.stringify(result, null, 2);
+      }
+
+      case 'automation_create_trigger': {
+        const { executeSubAgentTool } = await import('./sub-agents/index');
+        const result = await executeSubAgentTool('automation_create_trigger', {
+          event: input.event,
+          action: input.action,
+        });
+        return JSON.stringify(result, null, 2);
+      }
+
+      case 'automation_list': {
+        const { executeSubAgentTool } = await import('./sub-agents/index');
+        const result = await executeSubAgentTool('automation_list_automations', {
+          type: input.type,
+        });
+        return JSON.stringify(result, null, 2);
+      }
+
       default:
         return JSON.stringify({ error: `Unknown tool: ${name}` });
     }
@@ -1241,6 +1335,31 @@ const SYSTEM_PROMPT = `あなたは「番頭」です。SNSマーケティング
 似たような投稿やテーマのかぶりを防ぐ:
 - check_similarity: 新しい投稿文が既存と類似していないかチェック
 - get_variation_status: テーマの使用状況・バリエーションを確認
+
+【自動化サブエージェント】★完全自動化★
+データ収集・分析・自動化を担当するサブエージェント群:
+
+■ スクレイパーエージェント
+- scraper_analyze_profile: Stripchat/DXLiveのプロフィール画像を分析
+- scraper_get_trending: 配信プラットフォームのトレンドを取得
+
+■ Chrome拡張エージェント
+- chrome_scrape_page: URLのページ内容をスクレイピング
+- chrome_take_screenshot: URLのスクリーンショットを撮影
+- chrome_schedule_scrape: 定期スクレイピングをスケジュール
+
+■ アナリティクスエージェント
+- analytics_generate_report: パフォーマンスレポートを生成
+- analytics_get_insights: インサイトを抽出（最適投稿時間、ベストコンテンツなど）
+
+■ 自動化エージェント
+- automation_create_schedule: 投稿スケジュールを作成
+- automation_create_trigger: イベントトリガーを設定（DM受信→通知など）
+- automation_list: 設定済みの自動化一覧を確認
+
+【社長のビジョン】
+「見る」のはプログラム、「考える」のはAI。
+完全自動化を目指し、AIを活用して大企業を経営する。
 
 日本語で簡潔に、番頭らしく回答してください。`;
 
@@ -2157,6 +2276,188 @@ const functionDeclarations = [
       required: ['topic'],
     },
   },
+  // ========================================
+  // 自動化サブエージェント
+  // ========================================
+  {
+    name: 'scraper_analyze_profile',
+    description: '【スクレイパー】配信サイト（Stripchat/DXLive）のプロフィールを画像から分析。チップメニュー、Lovense設定などを解析。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        platform: {
+          type: SchemaType.STRING,
+          description: 'プラットフォーム: stripchat, dxlive, chaturbate',
+        },
+        analysisType: {
+          type: SchemaType.STRING,
+          description: '分析タイプ: tip_menu, profile, lovense, full',
+        },
+      },
+      required: ['platform'],
+    },
+  },
+  {
+    name: 'scraper_get_trending',
+    description: '【スクレイパー】配信プラットフォームのトレンド情報（トップ配信者、人気タグなど）を取得。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        platform: {
+          type: SchemaType.STRING,
+          description: 'プラットフォーム: stripchat, dxlive, chaturbate',
+        },
+        category: {
+          type: SchemaType.STRING,
+          description: 'カテゴリ: top_earners, new_models, trending, tags',
+        },
+      },
+      required: ['platform'],
+    },
+  },
+  {
+    name: 'chrome_scrape_page',
+    description: '【Chrome拡張】指定URLのページ内容をスクレイピング。Chrome拡張機能と連携。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        url: {
+          type: SchemaType.STRING,
+          description: 'スクレイピング対象のURL',
+        },
+        selector: {
+          type: SchemaType.STRING,
+          description: '抽出するCSSセレクター（省略時はページ全体）',
+        },
+      },
+      required: ['url'],
+    },
+  },
+  {
+    name: 'chrome_take_screenshot',
+    description: '【Chrome拡張】指定URLのスクリーンショットを撮影。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        url: {
+          type: SchemaType.STRING,
+          description: 'スクリーンショット対象のURL',
+        },
+        fullPage: {
+          type: SchemaType.STRING,
+          description: 'フルページスクリーンショット（true/false）',
+        },
+      },
+      required: ['url'],
+    },
+  },
+  {
+    name: 'chrome_schedule_scrape',
+    description: '【Chrome拡張】定期スクレイピングをスケジュール。特定URLのデータを定期的に収集。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        url: {
+          type: SchemaType.STRING,
+          description: 'スクレイピング対象のURL',
+        },
+        interval: {
+          type: SchemaType.STRING,
+          description: '実行間隔: hourly, daily, weekly',
+        },
+        selector: {
+          type: SchemaType.STRING,
+          description: '抽出するCSSセレクター',
+        },
+      },
+      required: ['url', 'interval'],
+    },
+  },
+  {
+    name: 'analytics_generate_report',
+    description: '【アナリティクス】指定期間のパフォーマンスレポートを生成。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        period: {
+          type: SchemaType.STRING,
+          description: 'レポート期間: today, week, month, custom',
+        },
+        metrics: {
+          type: SchemaType.STRING,
+          description: '含めるメトリクス（カンマ区切り）',
+        },
+      },
+      required: ['period'],
+    },
+  },
+  {
+    name: 'analytics_get_insights',
+    description: '【アナリティクス】データからインサイトを抽出。投稿最適時間、ベストコンテンツなどを分析。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        category: {
+          type: SchemaType.STRING,
+          description: 'インサイトカテゴリ: best_time, best_content, audience, improvement',
+        },
+      },
+      required: ['category'],
+    },
+  },
+  {
+    name: 'automation_create_schedule',
+    description: '【自動化】投稿スケジュールを作成。指定時間に自動投稿。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        account: {
+          type: SchemaType.STRING,
+          description: '対象アカウント: liver, chatre1, chatre2, all',
+        },
+        times: {
+          type: SchemaType.STRING,
+          description: '投稿時間（カンマ区切り、例: 09:00,12:00,19:00）',
+        },
+        postsPerDay: {
+          type: SchemaType.STRING,
+          description: '1日の投稿数',
+        },
+      },
+      required: ['account'],
+    },
+  },
+  {
+    name: 'automation_create_trigger',
+    description: '【自動化】イベントトリガーを設定。特定イベント発生時に自動アクション。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        event: {
+          type: SchemaType.STRING,
+          description: 'トリガーイベント: dm_received, mention, follower, engagement_spike, low_stock',
+        },
+        action: {
+          type: SchemaType.STRING,
+          description: '実行アクション: notify, generate_post, send_dm, run_analysis',
+        },
+      },
+      required: ['event', 'action'],
+    },
+  },
+  {
+    name: 'automation_list',
+    description: '【自動化】設定済みの自動化一覧を取得。スケジュール、トリガー、バッチ処理を確認。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        type: {
+          type: SchemaType.STRING,
+          description: 'フィルタタイプ: all, schedule, trigger, batch',
+        },
+      },
+    },
+  },
 ];
 
 // イベントタイプ
@@ -2183,12 +2484,13 @@ export async function chat(
 // ストリーミング対応のchat関数
 export async function* chatStream(
   userMessage: string,
-  history: AgentMessage[] = []
+  history: AgentMessage[] = [],
+  imageBase64?: string
 ): AsyncGenerator<AgentEvent> {
   const toolsUsed: string[] = [];
 
   try {
-    yield { type: 'thinking', content: 'リクエストを分析中...' };
+    yield { type: 'thinking', content: imageBase64 ? '画像を分析中...' : 'リクエストを分析中...' };
 
     // Geminiモデル初期化
     const model = genAI.getGenerativeModel({
@@ -2210,8 +2512,25 @@ export async function* chatStream(
 
     yield { type: 'thinking', content: 'Gemini APIに接続中...' };
 
+    // メッセージパーツを構築（テキスト + 画像）
+    const messageParts: any[] = [];
+    if (userMessage) {
+      messageParts.push({ text: userMessage });
+    }
+    if (imageBase64) {
+      // Base64画像をGemini形式に変換
+      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      const mimeType = imageBase64.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/jpeg';
+      messageParts.push({
+        inlineData: {
+          mimeType,
+          data: base64Data,
+        },
+      });
+    }
+
     // メッセージ送信
-    let result = await chatSession.sendMessage(userMessage);
+    let result = await chatSession.sendMessage(messageParts);
     let responseText = '';
 
     // Function Callingループ（最大5回）

@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import crypto from 'crypto';
 import { runPostGraph } from '@/lib/langgraph';
+import { notifyPostSuccess, notifyError } from '@/lib/discord';
 
 const KNOWLEDGE_DIR = path.join(process.cwd(), 'knowledge');
 const SETTINGS_FILE = path.join(KNOWLEDGE_DIR, 'twitter_credentials.json');
@@ -25,8 +26,30 @@ function decrypt(text: string): string {
   }
 }
 
-// Twitter認証情報読み込み
-function loadCredentials() {
+// Twitter認証情報読み込み（アカウント別対応）
+function loadCredentials(account: string = 'liver') {
+  // まず環境変数から読み込みを試みる
+  const accountMap: Record<string, string> = {
+    'liver': 'TT_LIVER',
+    'chatre1': 'MIC_CHAT',
+    'chatre2': 'MS_STRIPCHAT',
+  };
+
+  const envSuffix = accountMap[account] || 'TT_LIVER';
+
+  const envCredentials = {
+    apiKey: process.env[`TWITTER_API_KEY_${envSuffix}`] || '',
+    apiSecret: process.env[`TWITTER_API_SECRET_${envSuffix}`] || '',
+    accessToken: process.env[`TWITTER_ACCESS_TOKEN_${envSuffix}`] || '',
+    accessSecret: process.env[`TWITTER_ACCESS_TOKEN_SECRET_${envSuffix}`] || '',
+  };
+
+  // 環境変数が設定されていれば使用
+  if (envCredentials.apiKey && envCredentials.accessToken) {
+    return envCredentials;
+  }
+
+  // フォールバック: ファイルから読み込み
   try {
     if (!fs.existsSync(SETTINGS_FILE)) return null;
     const data = fs.readFileSync(SETTINGS_FILE, 'utf-8');
@@ -197,6 +220,15 @@ export async function POST(request: NextRequest) {
       savePostLog(log);
 
       if (result.posted) {
+        // Discord通知（投稿成功）
+        notifyPostSuccess({
+          account: 'liver',
+          tweetId: result.tweetId || '',
+          postText: result.revisedPost || result.generatedPost,
+          qualityScore: result.qualityScore?.overall,
+          slot: currentSlot.slot,
+        }).catch(console.error);
+
         return NextResponse.json({
           success: true,
           message: `投稿完了 (${todayCount + 1}/15) [LangGraph]`,
@@ -208,6 +240,13 @@ export async function POST(request: NextRequest) {
           flowLogs: result.logs,
         });
       } else {
+        // Discord通知（投稿失敗）
+        notifyError({
+          title: '自動投稿失敗',
+          error: result.error || 'Unknown error',
+          context: `Slot #${currentSlot.slot} (${currentSlot.type})`,
+        }).catch(console.error);
+
         return NextResponse.json({
           success: false,
           error: result.error,
@@ -218,6 +257,14 @@ export async function POST(request: NextRequest) {
       }
     } catch (error: any) {
       console.error('[LangGraph] Error:', error);
+
+      // Discord通知（エラー）
+      notifyError({
+        title: 'LangGraph実行エラー',
+        error: error.message,
+        context: `Slot #${currentSlot.slot}`,
+      }).catch(console.error);
+
       const log = {
         postedAt: new Date().toISOString(),
         success: false,

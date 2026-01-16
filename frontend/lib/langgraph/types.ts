@@ -20,6 +20,7 @@ export interface PostState {
   postType: string;
   slot: number;
   targetAudience: string;
+  account?: string; // 投稿先アカウント（liver, chatre1, chatre2）
 
   // 生成結果
   generatedPost: string;

@@ -3,12 +3,13 @@
  *
  * Vercel Cron: 毎週日曜 UTC 12:00 (JST 21:00)
  * 週間パフォーマンスを分析し、改善提案を生成
+ * 学習結果を自動的にナレッジベースに反映
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { getWeeklyStats } from '@/lib/database/schedule-db';
-import { getSuccessPatterns } from '@/lib/database/success-patterns-db';
+import { getSuccessPatterns, getPatternDetails, addSuccessPattern } from '@/lib/database/success-patterns-db';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -88,12 +89,50 @@ ${successPatterns.slice(0, 5).map((p, i) => `${i + 1}. ${p}`).join('\n') || 'な
       }
     }
 
-    // 4. レポートを保存
+    // 4. 分析結果から新しいパターンを自動学習
+    let learnedPatterns = 0;
+    if (analysis?.act?.improvements) {
+      for (const improvement of analysis.act.improvements) {
+        // 改善提案からパターンを抽出
+        if (improvement.action && improvement.action.includes('「') && improvement.action.includes('」')) {
+          const match = improvement.action.match(/「([^」]+)」/g);
+          if (match) {
+            for (const m of match) {
+              const pattern = m.replace(/[「」]/g, '');
+              if (pattern.length > 5 && pattern.length < 30) {
+                // 短すぎず長すぎないパターンを学習
+                const category = pattern.includes('DM') || pattern.includes('気軽') ? 'cta' :
+                                pattern.includes('万') || pattern.includes('稼') ? 'benefit' : 'hook';
+                await addSuccessPattern(pattern, category, 8.0);
+                learnedPatterns++;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 5. 高スコアパターンの強化（使用頻度が高く効果的なパターンを優先）
+    const patternDetails = await getPatternDetails();
+    const topPatterns = patternDetails
+      .filter(p => p.score >= 8.5)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
+
+    // 6. レポートを保存
     const report = {
       timestamp: new Date().toISOString(),
       weeklyStats,
       successPatternsCount: successPatterns.length,
       analysis,
+      autoLearning: {
+        learnedPatterns,
+        topPatterns: topPatterns.map(p => ({
+          pattern: p.pattern,
+          category: p.category,
+          score: p.score,
+        })),
+      },
     };
 
     const reportsDir = path.join(process.cwd(), 'data', 'pdca_reports');
@@ -111,6 +150,10 @@ ${successPatterns.slice(0, 5).map((p, i) => `${i + 1}. ${p}`).join('\n') || 'な
       success: true,
       timestamp: new Date().toISOString(),
       report,
+      autoLearning: {
+        learnedPatterns,
+        topPatternsCount: topPatterns.length,
+      },
     });
   } catch (error) {
     console.error('[CRON] Weekly PDCA error:', error);

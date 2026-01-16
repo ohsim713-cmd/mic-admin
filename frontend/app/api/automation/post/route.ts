@@ -5,6 +5,7 @@ import {
 } from '@/lib/dm-hunter/sns-adapter';
 import { POSTING_SCHEDULE } from '@/lib/automation/scheduler';
 import { addToPostsHistory } from '@/lib/analytics/posts-history';
+import { notifyPostSuccess, notifyError } from '@/lib/discord';
 
 // POST: 自動投稿実行
 export async function POST(request: NextRequest) {
@@ -107,10 +108,34 @@ export async function POST(request: NextRequest) {
             tweetId: postResult.id,
             timestamp: new Date().toISOString(),
           });
+
+          // Discord通知（投稿成功）
+          notifyPostSuccess({
+            account,
+            tweetId: postResult.id || '',
+            postText,
+            qualityScore: score,
+            slot: POSTING_SCHEDULE.slots.indexOf(currentSlot) + 1,
+          }).catch(console.error);
+        } else {
+          // Discord通知（投稿失敗）
+          notifyError({
+            title: '自動投稿失敗',
+            error: postResult.error || 'Unknown error',
+            context: `${account} - ${currentSlot.time}`,
+          }).catch(console.error);
         }
       }
     } catch (error: any) {
       console.error(`[Automation] Error for ${account}:`, error);
+
+      // Discord通知（エラー）
+      notifyError({
+        title: '投稿生成エラー',
+        error: error.message,
+        context: `${account}`,
+      }).catch(console.error);
+
       results.push({
         account,
         success: false,

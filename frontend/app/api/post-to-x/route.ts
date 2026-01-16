@@ -27,7 +27,29 @@ function decrypt(text: string): string {
     }
 }
 
-function loadCredentials() {
+function loadCredentials(account: string = 'liver') {
+    // まず環境変数から読み込みを試みる
+    const accountMap: Record<string, string> = {
+        'liver': 'TT_LIVER',
+        'chatre1': 'MIC_CHAT',
+        'chatre2': 'MS_STRIPCHAT',
+    };
+
+    const envSuffix = accountMap[account] || 'TT_LIVER';
+
+    const envCredentials = {
+        apiKey: process.env[`TWITTER_API_KEY_${envSuffix}`] || '',
+        apiSecret: process.env[`TWITTER_API_SECRET_${envSuffix}`] || '',
+        accessToken: process.env[`TWITTER_ACCESS_TOKEN_${envSuffix}`] || '',
+        accessSecret: process.env[`TWITTER_ACCESS_TOKEN_SECRET_${envSuffix}`] || '',
+    };
+
+    // 環境変数が設定されていれば使用
+    if (envCredentials.apiKey && envCredentials.accessToken) {
+        return envCredentials;
+    }
+
+    // フォールバック: ファイルから読み込み
     try {
         if (!fs.existsSync(SETTINGS_FILE)) {
             return null;

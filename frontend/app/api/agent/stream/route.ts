@@ -12,23 +12,23 @@ let chatHistory: AgentMessage[] = [];
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { message } = body;
+    const { message, image } = body;
 
-    if (!message) {
-      return new Response(JSON.stringify({ error: 'message が必要です' }), {
+    if (!message && !image) {
+      return new Response(JSON.stringify({ error: 'message または image が必要です' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('[Agent Stream] Starting stream for:', message.slice(0, 50));
+    console.log('[Agent Stream] Starting stream for:', message?.slice(0, 50) || '(image only)', image ? '+ image' : '');
 
     // Server-Sent Events ストリームを作成
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          const generator = chatStream(message, chatHistory);
+          const generator = chatStream(message || '', chatHistory, image);
 
           for await (const event of generator) {
             // SSE形式でイベントを送信

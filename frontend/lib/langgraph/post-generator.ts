@@ -13,8 +13,8 @@ import {
   QualityScore,
   WorkflowStep,
 } from './state';
-import { getSuccessPatterns } from '../database/success-patterns-db';
-import { getRandomHook, buildEnrichedKnowledgeContextWithGoogle, buildChatladyKnowledgeContextWithGoogle } from './knowledge-loader';
+import { getSuccessPatterns, getWeightedPatternsByCategory, selectWeighted } from '../database/success-patterns-db';
+import { getRandomHook, buildEnrichedKnowledgeContextWithGoogle, buildChatladyKnowledgeContextWithGoogle, getRandomInsight } from './knowledge-loader';
 import { initPhoenix, tracePostGeneration, recordQualityScore } from '../phoenix/client';
 
 // Phoenix 初期化（サーバー起動時に1回だけ）
@@ -43,6 +43,7 @@ const reviewModel = new ChatGoogleGenerativeAI({
 
 /**
  * RESEARCH: メリットをメイン軸にし、ターゲットをサブ要素として選定
+ * 成功パターンDBから重み付けで高スコアパターンを優先選択
  */
 async function researchNode(
   state: PostGeneratorStateType
@@ -51,28 +52,59 @@ async function researchNode(
   const benefit = state.benefit || BENEFITS[Math.floor(Math.random() * BENEFITS.length)];
   const target = state.target || TARGETS[Math.floor(Math.random() * TARGETS.length)];
 
-  // 成功パターンをDBから取得
+  // 成功パターンをDBから重み付けで取得
   let successPatterns: string[] = [];
+  let selectedHook: string | null = null;
+  let selectedCta: string | null = null;
+  let selectedBenefit: string | null = null;
+
   try {
-    const patterns = await getSuccessPatterns();
-    successPatterns = patterns.slice(0, 3);
+    // カテゴリ別に重み付けパターンを取得
+    const { hooks, ctas, benefits } = await getWeightedPatternsByCategory();
+
+    // 各カテゴリから重み付けで1つずつ選択（スコアが高いほど選ばれやすい）
+    const hookPattern = selectWeighted(hooks);
+    const ctaPattern = selectWeighted(ctas);
+    const benefitPattern = selectWeighted(benefits);
+
+    if (hookPattern) {
+      selectedHook = hookPattern.text;
+      successPatterns.push(`【フック】${hookPattern.text}（スコア${hookPattern.score.toFixed(1)}）`);
+    }
+    if (ctaPattern) {
+      selectedCta = ctaPattern.text;
+      successPatterns.push(`【CTA】${ctaPattern.text}（スコア${ctaPattern.score.toFixed(1)}）`);
+    }
+    if (benefitPattern) {
+      selectedBenefit = benefitPattern.text;
+      successPatterns.push(`【メリット表現】${benefitPattern.text}（スコア${benefitPattern.score.toFixed(1)}）`);
+    }
+
+    // パターンが足りない場合はフォールバック
+    if (successPatterns.length === 0) {
+      const patterns = await getSuccessPatterns();
+      successPatterns = patterns.slice(0, 3);
+    }
   } catch {
     // DBがない場合はデフォルトパターン
     successPatterns = [
-      'ぶっちゃけ〜って思ってる人へ',
-      '正直、〜だと思ってない？',
-      '〜なんて無理って思ってた私が',
+      '【フック】ぶっちゃけ〜って思ってる人へ',
+      '【CTA】気になったらDMで💬',
+      '【メリット表現】月30万以上',
     ];
   }
 
-  // ナレッジベースからフックパターンを追加
-  try {
-    const hook = await getRandomHook();
-    if (hook && !successPatterns.includes(hook)) {
-      successPatterns.push(hook);
+  // ナレッジベースからフックパターンを追加（補完）
+  if (!selectedHook) {
+    try {
+      const hook = await getRandomHook();
+      if (hook) {
+        selectedHook = hook;
+        successPatterns.push(`【フック候補】${hook}`);
+      }
+    } catch {
+      // エラーは無視
     }
-  } catch {
-    // エラーは無視
   }
 
   return {
@@ -123,6 +155,17 @@ async function draftNode(
     // ナレッジ取得失敗は無視
   }
 
+  // ユーザーの気づきを取得（壁打ちで保存した内容を反映）
+  let insightContext = '';
+  try {
+    const insight = await getRandomInsight();
+    if (insight) {
+      insightContext = `\n\n${insight}`;
+    }
+  } catch {
+    // 気づき取得失敗は無視
+  }
+
   const patternsText = successPatterns.length > 0
     ? `\n\n【参考にする成功パターン】\n${successPatterns.map((p, i) => `${i + 1}. ${p}`).join('\n')}`
     : '';
@@ -140,7 +183,7 @@ async function draftNode(
 ${selectedStyle.instruction}
 ※このスタイルに沿って書くこと！他の投稿と差別化するため、このスタイル特有の表現を使う。
 
-${knowledgeContext}
+${knowledgeContext}${insightContext}
 ${patternsText}
 ${feedbackText}
 
