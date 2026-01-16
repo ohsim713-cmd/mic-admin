@@ -1,6 +1,6 @@
 {
-  "name": "MIC - AI Automation Hub",
-  "short_name": "MIC",
+  "name": "MIC Agent",
+  "short_name": "MIC Agent",
   "description": "AI SNS自動化プラットフォーム",
   "start_url": "/",
   "display": "standalone",
