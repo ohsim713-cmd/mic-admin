@@ -33,7 +33,8 @@
       "Bash(\"$GCLOUD\" config set project micpro)",
       "Bash(\"$GCLOUD\" services enable cloudscheduler.googleapis.com --project micpro)",
       "Bash(xargs ls:*)",
-      "Bash(npx playwright install:*)"
+      "Bash(npx playwright install:*)",
+      "Bash(npx sharp-cli:*)"
     ]
   }
 }

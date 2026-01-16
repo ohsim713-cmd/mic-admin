@@ -1,14 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#d97706"/>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#eb5a3c"/>
+      <stop offset="100%" style="stop-color:#d94a2c"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
   <g fill="white">
-    <!-- Dashboard grid icon -->
-    <rect x="96" y="96" width="140" height="140" rx="24"/>
-    <rect x="276" y="96" width="140" height="140" rx="24"/>
-    <rect x="96" y="276" width="140" height="140" rx="24"/>
-    <rect x="276" y="276" width="140" height="140" rx="24"/>
-    <!-- Center circle for AI -->
-    <circle cx="256" cy="256" r="64" fill="#d97706"/>
-    <circle cx="256" cy="256" r="48" fill="white"/>
-    <circle cx="256" cy="256" r="24" fill="#d97706"/>
+    <!-- M letter stylized -->
+    <path d="M136 368V144h48l72 120 72-120h48v224h-44V220l-60 100h-32l-60-100v148z"/>
   </g>
 </svg>
