@@ -56,7 +56,7 @@ async function generateScript(topic: string, mood: string, hook: string): Promis
   if (!apiKey) return null;
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
   const prompt = `あなたはショート動画（TikTok/Reels/Shorts）のプロ脚本家です。
 以下のテーマに基づいて、15秒程度のショート動画の台本（セリフのみ）を作成してください。

@@ -1,0 +1,321 @@
+{
+  "last_updated": "2025-01-16",
+  "category": "sns_marketing_deep_knowledge",
+
+  "x_twitter_mastery": {
+    "algorithm_understanding": {
+      "ranking_factors": {
+        "engagement_velocity": {
+          "description": "投稿後30分以内のエンゲージメント速度が重要",
+          "weight": "非常に高い",
+          "tactics": [
+            "フォロワーのアクティブ時間に投稿",
+            "最初のリプで会話を誘発",
+            "ハッシュタグは2-3個まで"
+          ]
+        },
+        "reply_depth": {
+          "description": "返信の連鎖が長いほど評価される",
+          "weight": "高い",
+          "tactics": [
+            "質問を投げかけて返信を促す",
+            "返信には必ず返信する",
+            "議論を生む投稿をする"
+          ]
+        },
+        "profile_authority": {
+          "description": "アカウントの信頼度",
+          "weight": "中程度",
+          "factors": [
+            "アカウント年齢",
+            "フォロワー/フォロー比率",
+            "Blue認証の有無"
+          ]
+        }
+      },
+      "shadowban_avoidance": {
+        "dangerous_behaviors": [
+          "短時間での大量フォロー/いいね",
+          "同じリンクの連続投稿",
+          "センシティブ判定されるワード",
+          "同一文章のコピペ投稿",
+          "外部リンクの過剰使用"
+        ],
+        "safe_practices": [
+          "投稿間隔は最低30分",
+          "リンクはリプ欄に",
+          "ハッシュタグは控えめに",
+          "自然な言葉遣い"
+        ]
+      }
+    },
+    "content_strategy": {
+      "hook_patterns": {
+        "curiosity_gap": {
+          "pattern": "「〇〇な人は絶対見て」「知らないと損する」",
+          "example": "ライバーで月50万稼いでる人に聞いたら、みんな同じこと言ってた",
+          "effectiveness": "好奇心を刺激、スクロール停止率高い"
+        },
+        "controversy": {
+          "pattern": "「〇〇は間違い」「実は〇〇だった」",
+          "example": "「ライバーは稼げない」と言ってる人の99%は〇〇してない",
+          "effectiveness": "議論を生み、RT・引用が増える"
+        },
+        "social_proof": {
+          "pattern": "「〇〇人が」「みんな知ってる」",
+          "example": "うちの事務所に入った100人中98人が言うこと",
+          "effectiveness": "信頼性向上、説得力増加"
+        },
+        "fear_of_missing_out": {
+          "pattern": "「今だけ」「期間限定」",
+          "example": "【あと3日】来月からの応募は条件が変わります",
+          "effectiveness": "緊急性、即行動を促す"
+        },
+        "storytelling": {
+          "pattern": "「〇〇だった私が」「昔は〇〇」",
+          "example": "コンビニバイトで月8万だった私が、今は月50万稼げるようになった話",
+          "effectiveness": "共感、感情移入を誘発"
+        }
+      },
+      "post_structure": {
+        "optimal_length": "100-200文字（読みやすさと情報量のバランス）",
+        "line_breaks": "2-3行ごとに改行、読みやすさ重視",
+        "emoji_usage": "1-2個まで（多すぎると怪しく見える）",
+        "cta_placement": "最後の1行に自然に入れる"
+      }
+    },
+    "timing_optimization": {
+      "best_times": {
+        "weekday": {
+          "morning": "7:00-8:30（通勤時間）",
+          "lunch": "12:00-13:00（昼休み）",
+          "evening": "18:00-20:00（帰宅後）",
+          "night": "21:00-23:00（ゴールデンタイム）"
+        },
+        "weekend": {
+          "morning": "9:00-11:00（起床後）",
+          "afternoon": "14:00-16:00（活動時間）",
+          "night": "20:00-23:00（リラックスタイム）"
+        }
+      },
+      "avoid_times": [
+        "深夜2:00-6:00（アクティブユーザー少）",
+        "月曜朝（仕事モードでSNS見ない）",
+        "金曜夜（外出してる人多い）"
+      ]
+    }
+  },
+
+  "tiktok_mastery": {
+    "algorithm_factors": {
+      "watch_time": {
+        "importance": "最重要",
+        "target": "最後まで見させる構成",
+        "tactics": [
+          "最初の1秒でフックを入れる",
+          "「最後に衝撃の事実」でループ視聴を狙う",
+          "テンポよくカットを繋ぐ"
+        ]
+      },
+      "loop_rate": {
+        "importance": "非常に高い",
+        "description": "繰り返し視聴される回数",
+        "tactics": [
+          "オチを最初に持ってきて、なぜ？を持続",
+          "短い動画（15秒）で回転率アップ",
+          "意味がわかると2度見したくなる構成"
+        ]
+      },
+      "engagement_rate": {
+        "importance": "高い",
+        "metrics": ["いいね", "コメント", "シェア", "保存"],
+        "tactics": [
+          "コメントで質問に答える",
+          "「〇〇な人はコメントして」で誘導",
+          "賛否両論になるテーマ"
+        ]
+      }
+    },
+    "content_types": {
+      "educational": {
+        "description": "「知らないと損」系の知識共有",
+        "structure": [
+          "0-1秒: 衝撃的な事実をテロップ",
+          "1-5秒: 問題提起",
+          "5-25秒: 解説・ノウハウ",
+          "25-30秒: まとめとCTA"
+        ],
+        "example_topics": [
+          "ライバーで稼げる人と稼げない人の違い",
+          "事務所選びで見るべき3つのポイント",
+          "初心者が絶対やっちゃダメなこと"
+        ]
+      },
+      "testimonial": {
+        "description": "体験談・ビフォーアフター",
+        "structure": [
+          "0-3秒: Before状態を見せる",
+          "3-10秒: 転機となった出来事",
+          "10-25秒: After状態・変化の詳細",
+          "25-30秒: メッセージ・CTA"
+        ],
+        "example_topics": [
+          "パート月8万→ライバー月50万になった話",
+          "顔出しなしで稼げるようになるまで",
+          "事務所に入って人生変わった"
+        ]
+      },
+      "trend_riding": {
+        "description": "流行りの音源・フォーマットを活用",
+        "tactics": [
+          "トレンド音源をすぐに使う",
+          "業界に絡めたオリジナリティを追加",
+          "バズってる構成をパクって横展開"
+        ]
+      }
+    }
+  },
+
+  "instagram_mastery": {
+    "algorithm_factors": {
+      "saves": {
+        "importance": "最重要",
+        "description": "保存数がリーチを大きく左右",
+        "tactics": [
+          "保存したくなるノウハウ系投稿",
+          "チェックリスト・まとめ形式",
+          "「保存して後で見返してね」のCTA"
+        ]
+      },
+      "shares": {
+        "importance": "非常に高い",
+        "description": "DMやストーリーでのシェア",
+        "tactics": [
+          "友達に送りたくなる内容",
+          "「これ私じゃん」と共感される投稿",
+          "役立つ情報・面白いコンテンツ"
+        ]
+      }
+    },
+    "content_formats": {
+      "reels": {
+        "description": "TikTokと同様のショート動画",
+        "optimal_length": "15-30秒",
+        "posting_frequency": "毎日1本が理想"
+      },
+      "carousel": {
+        "description": "複数画像をスワイプで見せる",
+        "optimal_slides": "5-10枚",
+        "structure": [
+          "1枚目: 興味を引くカバー",
+          "2-9枚目: 本編コンテンツ",
+          "最終枚: CTAと次回予告"
+        ]
+      },
+      "stories": {
+        "description": "24時間で消える投稿",
+        "usage": [
+          "日常の発信（親近感）",
+          "投稿の告知",
+          "質問箱・アンケート",
+          "DM誘導"
+        ]
+      }
+    }
+  },
+
+  "copywriting_frameworks": {
+    "AIDMA": {
+      "description": "古典的だが効果的な購買心理モデル",
+      "steps": {
+        "Attention": "注意を引く（衝撃的な数字、質問）",
+        "Interest": "興味を持たせる（ベネフィット提示）",
+        "Desire": "欲求を刺激する（未来の姿を描く）",
+        "Memory": "記憶に残す（キャッチフレーズ）",
+        "Action": "行動を促す（具体的なCTA）"
+      }
+    },
+    "PAS": {
+      "description": "シンプルで強力な構成",
+      "steps": {
+        "Problem": "問題を提起する",
+        "Agitate": "問題を煽る（放置するとどうなるか）",
+        "Solution": "解決策を提示する"
+      },
+      "example": "今の収入で将来大丈夫？ → 物価上昇、年金不安... → ライバーなら副業で月20万も可能"
+    },
+    "QUEST": {
+      "description": "感情に訴えかける構成",
+      "steps": {
+        "Qualify": "ターゲットを絞る（「〇〇な人へ」）",
+        "Understand": "悩みを理解する（共感を示す）",
+        "Educate": "解決策を教育する",
+        "Stimulate": "行動を刺激する",
+        "Transition": "次のステップへ導く"
+      }
+    }
+  },
+
+  "conversion_optimization": {
+    "dm_acquisition": {
+      "funnel": {
+        "step1": "投稿で興味を引く",
+        "step2": "プロフィールへ誘導",
+        "step3": "固定投稿・ハイライトで信頼構築",
+        "step4": "DMへのCTAを設置",
+        "step5": "DM内で質問・相談を受け付け"
+      },
+      "cta_examples": [
+        "気になる方はDMで「詳細」と送ってね",
+        "質問あればお気軽にDMどうぞ",
+        "プロフ見てDMくれた方限定で〇〇プレゼント"
+      ],
+      "dm_response_templates": {
+        "initial": "DMありがとうございます！〇〇に興味を持ってくれたんですね。何か気になることありますか？",
+        "followup": "質問ありがとう！〇〇については△△だよ。他にも聞きたいことあれば何でも！",
+        "closing": "もしよければ、詳しい話をオンラインでできるけど、どうかな？"
+      }
+    },
+    "landing_page_principles": {
+      "above_the_fold": [
+        "キャッチコピー（ベネフィット明確）",
+        "サブコピー（信頼性の証明）",
+        "CTA（目立つボタン）"
+      ],
+      "social_proof": [
+        "実績数字",
+        "お客様の声",
+        "メディア掲載"
+      ],
+      "urgency": [
+        "期間限定",
+        "人数限定",
+        "今だけの特典"
+      ]
+    }
+  },
+
+  "analytics_kpis": {
+    "awareness_metrics": {
+      "impressions": "投稿が表示された回数",
+      "reach": "投稿を見たユニークユーザー数",
+      "follower_growth": "フォロワー増加数"
+    },
+    "engagement_metrics": {
+      "engagement_rate": "（いいね+コメント+シェア）/ リーチ × 100",
+      "save_rate": "保存数 / リーチ × 100",
+      "comment_rate": "コメント数 / リーチ × 100"
+    },
+    "conversion_metrics": {
+      "profile_visits": "プロフィールへの流入数",
+      "link_clicks": "リンクのクリック数",
+      "dm_count": "受信DM数",
+      "conversion_rate": "DM数 / インプレッション × 100"
+    },
+    "benchmarks": {
+      "good_engagement_rate": "3%以上",
+      "excellent_engagement_rate": "6%以上",
+      "viral_threshold": "インプレッション10万以上"
+    }
+  }
+}

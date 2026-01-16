@@ -115,6 +115,26 @@ interface AccountStats {
   weaknesses: Array<{ point: string; count: number }>;
 }
 
+// メトリクス型定義
+interface MetricsData {
+  totalImpressions: number;
+  totalLikes: number;
+  totalRetweets: number;
+  totalReplies: number;
+  engagementRate: number;
+  postsWithMetrics: number;
+  lastUpdated: string | null;
+}
+
+// PDCA分析結果型定義
+interface PDCAResult {
+  totalAnalyzed: number;
+  correlationStrength: string;
+  effectiveTargets: Array<{ target: string; avgEngagement: number; count: number }>;
+  effectiveBenefits: Array<{ benefit: string; avgEngagement: number; count: number }>;
+  recommendations: string[];
+}
+
 export default function DashboardPage() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedAccount, setSelectedAccount] = useState<string | null>('liver');
@@ -150,6 +170,25 @@ export default function DashboardPage() {
   // アカウント別統計
   const [accountAnalytics, setAccountAnalytics] = useState<Record<string, AccountStats>>({});
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+
+  // メトリクスデータ（自動収集）
+  const [metricsData, setMetricsData] = useState<MetricsData>({
+    totalImpressions: 0,
+    totalLikes: 0,
+    totalRetweets: 0,
+    totalReplies: 0,
+    engagementRate: 0,
+    postsWithMetrics: 0,
+    lastUpdated: null,
+  });
+  const [metricsLoading, setMetricsLoading] = useState(false);
+
+  // PDCA分析結果
+  const [pdcaResult, setPdcaResult] = useState<PDCAResult | null>(null);
+
+  // 自動収集の状態
+  const [autoCollectEnabled, setAutoCollectEnabled] = useState(true);
+  const autoCollectIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // 次の投稿予定（直近3件）
   const [upcomingPosts, setUpcomingPosts] = useState<GeneratedPost[]>([]);
@@ -195,12 +234,111 @@ export default function DashboardPage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
 
+  // メトリクスを取得（ローカルデータから集計）
+  const loadMetrics = useCallback(async () => {
+    setMetricsLoading(true);
+    try {
+      // SDK サマリーから取得
+      const res = await fetch('/api/analytics/summary');
+      if (res.ok) {
+        const data = await res.json();
+        const summary = data.summary;
+        if (summary?.performance) {
+          setMetricsData({
+            totalImpressions: summary.performance.totalImpressions || 0,
+            totalLikes: summary.performance.totalEngagement || 0,
+            totalRetweets: 0,
+            totalReplies: 0,
+            engagementRate: summary.performance.avgEngagementRate || 0,
+            postsWithMetrics: summary.overview?.postedPosts || 0,
+            lastUpdated: summary.generatedAt || null,
+          });
+        }
+      }
+    } catch (e) {
+      console.error('メトリクス取得エラー:', e);
+    } finally {
+      setMetricsLoading(false);
+    }
+  }, []);
+
+  // PDCA分析結果を取得
+  const loadPDCAResult = useCallback(async () => {
+    try {
+      const res = await fetch('/api/analytics/pdca');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.result) {
+          setPdcaResult({
+            totalAnalyzed: data.result.totalAnalyzed || 0,
+            correlationStrength: data.result.scoreCorrelation?.correlationStrength || 'none',
+            effectiveTargets: data.result.effectivePatterns?.targets || [],
+            effectiveBenefits: data.result.effectivePatterns?.benefits || [],
+            recommendations: data.result.recommendations || [],
+          });
+        }
+      }
+    } catch (e) {
+      console.error('PDCA結果取得エラー:', e);
+    }
+  }, []);
+
+  // 自動収集実行
+  const runAutoCollect = useCallback(async () => {
+    if (!autoCollectEnabled) return;
+
+    console.log('[AutoCollect] 自動収集開始...');
+
+    // 1. インプレッション取得（X API）
+    try {
+      const impRes = await fetch('/api/automation/fetch-impressions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account: 'tt_liver' }),
+      });
+      if (impRes.ok) {
+        const impData = await impRes.json();
+        if (impData.updated > 0) {
+          console.log(`[AutoCollect] ${impData.updated}件のメトリクス更新`);
+        }
+      }
+    } catch (e) {
+      console.error('[AutoCollect] インプレッション取得エラー:', e);
+    }
+
+    // 2. サマリー更新
+    try {
+      await fetch('/api/analytics/summary', { method: 'POST' });
+    } catch (e) {
+      console.error('[AutoCollect] サマリー更新エラー:', e);
+    }
+
+    // 3. メトリクスとPDCA結果を再読み込み
+    await Promise.all([loadMetrics(), loadPDCAResult()]);
+  }, [autoCollectEnabled, loadMetrics, loadPDCAResult]);
+
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000);
     loadDBStats();
     loadUpcomingPosts();
     loadAccountAnalytics();
-    return () => clearInterval(interval);
+
+    // 初回メトリクス読み込み
+    loadMetrics();
+    loadPDCAResult();
+
+    // 自動収集: 5分ごとに実行
+    if (autoCollectEnabled) {
+      runAutoCollect(); // 初回実行
+      autoCollectIntervalRef.current = setInterval(runAutoCollect, 5 * 60 * 1000);
+    }
+
+    return () => {
+      clearInterval(interval);
+      if (autoCollectIntervalRef.current) {
+        clearInterval(autoCollectIntervalRef.current);
+      }
+    };
   }, []);
 
   // 選択アカウント変更時に投稿を再取得
@@ -856,6 +994,242 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      {/* メトリクスダッシュボード - 自動更新 */}
+      <section className="section metrics-dashboard">
+        <div className="section-header">
+          <h2>リアルタイムメトリクス</h2>
+          <div className="auto-collect-toggle">
+            <span className={`auto-status ${autoCollectEnabled ? 'active' : ''}`}>
+              {autoCollectEnabled ? '自動収集ON' : '自動収集OFF'}
+            </span>
+            <button
+              className={`toggle-btn ${autoCollectEnabled ? 'on' : 'off'}`}
+              onClick={() => setAutoCollectEnabled(!autoCollectEnabled)}
+            >
+              {autoCollectEnabled ? '停止' : '開始'}
+            </button>
+            {metricsData.lastUpdated && (
+              <span className="last-updated">
+                更新: {new Date(metricsData.lastUpdated).toLocaleTimeString('ja-JP')}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="metrics-grid">
+          {/* インプレッション */}
+          <div className="metric-card impressions">
+            <div className="metric-icon">👁</div>
+            <div className="metric-content">
+              <div className="metric-value">{metricsData.totalImpressions.toLocaleString()}</div>
+              <div className="metric-label">総インプレッション</div>
+            </div>
+          </div>
+
+          {/* エンゲージメント */}
+          <div className="metric-card engagement">
+            <div className="metric-icon">💬</div>
+            <div className="metric-content">
+              <div className="metric-value">{metricsData.totalLikes.toLocaleString()}</div>
+              <div className="metric-label">総エンゲージメント</div>
+            </div>
+          </div>
+
+          {/* エンゲージメント率 */}
+          <div className="metric-card rate">
+            <div className="metric-icon">📈</div>
+            <div className="metric-content">
+              <div className="metric-value">{metricsData.engagementRate.toFixed(2)}%</div>
+              <div className="metric-label">エンゲージメント率</div>
+            </div>
+          </div>
+
+          {/* 分析済み投稿数 */}
+          <div className="metric-card posts">
+            <div className="metric-icon">📝</div>
+            <div className="metric-content">
+              <div className="metric-value">{metricsData.postsWithMetrics}</div>
+              <div className="metric-label">分析済み投稿</div>
+            </div>
+          </div>
+        </div>
+
+        {/* PDCA分析結果 */}
+        {pdcaResult && pdcaResult.totalAnalyzed > 0 && (
+          <div className="pdca-insights">
+            <div className="pdca-header">
+              <span className="pdca-title">PDCA分析インサイト</span>
+              <span className={`correlation-badge ${pdcaResult.correlationStrength}`}>
+                相関: {pdcaResult.correlationStrength === 'strong' ? '強' :
+                  pdcaResult.correlationStrength === 'moderate' ? '中' :
+                    pdcaResult.correlationStrength === 'weak' ? '弱' : 'なし'}
+              </span>
+            </div>
+
+            {pdcaResult.effectiveTargets.length > 0 && (
+              <div className="insight-section">
+                <div className="insight-label">効果的なターゲット:</div>
+                <div className="insight-tags">
+                  {pdcaResult.effectiveTargets.slice(0, 3).map((t, i) => (
+                    <span key={i} className="insight-tag target">
+                      {t.target} ({t.avgEngagement.toFixed(1)}%)
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {pdcaResult.effectiveBenefits.length > 0 && (
+              <div className="insight-section">
+                <div className="insight-label">効果的なベネフィット:</div>
+                <div className="insight-tags">
+                  {pdcaResult.effectiveBenefits.slice(0, 3).map((b, i) => (
+                    <span key={i} className="insight-tag benefit">
+                      {b.benefit} ({b.avgEngagement.toFixed(1)}%)
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {pdcaResult.recommendations.length > 0 && (
+              <div className="insight-section recommendations">
+                <div className="insight-label">提案:</div>
+                <ul className="recommendation-list">
+                  {pdcaResult.recommendations.slice(0, 3).map((rec, i) => (
+                    <li key={i}>{rec}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {metricsLoading && (
+          <div className="metrics-loading">
+            <span className="loading-spinner"></span>
+            データ収集中...
+          </div>
+        )}
+
+        {/* 仮説検証セクション */}
+        <div className="hypothesis-section">
+          <div className="hypothesis-header">
+            <span className="hypothesis-title">仮説検証エンジン</span>
+            <div className="hypothesis-actions">
+              <button
+                className="hypothesis-btn generate"
+                onClick={async () => {
+                  addLog('info', 'AI仮説を生成中...');
+                  try {
+                    const res = await fetch('/api/analytics/hypothesis', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ action: 'generate', count: 3 }),
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      addLog('success', `${data.hypotheses.length}件の仮説を生成`,
+                        data.hypotheses[0]?.statement?.slice(0, 50) + '...');
+                    } else {
+                      addLog('error', '仮説生成失敗', data.error);
+                    }
+                  } catch (e) {
+                    addLog('error', 'エラー', String(e));
+                  }
+                }}
+              >
+                仮説生成
+              </button>
+              <button
+                className="hypothesis-btn validate"
+                onClick={async () => {
+                  addLog('info', '全仮説を検証中...');
+                  try {
+                    const res = await fetch('/api/analytics/hypothesis', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ action: 'validate-all' }),
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      const r = data.results;
+                      addLog('success', '仮説検証完了',
+                        `支持:${r.validated} 棄却:${r.rejected} 保留:${r.inconclusive}`);
+                      // 検証結果をログに表示
+                      for (const h of r.results.slice(0, 3)) {
+                        const icon = h.status === 'validated' ? '✓' : h.status === 'rejected' ? '✗' : '?';
+                        addLog('info', `${icon} ${h.statement.slice(0, 40)}...`,
+                          h.results?.conclusion?.slice(0, 60) || '');
+                      }
+                    } else {
+                      addLog('error', '検証失敗', data.error);
+                    }
+                  } catch (e) {
+                    addLog('error', 'エラー', String(e));
+                  }
+                }}
+              >
+                全検証
+              </button>
+              <button
+                className="hypothesis-btn summary"
+                onClick={async () => {
+                  addLog('info', '仮説サマリーを取得中...');
+                  try {
+                    const res = await fetch('/api/analytics/hypothesis');
+                    const data = await res.json();
+                    if (data.success) {
+                      const s = data.summary;
+                      addLog('success', `仮説: ${s.total}件`,
+                        `支持:${s.byStatus.validated || 0} 棄却:${s.byStatus.rejected || 0} 保留:${s.byStatus.pending || 0}`);
+                      // Top validated
+                      if (s.topValidated?.length > 0) {
+                        addLog('info', '効果実証済み',
+                          s.topValidated[0].statement.slice(0, 50) + '...');
+                      }
+                    }
+                  } catch (e) {
+                    addLog('error', 'エラー', String(e));
+                  }
+                }}
+              >
+                サマリー
+              </button>
+            </div>
+          </div>
+          <div className="hypothesis-info">
+            <span>AIがデータから仮説を自動生成し、統計的に検証します（t検定, p&lt;0.05）</span>
+          </div>
+          <div className="migrate-section">
+            <button
+              className="hypothesis-btn migrate"
+              onClick={async () => {
+                addLog('info', 'データを移行中...');
+                try {
+                  const res = await fetch('/api/analytics/migrate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    addLog('success', `${data.migration.migrated}件を移行`,
+                      `総投稿: ${data.summary.totalPosts}件 / メトリクス付き: ${data.summary.postsWithMetrics}件`);
+                  } else {
+                    addLog('error', '移行失敗', data.error);
+                  }
+                } catch (e) {
+                  addLog('error', 'エラー', String(e));
+                }
+              }}
+            >
+              データ移行
+            </button>
+            <span className="migrate-info">post_stock.json からSDK分析用データを移行</span>
+          </div>
+        </div>
+      </section>
+
       {/* 選択中アカウント詳細 */}
       {selectedAccountInfo && (
         <section className="section detail-section">
@@ -935,9 +1309,139 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* AI分析 */}
-            <div className="detail-card">
-              <div className="detail-title">AI分析</div>
+            {/* AI分析 - Agent SDK */}
+            <div className="detail-card agent-card">
+              <div className="detail-title">
+                <span>Agent SDK</span>
+                <span className="agent-badge">Haiku</span>
+              </div>
+              <div className="agent-actions">
+                <button
+                  className="agent-btn summary-btn"
+                  onClick={async () => {
+                    addLog('info', '分析サマリーを生成中...');
+                    try {
+                      const res = await fetch('/api/analytics/summary', {
+                        method: 'POST',
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        const s = data.summary.overview;
+                        addLog('success', 'サマリー生成完了',
+                          `投稿: ${s.totalPosts}件, 平均スコア: ${s.avgScore}, pending: ${s.pendingPosts}件`);
+                        if (data.summary.recommendations?.length > 0) {
+                          data.summary.recommendations.forEach((rec: string) => addLog('info', '提案', rec));
+                        }
+                      } else {
+                        addLog('error', 'サマリー生成失敗', data.error);
+                      }
+                    } catch (e) {
+                      addLog('error', 'エラー', String(e));
+                    }
+                  }}
+                >
+                  サマリー更新
+                </button>
+                <button
+                  className="agent-btn"
+                  onClick={async () => {
+                    addLog('info', 'ナレッジ学習を開始...');
+                    try {
+                      const res = await fetch('/api/agent', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'learn-knowledge', focusArea: 'all' }),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        addLog('success', 'ナレッジ学習完了', data.result?.slice(0, 100) + '...');
+                      } else {
+                        addLog('error', '学習失敗', data.error);
+                      }
+                    } catch (e) {
+                      addLog('error', 'エラー', String(e));
+                    }
+                  }}
+                >
+                  ナレッジ学習
+                </button>
+                <button
+                  className="agent-btn"
+                  onClick={async () => {
+                    addLog('info', 'パフォーマンス分析を開始...');
+                    try {
+                      const res = await fetch('/api/agent', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'performance-analysis', period: 'week' }),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        addLog('success', '分析完了', data.result?.slice(0, 100) + '...');
+                      } else {
+                        addLog('error', '分析失敗', data.error);
+                      }
+                    } catch (e) {
+                      addLog('error', 'エラー', String(e));
+                    }
+                  }}
+                >
+                  分析
+                </button>
+                <button
+                  className="agent-btn secondary"
+                  onClick={async () => {
+                    addLog('info', 'ローカル分析を実行...');
+                    try {
+                      const res = await fetch('/api/agent', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'analyze-local' }),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        const r = data.result;
+                        addLog('success', `ローカル分析完了 (コスト: $0)`,
+                          `投稿数: ${r.totalPosts}, 平均スコア: ${r.avgScore.toFixed(1)}`);
+                        if (r.recommendations?.length > 0) {
+                          r.recommendations.forEach((rec: string) => addLog('info', '改善提案', rec));
+                        }
+                      }
+                    } catch (e) {
+                      addLog('error', 'エラー', String(e));
+                    }
+                  }}
+                >
+                  無料分析
+                </button>
+                <button
+                  className="agent-btn pdca-btn"
+                  onClick={async () => {
+                    addLog('info', 'PDCA分析を実行中...');
+                    try {
+                      const res = await fetch('/api/analytics/pdca', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({}),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        const s = data.summary;
+                        addLog('success', `PDCA完了 (${s.analyzed}件分析)`,
+                          `相関: ${s.correlationStrength}, 更新: ${s.updatedFiles.join(', ')}`);
+                        s.recommendations?.forEach((rec: string) => addLog('info', 'PDCA提案', rec));
+                        s.actions?.forEach((act: string) => addLog('info', 'Act', act));
+                      } else {
+                        addLog('error', 'PDCA失敗', data.error);
+                      }
+                    } catch (e) {
+                      addLog('error', 'エラー', String(e));
+                    }
+                  }}
+                >
+                  PDCA実行
+                </button>
+              </div>
               <div className="analysis">
                 <div className="analysis-item">
                   <span className="analysis-label">週間DM</span>
@@ -946,6 +1450,187 @@ export default function DashboardPage() {
                 <div className="analysis-item">
                   <span className="analysis-label">課題</span>
                   <span className="analysis-value">データ収集中</span>
+                </div>
+              </div>
+            </div>
+
+            {/* ナレッジ収集 - Google検索 */}
+            <div className="detail-card knowledge-card">
+              <div className="detail-title">
+                <span>ナレッジ収集</span>
+                <span className="knowledge-badge">Gemini</span>
+              </div>
+              <div className="agent-actions">
+                <button
+                  className="agent-btn knowledge"
+                  onClick={async () => {
+                    addLog('info', 'Google検索でナレッジ収集中...');
+                    try {
+                      const res = await fetch('/api/knowledge/collect', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ category: 'liver' }),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        const s = data.stats.liver;
+                        addLog('success', 'ライバーナレッジ収集完了',
+                          `${s.topicsCollected}トピック、${s.totalInsights}件のインサイト`);
+                      } else {
+                        addLog('error', '収集失敗', data.error);
+                      }
+                    } catch (e) {
+                      addLog('error', 'エラー', String(e));
+                    }
+                  }}
+                >
+                  ライバー検索
+                </button>
+                <button
+                  className="agent-btn knowledge"
+                  onClick={async () => {
+                    addLog('info', 'Google検索でナレッジ収集中...');
+                    try {
+                      const res = await fetch('/api/knowledge/collect', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ category: 'chatlady' }),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        const s = data.stats.chatlady;
+                        addLog('success', 'チャトレナレッジ収集完了',
+                          `${s.topicsCollected}トピック、${s.totalInsights}件のインサイト`);
+                      } else {
+                        addLog('error', '収集失敗', data.error);
+                      }
+                    } catch (e) {
+                      addLog('error', 'エラー', String(e));
+                    }
+                  }}
+                >
+                  チャトレ検索
+                </button>
+                <button
+                  className="agent-btn knowledge secondary"
+                  onClick={async () => {
+                    addLog('info', '全カテゴリのナレッジ収集中...');
+                    try {
+                      const res = await fetch('/api/knowledge/collect', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ category: 'both' }),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        addLog('success', '全ナレッジ収集完了',
+                          `ライバー: ${data.stats.liver?.topicsCollected || 0}件, チャトレ: ${data.stats.chatlady?.topicsCollected || 0}件`);
+                      } else {
+                        addLog('error', '収集失敗', data.error);
+                      }
+                    } catch (e) {
+                      addLog('error', 'エラー', String(e));
+                    }
+                  }}
+                >
+                  全て収集
+                </button>
+              </div>
+              <div className="analysis">
+                <div className="analysis-item">
+                  <span className="analysis-label">収集方法</span>
+                  <span className="analysis-value">Gemini + Web</span>
+                </div>
+                <div className="analysis-item">
+                  <span className="analysis-label">保存先</span>
+                  <span className="analysis-value">knowledge/</span>
+                </div>
+              </div>
+            </div>
+
+            {/* インプレッション取得カード */}
+            <div className="detail-card impressions-card">
+              <div className="detail-title">
+                <span>X メトリクス</span>
+                <span className="impressions-badge">API v2</span>
+              </div>
+              <div className="agent-actions">
+                <button
+                  className="agent-btn impressions"
+                  onClick={async () => {
+                    addLog('info', 'tt_liver のインプレッションを取得中...');
+                    try {
+                      const res = await fetch('/api/automation/fetch-impressions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ account: 'tt_liver' }),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        addLog('success', `インプレッション取得完了`,
+                          `更新: ${data.updated}件, 失敗: ${data.failed || 0}件, 合計: ${data.total}件`);
+                        // PDCA分析も自動実行
+                        if (data.updated > 0) {
+                          addLog('info', 'PDCA分析を自動実行中...');
+                          const pdcaRes = await fetch('/api/analytics/pdca', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({}),
+                          });
+                          const pdcaData = await pdcaRes.json();
+                          if (pdcaData.success) {
+                            addLog('success', 'PDCA分析完了',
+                              `分析: ${pdcaData.summary.analyzed}件, 相関: ${pdcaData.summary.correlationStrength}`);
+                          }
+                        }
+                      } else {
+                        addLog('error', 'インプレッション取得失敗', data.error);
+                      }
+                    } catch (e) {
+                      addLog('error', 'エラー', String(e));
+                    }
+                  }}
+                >
+                  @tt_liver 取得
+                </button>
+                <button
+                  className="agent-btn impressions secondary"
+                  onClick={async () => {
+                    addLog('info', '全アカウントのインプレッションを取得中...');
+                    const accounts = ['tt_liver'];
+                    let totalUpdated = 0;
+                    let totalFailed = 0;
+                    for (const acc of accounts) {
+                      try {
+                        const res = await fetch('/api/automation/fetch-impressions', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ account: acc }),
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                          totalUpdated += data.updated || 0;
+                          totalFailed += data.failed || 0;
+                          addLog('info', `${acc}: ${data.updated}件更新`);
+                        }
+                      } catch (e) {
+                        addLog('error', `${acc}: 取得失敗`);
+                      }
+                    }
+                    addLog('success', `全アカウント取得完了`, `更新: ${totalUpdated}件, 失敗: ${totalFailed}件`);
+                  }}
+                >
+                  全て取得
+                </button>
+              </div>
+              <div className="analysis">
+                <div className="analysis-item">
+                  <span className="analysis-label">対象</span>
+                  <span className="analysis-value">@tt_liver</span>
+                </div>
+                <div className="analysis-item">
+                  <span className="analysis-label">データ</span>
+                  <span className="analysis-value">IMP/Like/RT/Reply</span>
                 </div>
               </div>
             </div>
@@ -1850,6 +2535,471 @@ export default function DashboardPage() {
           padding: 0.75rem;
           background: rgba(0,0,0,0.2);
           border-radius: 8px;
+        }
+
+        .detail-card.agent-card {
+          border: 1px solid rgba(168, 85, 247, 0.3);
+          background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(0,0,0,0.2));
+        }
+
+        .agent-badge {
+          font-size: 0.55rem;
+          background: linear-gradient(135deg, #a855f7, #6366f1);
+          padding: 0.15rem 0.4rem;
+          border-radius: 4px;
+          margin-left: auto;
+          font-weight: 600;
+        }
+
+        .agent-actions {
+          display: flex;
+          gap: 0.35rem;
+          margin-bottom: 0.5rem;
+          flex-wrap: wrap;
+        }
+
+        .agent-btn {
+          flex: 1;
+          min-width: 60px;
+          font-size: 0.6rem;
+          padding: 0.35rem 0.5rem;
+          background: linear-gradient(135deg, #a855f7, #6366f1);
+          border: none;
+          border-radius: 4px;
+          color: white;
+          cursor: pointer;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+
+        .agent-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(168, 85, 247, 0.4);
+        }
+
+        .agent-btn.secondary {
+          background: rgba(168, 85, 247, 0.2);
+          border: 1px solid rgba(168, 85, 247, 0.4);
+        }
+
+        .agent-btn.secondary:hover {
+          background: rgba(168, 85, 247, 0.3);
+        }
+
+        .agent-btn.summary-btn {
+          background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .agent-btn.summary-btn:hover {
+          box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+        }
+
+        .agent-btn.pdca-btn {
+          background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .agent-btn.pdca-btn:hover {
+          box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+        }
+
+        /* ナレッジ収集カード */
+        .detail-card.knowledge-card {
+          border: 1px solid rgba(34, 197, 94, 0.3);
+          background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(0,0,0,0.2));
+        }
+
+        .knowledge-badge {
+          font-size: 0.55rem;
+          background: linear-gradient(135deg, #22c55e, #10b981);
+          padding: 0.15rem 0.4rem;
+          border-radius: 4px;
+          margin-left: auto;
+          color: white;
+        }
+
+        .agent-btn.knowledge {
+          background: linear-gradient(135deg, #22c55e, #10b981);
+        }
+
+        .agent-btn.knowledge:hover {
+          box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+        }
+
+        .agent-btn.knowledge.secondary {
+          background: rgba(34, 197, 94, 0.2);
+          border: 1px solid rgba(34, 197, 94, 0.4);
+        }
+
+        .agent-btn.knowledge.secondary:hover {
+          background: rgba(34, 197, 94, 0.3);
+        }
+
+        /* インプレッションカード */
+        .detail-card.impressions-card {
+          border: 1px solid rgba(59, 130, 246, 0.3);
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(0,0,0,0.2));
+        }
+
+        .impressions-badge {
+          font-size: 0.55rem;
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          padding: 0.15rem 0.4rem;
+          border-radius: 4px;
+          margin-left: auto;
+          color: white;
+        }
+
+        .agent-btn.impressions {
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .agent-btn.impressions:hover {
+          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        .agent-btn.impressions.secondary {
+          background: rgba(59, 130, 246, 0.2);
+          border: 1px solid rgba(59, 130, 246, 0.4);
+        }
+
+        .agent-btn.impressions.secondary:hover {
+          background: rgba(59, 130, 246, 0.3);
+        }
+
+        /* メトリクスダッシュボード */
+        .metrics-dashboard {
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1));
+          border: 1px solid rgba(16, 185, 129, 0.2);
+          border-radius: 12px;
+          padding: 1rem;
+          margin-bottom: 1rem;
+        }
+
+        .metrics-dashboard .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1rem;
+        }
+
+        .metrics-dashboard .section-header h2 {
+          font-size: 0.9rem;
+          color: #10b981;
+          margin: 0;
+        }
+
+        .auto-collect-toggle {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .auto-status {
+          font-size: 0.65rem;
+          color: rgba(255,255,255,0.5);
+          padding: 0.2rem 0.5rem;
+          background: rgba(255,255,255,0.1);
+          border-radius: 4px;
+        }
+
+        .auto-status.active {
+          color: #10b981;
+          background: rgba(16, 185, 129, 0.2);
+        }
+
+        .toggle-btn {
+          font-size: 0.6rem;
+          padding: 0.25rem 0.5rem;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .toggle-btn.on {
+          background: rgba(239, 68, 68, 0.3);
+          color: #ef4444;
+        }
+
+        .toggle-btn.off {
+          background: rgba(16, 185, 129, 0.3);
+          color: #10b981;
+        }
+
+        .last-updated {
+          font-size: 0.6rem;
+          color: rgba(255,255,255,0.4);
+        }
+
+        .metrics-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 0.75rem;
+          margin-bottom: 1rem;
+        }
+
+        .metric-card {
+          background: rgba(0,0,0,0.3);
+          border-radius: 8px;
+          padding: 0.75rem;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          border: 1px solid transparent;
+          transition: all 0.2s;
+        }
+
+        .metric-card:hover {
+          transform: translateY(-2px);
+        }
+
+        .metric-card.impressions {
+          border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .metric-card.engagement {
+          border-color: rgba(236, 72, 153, 0.3);
+        }
+
+        .metric-card.rate {
+          border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .metric-card.posts {
+          border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        .metric-icon {
+          font-size: 1.5rem;
+        }
+
+        .metric-content {
+          flex: 1;
+        }
+
+        .metric-value {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: white;
+          font-family: monospace;
+        }
+
+        .metric-label {
+          font-size: 0.6rem;
+          color: rgba(255,255,255,0.5);
+        }
+
+        /* PDCA分析インサイト */
+        .pdca-insights {
+          background: rgba(0,0,0,0.2);
+          border-radius: 8px;
+          padding: 0.75rem;
+          border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .pdca-header {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 0.75rem;
+        }
+
+        .pdca-title {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #ef4444;
+        }
+
+        .correlation-badge {
+          font-size: 0.55rem;
+          padding: 0.15rem 0.4rem;
+          border-radius: 4px;
+          background: rgba(255,255,255,0.1);
+        }
+
+        .correlation-badge.strong {
+          background: rgba(16, 185, 129, 0.3);
+          color: #10b981;
+        }
+
+        .correlation-badge.moderate {
+          background: rgba(245, 158, 11, 0.3);
+          color: #f59e0b;
+        }
+
+        .correlation-badge.weak {
+          background: rgba(239, 68, 68, 0.3);
+          color: #ef4444;
+        }
+
+        .insight-section {
+          margin-bottom: 0.5rem;
+        }
+
+        .insight-section:last-child {
+          margin-bottom: 0;
+        }
+
+        .insight-label {
+          font-size: 0.6rem;
+          color: rgba(255,255,255,0.5);
+          margin-bottom: 0.25rem;
+        }
+
+        .insight-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.35rem;
+        }
+
+        .insight-tag {
+          font-size: 0.6rem;
+          padding: 0.2rem 0.4rem;
+          border-radius: 4px;
+          background: rgba(255,255,255,0.1);
+        }
+
+        .insight-tag.target {
+          background: rgba(236, 72, 153, 0.2);
+          color: #ec4899;
+        }
+
+        .insight-tag.benefit {
+          background: rgba(59, 130, 246, 0.2);
+          color: #3b82f6;
+        }
+
+        .recommendation-list {
+          margin: 0;
+          padding-left: 1rem;
+          font-size: 0.6rem;
+          color: rgba(255,255,255,0.7);
+        }
+
+        .recommendation-list li {
+          margin-bottom: 0.25rem;
+        }
+
+        .metrics-loading {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          padding: 0.75rem;
+          color: rgba(255,255,255,0.5);
+          font-size: 0.7rem;
+        }
+
+        .loading-spinner {
+          width: 14px;
+          height: 14px;
+          border: 2px solid rgba(255,255,255,0.2);
+          border-top-color: #10b981;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+          .metrics-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        /* 仮説検証セクション */
+        .hypothesis-section {
+          margin-top: 1rem;
+          padding: 0.75rem;
+          background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(236, 72, 153, 0.1));
+          border: 1px solid rgba(168, 85, 247, 0.3);
+          border-radius: 8px;
+        }
+
+        .hypothesis-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.5rem;
+        }
+
+        .hypothesis-title {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #a855f7;
+        }
+
+        .hypothesis-actions {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .hypothesis-btn {
+          font-size: 0.6rem;
+          padding: 0.3rem 0.6rem;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          transition: all 0.2s;
+          font-weight: 500;
+        }
+
+        .hypothesis-btn.generate {
+          background: linear-gradient(135deg, #a855f7, #6366f1);
+          color: white;
+        }
+
+        .hypothesis-btn.generate:hover {
+          box-shadow: 0 2px 8px rgba(168, 85, 247, 0.4);
+        }
+
+        .hypothesis-btn.validate {
+          background: linear-gradient(135deg, #10b981, #059669);
+          color: white;
+        }
+
+        .hypothesis-btn.validate:hover {
+          box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        }
+
+        .hypothesis-btn.summary {
+          background: rgba(168, 85, 247, 0.2);
+          color: #a855f7;
+          border: 1px solid rgba(168, 85, 247, 0.4);
+        }
+
+        .hypothesis-btn.summary:hover {
+          background: rgba(168, 85, 247, 0.3);
+        }
+
+        .hypothesis-info {
+          font-size: 0.55rem;
+          color: rgba(255,255,255,0.4);
+        }
+
+        .hypothesis-btn.migrate {
+          background: linear-gradient(135deg, #f59e0b, #d97706);
+          color: white;
+        }
+
+        .hypothesis-btn.migrate:hover {
+          box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+        }
+
+        .migrate-section {
+          margin-top: 0.5rem;
+          padding-top: 0.5rem;
+          border-top: 1px solid rgba(255,255,255,0.1);
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .migrate-info {
+          font-size: 0.55rem;
+          color: rgba(255,255,255,0.4);
         }
 
         .detail-title {

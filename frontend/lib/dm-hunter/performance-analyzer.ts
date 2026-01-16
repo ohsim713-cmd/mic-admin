@@ -276,7 +276,7 @@ ${data.bestTimes.slice(0, 3).map(t => `- ${t.hour}時: 平均${t.avgDMs.toFixed(
 改善提案:`;
 
     const result = await genAI.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
     });
 
@@ -381,7 +381,7 @@ export async function generateWeeklyReport(): Promise<{
 サマリー:`;
 
     const result = await genAI.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
     });
     summary = result.text?.trim() || '';

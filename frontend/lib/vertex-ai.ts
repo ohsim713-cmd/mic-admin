@@ -6,6 +6,6 @@ const location = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
 
 const vertex_ai = new VertexAI({ project: project, location: location });
 
-export function getModel(modelName: string = 'gemini-1.5-flash-001') {
+export function getModel(modelName: string = 'gemini-3-flash-preview') {
     return vertex_ai.getGenerativeModel({ model: modelName });
 }

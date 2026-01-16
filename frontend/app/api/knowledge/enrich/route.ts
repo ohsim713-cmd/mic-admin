@@ -12,7 +12,7 @@ import * as path from 'path';
 export const maxDuration = 120;
 
 const model = new ChatGoogleGenerativeAI({
-  model: 'gemini-2.0-flash',
+  model: 'gemini-3-flash-preview',
   temperature: 0.3,
   apiKey: process.env.GEMINI_API_KEY,
 });

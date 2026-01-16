@@ -4,6 +4,7 @@ import {
   ACCOUNTS,
 } from '@/lib/dm-hunter/sns-adapter';
 import { POSTING_SCHEDULE } from '@/lib/automation/scheduler';
+import { addToPostsHistory } from '@/lib/analytics/posts-history';
 
 // POST: 自動投稿実行
 export async function POST(request: NextRequest) {
@@ -93,6 +94,20 @@ export async function POST(request: NextRequest) {
           score,
           error: postResult.error,
         });
+
+        // 投稿履歴に記録（SDK分析用）
+        if (postResult.success) {
+          await addToPostsHistory({
+            id: postResult.id || `post_${Date.now()}`,
+            text: postText,
+            account,
+            target,
+            benefit,
+            score,
+            tweetId: postResult.id,
+            timestamp: new Date().toISOString(),
+          });
+        }
       }
     } catch (error: any) {
       console.error(`[Automation] Error for ${account}:`, error);

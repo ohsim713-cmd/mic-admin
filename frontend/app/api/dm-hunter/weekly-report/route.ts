@@ -99,7 +99,7 @@ ${baseReport.improvements?.slice(0, 2).join('\n') || 'なし'}
 サマリー:`;
 
     const result = await genAI.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
     });
     executiveSummary = result.text?.trim() || baseReport.summary;

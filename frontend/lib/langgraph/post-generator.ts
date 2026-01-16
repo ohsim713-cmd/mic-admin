@@ -14,7 +14,7 @@ import {
   WorkflowStep,
 } from './state';
 import { getSuccessPatterns } from '../database/success-patterns-db';
-import { getRandomHook, buildEnrichedKnowledgeContext, buildChatladyKnowledgeContext } from './knowledge-loader';
+import { getRandomHook, buildEnrichedKnowledgeContextWithGoogle, buildChatladyKnowledgeContextWithGoogle } from './knowledge-loader';
 import { initPhoenix, tracePostGeneration, recordQualityScore } from '../phoenix/client';
 
 // Phoenix 初期化（サーバー起動時に1回だけ）
@@ -28,13 +28,13 @@ try {
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
 const model = new ChatGoogleGenerativeAI({
-  model: 'gemini-2.0-flash',
+  model: 'gemini-3-flash-preview',
   temperature: 0.8,
   apiKey,
 });
 
 const reviewModel = new ChatGoogleGenerativeAI({
-  model: 'gemini-2.0-flash',
+  model: 'gemini-3-flash-preview',
   temperature: 0.3,
   apiKey,
 });
@@ -83,23 +83,41 @@ async function researchNode(
   };
 }
 
+// 文章スタイルのバリエーション（幅広い文章を生成するため）
+const WRITING_STYLES = [
+  { id: 'empathy', name: '共感型', instruction: '読者の悩みに深く寄り添い、「分かるよ」「私もそうだった」という姿勢で書く。感情に訴えかける。' },
+  { id: 'story', name: 'ストーリー型', instruction: '具体的な人物のエピソード・体験談を中心に構成。「うちの30代のライバーさんが〜」のように臨場感を出す。' },
+  { id: 'question', name: '質問型', instruction: '冒頭から読者に問いかけ、考えさせる。「〜って思ってない？」「〜じゃないですか？」で興味を引く。' },
+  { id: 'benefit_first', name: 'ベネフィット先行型', instruction: '冒頭でメリット・結果を明示。「週3日で月20万」など数字を最初に出して興味を引く。' },
+  { id: 'contrast', name: '対比型', instruction: 'ビフォーアフター、過去と現在の対比で変化を見せる。「前は〜だったけど、今は〜」構成。' },
+  { id: 'casual', name: 'カジュアル型', instruction: '友達にLINEするようなフランクなトーン。敬語控えめ、タメ口寄り。「〜なんだよね」「〜してみない？」' },
+  { id: 'professional', name: 'プロ型', instruction: '事務所としての信頼感・専門性を強調。実績データや具体的なサポート体制を前面に。' },
+  { id: 'secret', name: '秘密共有型', instruction: '「ここだけの話」「実は」感を出す。読者だけに特別な情報を教える雰囲気。' },
+  { id: 'urgent', name: '緊急性型', instruction: '「今なら」「今月限定」「枠が残りわずか」など、今すぐ行動を促す要素を入れる。' },
+  { id: 'social_proof', name: '社会的証明型', instruction: '他の人がやっている・成功している事実を示す。「〇〇人が応募」「最近増えてる」など。' },
+];
+
 /**
- * DRAFT: 投稿文を生成（ナレッジベース活用）
+ * DRAFT: 投稿文を生成（ナレッジベース活用 + スタイルバリエーション）
  */
 async function draftNode(
   state: PostGeneratorStateType
 ): Promise<Partial<PostGeneratorStateType>> {
   const { target, benefit, accountType, successPatterns, feedback } = state;
 
+  // ランダムにスタイルを選択（幅広い文章を生成するため）
+  const selectedStyle = WRITING_STYLES[Math.floor(Math.random() * WRITING_STYLES.length)];
+
   // ナレッジコンテキストを取得（毎回新鮮な情報を使う - バリエーション向上のため）
+  // Google検索で収集したナレッジも自動的に活用
   let knowledgeContext = '';
   try {
     if (accountType === 'ライバー') {
-      // ライバー用はリッチなコンテキストを毎回生成（ランダム情報が含まれる）
-      knowledgeContext = await buildEnrichedKnowledgeContext();
+      // ライバー用はリッチなコンテキスト + Google検索ナレッジ
+      knowledgeContext = await buildEnrichedKnowledgeContextWithGoogle();
     } else {
-      // チャトレ用は既存のコンテキストを使用
-      knowledgeContext = await buildChatladyKnowledgeContext();
+      // チャトレ用はリッチコンテキスト + Google検索ナレッジ
+      knowledgeContext = await buildChatladyKnowledgeContextWithGoogle();
     }
   } catch {
     // ナレッジ取得失敗は無視
@@ -117,6 +135,11 @@ async function draftNode(
 
 【ターゲット】${target}
 【訴求ポイント】${benefit}
+
+★★★【今回の文章スタイル: ${selectedStyle.name}】★★★
+${selectedStyle.instruction}
+※このスタイルに沿って書くこと！他の投稿と差別化するため、このスタイル特有の表現を使う。
+
 ${knowledgeContext}
 ${patternsText}
 ${feedbackText}
@@ -128,6 +151,7 @@ ${feedbackText}
 
 【重要な条件】
 - ★★冒頭は必ず【今回使う冒頭フレーズ】をそのまま使う（「ぶっちゃけ」で始めない）
+- ★★【${selectedStyle.name}】のスタイルに従って書く
 - 280〜320文字（中長文で深く刺す）
 - ★上記の【今回使う具体的な情報】を必ず1つ以上盛り込む（実例、年齢戦略、収入シミュレーション、統計など）
 - 具体的な数字を入れる（バリエーションを持たせて毎回違う数字を使う）

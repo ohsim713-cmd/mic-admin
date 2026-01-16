@@ -2,5 +2,26 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "outputDirectory": ".next",
-  "crons": []
+  "crons": [
+    {
+      "path": "/api/cron/auto-post",
+      "schedule": "0 22-23,0-14 * * *"
+    },
+    {
+      "path": "/api/cron/autonomous",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/refill-stock",
+      "schedule": "30 21 * * *"
+    },
+    {
+      "path": "/api/cron/buzz-check",
+      "schedule": "30 */4 * * *"
+    },
+    {
+      "path": "/api/cron/wordpress-post",
+      "schedule": "0 */6 * * *"
+    }
+  ]
 }

@@ -8,11 +8,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   generateMultiplePosts,
+  generateSinglePost,
   GenerationProgress,
 } from '../../../../lib/langgraph/post-generator';
-import { addPosts } from '../../../../lib/database/generated-posts';
+import { addPosts, updatePost } from '../../../../lib/database/generated-posts';
 import { learnFromPost } from '../../../../lib/database/success-patterns-db';
 import { ACCOUNTS } from '../../../../lib/dm-hunter/sns-adapter';
+
+// 低スコア閾値（この点数以下は自動改善対象）
+const LOW_SCORE_THRESHOLD = 10;
 
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5分
@@ -78,6 +82,66 @@ export async function POST(request: NextRequest) {
           const scoreTotal = result.score?.total ?? 0;
           if (scoreTotal >= 8) {
             await learnFromPost(result.text, scoreTotal, false);
+          }
+        }
+
+        // 低スコア投稿の自動改善（スコア10以下を再生成）
+        const lowScorePosts = savedPosts.filter(p => (p.score?.total ?? 0) <= LOW_SCORE_THRESHOLD);
+        let improvedCount = 0;
+
+        if (lowScorePosts.length > 0) {
+          await writer.write(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                type: 'pdca',
+                message: `低スコア投稿 ${lowScorePosts.length}件を自動改善中...`,
+              })}\n\n`
+            )
+          );
+
+          for (const post of lowScorePosts) {
+            try {
+              // フィードバックを含めて再生成
+              const feedback = post.score?.weaknesses?.join('、') || '品質向上が必要';
+              const improved = await generateSinglePost(
+                account,
+                accountInfo.type,
+                post.target || undefined,
+                post.benefit || undefined,
+                (step) => {
+                  // 進捗は送らない（バックグラウンド処理）
+                }
+              );
+
+              // スコアが向上した場合のみ更新
+              if ((improved.score?.total ?? 0) > (post.score?.total ?? 0)) {
+                await updatePost(post.id, {
+                  text: improved.text,
+                  score: improved.score,
+                  revisionCount: (post.revisionCount || 0) + 1,
+                });
+                improvedCount++;
+
+                // 改善後の投稿も学習
+                if ((improved.score?.total ?? 0) >= 8) {
+                  await learnFromPost(improved.text, improved.score?.total ?? 0, false);
+                }
+              }
+            } catch (e) {
+              console.error(`PDCA改善失敗: ${post.id}`, e);
+            }
+          }
+
+          if (improvedCount > 0) {
+            await writer.write(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  type: 'pdca_complete',
+                  improved: improvedCount,
+                  total: lowScorePosts.length,
+                })}\n\n`
+              )
+            );
           }
         }
 

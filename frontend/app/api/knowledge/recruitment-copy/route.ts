@@ -27,7 +27,7 @@ function loadKnowledge(filename: string) {
 export async function POST(request: NextRequest) {
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
     const copywritingPrompt = `あなたは求人広告のコピーライティング専門家です。
 特に女性向け高収入求人（チャットレディ、ライバー等）の効果的なコピーライティングノウハウを提供してください。

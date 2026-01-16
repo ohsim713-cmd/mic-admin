@@ -90,7 +90,7 @@ export async function evaluateOpportunity(opportunityId: string): Promise<Evalua
 
     // Gemini API呼び出し
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
     const result = await model.generateContent(prompt);
     const text = result.response.text();

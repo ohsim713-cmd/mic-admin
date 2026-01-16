@@ -1,0 +1,41 @@
+name: Daily Knowledge Collection
+
+on:
+  schedule:
+    # 毎日午前3時（JST）に実行
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+    # 手動実行も可能
+
+jobs:
+  collect-knowledge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run knowledge collection
+        working-directory: ./frontend
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          # ナレッジ収集スクリプトを実行
+          npx ts-node --esm scripts/collect-knowledge.ts
+
+      - name: Commit knowledge updates
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add frontend/knowledge/*.json
+          git diff --staged --quiet || git commit -m "chore: Daily knowledge update $(date +%Y-%m-%d)"
+          git push

@@ -5,6 +5,7 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import { KnowledgeSearchResult } from '../knowledge/google-search-collector';
 
 const KNOWLEDGE_DIR = path.join(process.cwd(), 'knowledge');
 
@@ -694,4 +695,263 @@ ${selected.join('\n')}
   }
 
   return enrichedContext;
+}
+
+// ========================================
+// Google検索ナレッジの統合
+// ========================================
+
+/**
+ * Google検索で収集したナレッジを読み込み
+ */
+export async function loadGoogleKnowledge(category: 'liver' | 'chatlady'): Promise<KnowledgeSearchResult[]> {
+  const filename = `${category}_google_knowledge.json`;
+  const data = await loadJson<KnowledgeSearchResult[]>(filename);
+  return data || [];
+}
+
+/**
+ * Google検索ナレッジからランダムなインサイトを取得
+ */
+export async function getRandomGoogleInsight(category: 'liver' | 'chatlady'): Promise<string | null> {
+  const knowledge = await loadGoogleKnowledge(category);
+  if (knowledge.length === 0) return null;
+
+  const allInsights = knowledge.flatMap(k => k.insights);
+  if (allInsights.length === 0) return null;
+
+  return allInsights[Math.floor(Math.random() * allInsights.length)];
+}
+
+/**
+ * Google検索ナレッジからランダムな統計を取得
+ */
+export async function getRandomGoogleStatistic(category: 'liver' | 'chatlady'): Promise<string | null> {
+  const knowledge = await loadGoogleKnowledge(category);
+  if (knowledge.length === 0) return null;
+
+  const allStats = knowledge.flatMap(k => k.statistics);
+  if (allStats.length === 0) return null;
+
+  return `【Web情報】${allStats[Math.floor(Math.random() * allStats.length)]}`;
+}
+
+/**
+ * Google検索ナレッジからランダムなトレンドを取得
+ */
+export async function getRandomGoogleTrend(category: 'liver' | 'chatlady'): Promise<string | null> {
+  const knowledge = await loadGoogleKnowledge(category);
+  if (knowledge.length === 0) return null;
+
+  const allTrends = knowledge.flatMap(k => k.trends);
+  if (allTrends.length === 0) return null;
+
+  return `【最新トレンド】${allTrends[Math.floor(Math.random() * allTrends.length)]}`;
+}
+
+/**
+ * Google検索ナレッジからランダムな成功事例を取得
+ */
+export async function getRandomGoogleExample(category: 'liver' | 'chatlady'): Promise<string | null> {
+  const knowledge = await loadGoogleKnowledge(category);
+  if (knowledge.length === 0) return null;
+
+  const allExamples = knowledge.flatMap(k => k.examples);
+  if (allExamples.length === 0) return null;
+
+  return `【体験談】${allExamples[Math.floor(Math.random() * allExamples.length)]}`;
+}
+
+/**
+ * Google検索ナレッジを含むリッチコンテキストを構築（ライバー用）
+ */
+export async function buildEnrichedKnowledgeContextWithGoogle(): Promise<string> {
+  // 基本のリッチコンテキスト
+  const baseContext = await buildEnrichedKnowledgeContext();
+
+  // Google検索ナレッジからランダムに情報を追加
+  const googleInfo: (string | null)[] = await Promise.all([
+    getRandomGoogleStatistic('liver'),
+    getRandomGoogleTrend('liver'),
+    getRandomGoogleExample('liver'),
+  ]);
+
+  const validGoogleInfo = googleInfo.filter((info): info is string => info !== null);
+
+  if (validGoogleInfo.length > 0) {
+    // 1-2個をランダムに選択
+    const selected = validGoogleInfo.sort(() => Math.random() - 0.5).slice(0, Math.floor(Math.random() * 2) + 1);
+    return baseContext + `\n\n【Google検索からの最新情報】\n${selected.join('\n')}`;
+  }
+
+  return baseContext;
+}
+
+/**
+ * Google検索ナレッジを含むリッチコンテキストを構築（チャトレ用）
+ */
+export async function buildChatladyKnowledgeContextWithGoogle(): Promise<string> {
+  // 基本のリッチコンテキスト
+  const baseContext = await buildChatladyKnowledgeContext();
+
+  // Google検索ナレッジからランダムに情報を追加
+  const googleInfo: (string | null)[] = await Promise.all([
+    getRandomGoogleStatistic('chatlady'),
+    getRandomGoogleTrend('chatlady'),
+    getRandomGoogleExample('chatlady'),
+  ]);
+
+  const validGoogleInfo = googleInfo.filter((info): info is string => info !== null);
+
+  if (validGoogleInfo.length > 0) {
+    // 1-2個をランダムに選択
+    const selected = validGoogleInfo.sort(() => Math.random() - 0.5).slice(0, Math.floor(Math.random() * 2) + 1);
+    return baseContext + `\n\n【Google検索からの最新情報】\n${selected.join('\n')}`;
+  }
+
+  return baseContext;
+}
+
+// ========================================
+// 深い専門知識ローダー
+// ========================================
+
+interface DeepExpertiseData {
+  [key: string]: any;
+}
+
+/**
+ * ライバー業界の深い専門知識からランダムな情報を取得
+ */
+export async function getRandomLiverDeepExpertise(): Promise<string | null> {
+  const data = await loadJson<DeepExpertiseData>('liver_deep_expertise.json');
+  if (!data) return null;
+
+  const categories = [
+    { key: 'streaming_psychology', label: '配信心理学' },
+    { key: 'platform_mastery', label: 'プラットフォーム攻略' },
+    { key: 'income_optimization', label: '収益最適化' },
+    { key: 'mental_health_management', label: 'メンタル管理' },
+    { key: 'equipment_guide', label: '機材ガイド' },
+    { key: 'success_case_studies', label: '成功事例' },
+    { key: 'recruitment_objection_handling', label: '不安解消' },
+  ];
+
+  const category = categories[Math.floor(Math.random() * categories.length)];
+  const categoryData = data[category.key];
+  if (!categoryData) return null;
+
+  // カテゴリに応じたランダム情報を抽出
+  const info = JSON.stringify(categoryData, null, 2).slice(0, 500);
+  return `【${category.label}】${info}`;
+}
+
+/**
+ * チャットレディ業界の深い専門知識からランダムな情報を取得
+ */
+export async function getRandomChatladyDeepExpertise(): Promise<string | null> {
+  const data = await loadJson<DeepExpertiseData>('chatlady_deep_expertise.json');
+  if (!data) return null;
+
+  const categories = [
+    { key: 'platform_mastery', label: 'サイト攻略' },
+    { key: 'work_psychology', label: '顧客心理' },
+    { key: 'income_optimization', label: '収益最適化' },
+    { key: 'safety_and_privacy', label: '安全・プライバシー' },
+    { key: 'mental_health', label: 'メンタル管理' },
+    { key: 'career_development', label: 'キャリア' },
+    { key: 'success_case_studies', label: '成功事例' },
+    { key: 'recruitment_objection_handling', label: '不安解消' },
+  ];
+
+  const category = categories[Math.floor(Math.random() * categories.length)];
+  const categoryData = data[category.key];
+  if (!categoryData) return null;
+
+  const info = JSON.stringify(categoryData, null, 2).slice(0, 500);
+  return `【${category.label}】${info}`;
+}
+
+/**
+ * SNSマーケティングの専門知識からランダムな情報を取得
+ */
+export async function getRandomSNSMarketingExpertise(): Promise<string | null> {
+  const data = await loadJson<DeepExpertiseData>('sns_marketing_expertise.json');
+  if (!data) return null;
+
+  const categories = [
+    { key: 'x_twitter_mastery', label: 'X(Twitter)攻略' },
+    { key: 'tiktok_mastery', label: 'TikTok攻略' },
+    { key: 'instagram_mastery', label: 'Instagram攻略' },
+    { key: 'copywriting_frameworks', label: 'コピーライティング' },
+    { key: 'conversion_optimization', label: 'CV最適化' },
+    { key: 'analytics_kpis', label: '分析指標' },
+  ];
+
+  const category = categories[Math.floor(Math.random() * categories.length)];
+  const categoryData = data[category.key];
+  if (!categoryData) return null;
+
+  const info = JSON.stringify(categoryData, null, 2).slice(0, 500);
+  return `【${category.label}】${info}`;
+}
+
+/**
+ * 深い専門知識を含む超リッチコンテキストを構築（ライバー用）
+ */
+export async function buildUltraEnrichedLiverContext(): Promise<string> {
+  const baseContext = await buildEnrichedKnowledgeContextWithGoogle();
+
+  // 深い専門知識からランダムに追加
+  const deepInfo: (string | null)[] = await Promise.all([
+    getRandomLiverDeepExpertise(),
+    getRandomSNSMarketingExpertise(),
+  ]);
+
+  const validDeepInfo = deepInfo.filter((info): info is string => info !== null);
+
+  if (validDeepInfo.length > 0) {
+    const selected = validDeepInfo.sort(() => Math.random() - 0.5).slice(0, 1);
+    return baseContext + `\n\n【深い専門知識】\n${selected.join('\n')}`;
+  }
+
+  return baseContext;
+}
+
+/**
+ * 深い専門知識を含む超リッチコンテキストを構築（チャトレ用）
+ */
+export async function buildUltraEnrichedChatladyContext(): Promise<string> {
+  const baseContext = await buildChatladyKnowledgeContextWithGoogle();
+
+  // 深い専門知識からランダムに追加
+  const deepInfo: (string | null)[] = await Promise.all([
+    getRandomChatladyDeepExpertise(),
+    getRandomSNSMarketingExpertise(),
+  ]);
+
+  const validDeepInfo = deepInfo.filter((info): info is string => info !== null);
+
+  if (validDeepInfo.length > 0) {
+    const selected = validDeepInfo.sort(() => Math.random() - 0.5).slice(0, 1);
+    return baseContext + `\n\n【深い専門知識】\n${selected.join('\n')}`;
+  }
+
+  return baseContext;
+}
+
+/**
+ * 全ナレッジファイルの一覧を取得
+ */
+export async function listAllKnowledgeFiles(): Promise<string[]> {
+  const { promises: fsPromises } = await import('fs');
+  const files = await fsPromises.readdir(KNOWLEDGE_DIR);
+  return files.filter(f => f.endsWith('.json'));
+}
+
+/**
+ * 特定のナレッジファイルの内容を取得
+ */
+export async function getKnowledgeFileContent(filename: string): Promise<any | null> {
+  return loadJson<any>(filename);
 }

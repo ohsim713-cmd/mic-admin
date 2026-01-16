@@ -250,7 +250,7 @@ export async function POST(request: NextRequest) {
 
   try {
     // 投稿生成
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
     const prompt = `あなたは在宅ワーク求人のプロコピーライターです。
 【投稿タイプ】${currentSlot.type}
 【強調メリット】${benefit.label} - ${benefit.desc}

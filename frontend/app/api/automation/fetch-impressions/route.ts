@@ -10,11 +10,23 @@ type PostHistory = {
     text: string;
     timestamp: string;
     tweetId?: string;
+    account?: string;
     impressions?: number;
     engagements?: number;
     likes?: number;
     retweets?: number;
     replies?: number;
+};
+
+type XCredentials = {
+    tt_liver?: {
+        bearerToken: string;
+        clientId?: string;
+    };
+    [key: string]: {
+        bearerToken: string;
+        clientId?: string;
+    } | undefined;
 };
 
 function loadPostsHistory(): PostHistory[] {
@@ -43,7 +55,7 @@ function savePostsHistory(posts: PostHistory[]) {
     }
 }
 
-function loadCredentials() {
+function loadCredentials(): XCredentials | null {
     try {
         if (!fs.existsSync(CREDENTIALS_FILE)) {
             return null;
@@ -56,20 +68,96 @@ function loadCredentials() {
     }
 }
 
+/**
+ * 複数ツイートを一括取得（最大100件）
+ */
+async function fetchMultipleTweetMetrics(tweetIds: string[], bearerToken: string): Promise<Map<string, {
+    impressions: number;
+    likes: number;
+    retweets: number;
+    replies: number;
+}>> {
+    const results = new Map();
+
+    // URLデコード
+    const decodedToken = decodeURIComponent(bearerToken);
+
+    // 100件ずつバッチ処理
+    const batchSize = 100;
+    for (let i = 0; i < tweetIds.length; i += batchSize) {
+        const batch = tweetIds.slice(i, i + batchSize);
+        const idsParam = batch.join(',');
+
+        try {
+            const response = await fetch(
+                `https://api.twitter.com/2/tweets?ids=${idsParam}&tweet.fields=public_metrics`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${decodedToken}`
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`X API batch error:`, response.status, errorText);
+                continue;
+            }
+
+            const data = await response.json();
+
+            if (data.data) {
+                for (const tweet of data.data) {
+                    if (tweet.public_metrics) {
+                        results.set(tweet.id, {
+                            impressions: tweet.public_metrics.impression_count || 0,
+                            likes: tweet.public_metrics.like_count || 0,
+                            retweets: tweet.public_metrics.retweet_count || 0,
+                            replies: tweet.public_metrics.reply_count || 0
+                        });
+                    }
+                }
+            }
+        } catch (e) {
+            console.error(`Failed to fetch batch metrics:`, e);
+        }
+
+        // レート制限対策: バッチ間で少し待機
+        if (i + batchSize < tweetIds.length) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+
+    return results;
+}
+
 export async function POST(request: NextRequest) {
     try {
+        const body = await request.json().catch(() => ({}));
+        const { account = 'tt_liver' } = body;
+
         const credentials = loadCredentials();
-        if (!credentials || !credentials.apiKey) {
+        if (!credentials) {
             return NextResponse.json(
-                { error: 'X API credentials not configured' },
+                { error: 'X API credentials file not found' },
+                { status: 400 }
+            );
+        }
+
+        const accountCreds = credentials[account];
+        if (!accountCreds?.bearerToken) {
+            return NextResponse.json(
+                { error: `Bearer token not configured for account: ${account}` },
                 { status: 400 }
             );
         }
 
         const posts = loadPostsHistory();
 
-        // tweetIdがある投稿のみ取得
-        const postsWithTweetId = posts.filter(p => p.tweetId);
+        // tweetIdがある投稿のみ取得（アカウントでフィルタ可能）
+        const postsWithTweetId = posts.filter(p =>
+            p.tweetId && (!p.account || p.account === account)
+        );
 
         if (postsWithTweetId.length === 0) {
             return NextResponse.json({
@@ -79,67 +167,71 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // X API v2でツイートメトリクスを取得
-        // 注: 実際のAPI呼び出しには Bearer Token が必要
-        // Free Tierでは制限があるため、ここではモック実装
+        // まだメトリクスがない、または更新が必要な投稿を抽出
+        const postsToUpdate = postsWithTweetId.filter(p =>
+            !p.impressions || p.impressions === 0
+        );
+
+        if (postsToUpdate.length === 0) {
+            return NextResponse.json({
+                success: true,
+                message: 'All tweets already have metrics',
+                updated: 0,
+                total: postsWithTweetId.length
+            });
+        }
+
+        // 一括取得
+        const tweetIds = postsToUpdate.map(p => p.tweetId!);
+        const metricsMap = await fetchMultipleTweetMetrics(tweetIds, accountCreds.bearerToken);
 
         let updatedCount = 0;
+        let failedCount = 0;
 
-        // モック: ランダムなインプレッション数を生成 (実際はAPI呼び出し)
-        for (const post of postsWithTweetId) {
-            if (!post.impressions || post.impressions === 0) {
-                // 実際のAPI呼び出しの代わりにモックデータを使用
-                post.impressions = Math.floor(Math.random() * 2000) + 500; // 500-2500
-                post.likes = Math.floor(Math.random() * 50) + 5; // 5-55
-                post.retweets = Math.floor(Math.random() * 20) + 1; // 1-21
-                post.replies = Math.floor(Math.random() * 10) + 1; // 1-11
-                post.engagements = post.likes + post.retweets + post.replies;
+        for (const post of postsToUpdate) {
+            const metrics = metricsMap.get(post.tweetId!);
+            if (metrics) {
+                post.impressions = metrics.impressions;
+                post.likes = metrics.likes;
+                post.retweets = metrics.retweets;
+                post.replies = metrics.replies;
+                post.engagements = metrics.likes + metrics.retweets + metrics.replies;
                 updatedCount++;
+            } else {
+                failedCount++;
             }
         }
 
         // 更新された投稿履歴を保存
         savePostsHistory(posts);
 
-        console.log(`Updated metrics for ${updatedCount} posts`);
+        console.log(`[fetch-impressions] Updated: ${updatedCount}, Failed: ${failedCount}`);
 
         return NextResponse.json({
             success: true,
             message: `${updatedCount}件の投稿メトリクスを更新しました`,
             updated: updatedCount,
+            failed: failedCount,
             total: postsWithTweetId.length
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Failed to fetch impressions:', error);
         return NextResponse.json(
-            { error: 'Failed to fetch impressions' },
+            { error: 'Failed to fetch impressions', details: error.message },
             { status: 500 }
         );
     }
 }
 
-// 実際のX API v2呼び出しの例 (コメントアウト)
-/*
-async function fetchTweetMetrics(tweetId: string, bearerToken: string) {
-  const response = await fetch(
-    `https://api.twitter.com/2/tweets/${tweetId}?tweet.fields=public_metrics`,
-    {
-      headers: {
-        'Authorization': `Bearer ${bearerToken}`
-      }
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch tweet metrics');
-  }
-
-  const data = await response.json();
-  return {
-    impressions: data.data.public_metrics.impression_count,
-    likes: data.data.public_metrics.like_count,
-    retweets: data.data.public_metrics.retweet_count,
-    replies: data.data.public_metrics.reply_count
-  };
+export async function GET() {
+    return NextResponse.json({
+        endpoint: '/api/automation/fetch-impressions',
+        description: 'X APIからツイートのインプレッションを取得',
+        usage: {
+            method: 'POST',
+            body: {
+                account: 'アカウント名（デフォルト: tt_liver）'
+            }
+        }
+    });
 }
-*/

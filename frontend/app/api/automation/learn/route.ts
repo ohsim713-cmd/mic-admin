@@ -126,7 +126,7 @@ export async function POST() {
 
         // Gemini APIで優秀な投稿を分析
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
         const analysisPrompt = `
 以下の優秀な投稿(高いインプレッションを獲得した投稿)を分析し、成功パターンを抽出してください。

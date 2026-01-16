@@ -11,10 +11,15 @@
     "ngrok": "ngrok http 3000"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.7",
+    "@anthropic-ai/claude-code": "^2.1.7",
     "@anthropic-ai/sdk": "^0.71.2",
     "@arizeai/phoenix-otel": "^0.3.4",
     "@atproto/api": "^0.18.13",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@google-cloud/functions-framework": "^5.0.0",
+    "@google-cloud/scheduler": "^5.3.1",
+    "@google-cloud/storage": "^7.18.0",
     "@google-cloud/text-to-speech": "^6.4.0",
     "@google-cloud/vertexai": "^1.10.0",
     "@google/genai": "^1.35.0",

@@ -360,7 +360,7 @@ export async function generateDMPostForAccount(account: AccountType): Promise<Ge
     const prompt = buildPrompt(config, target, benefit, pattern, feedback, successExamples, knowledgeSnippets);
 
     const result = await genAI.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-3-flash-preview",
       contents: prompt,
     });
     const text = result.text?.trim() || "";
@@ -652,7 +652,7 @@ ${pattern.label}: ${pattern.structure}
 投稿文のみ出力。説明不要。`;
 
   const result = await genAI.models.generateContent({
-    model: "gemini-2.0-flash",
+    model: "gemini-3-flash-preview",
     contents: prompt,
   });
   const text = result.text?.trim() || "";

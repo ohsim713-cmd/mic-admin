@@ -25,7 +25,7 @@ export async function POST(request: Request) {
         // ビジネスタイプに応じた用語設定
         const businessLabel = businessType === 'liver-agency' ? 'ライバー事務所' : 'チャットレディ事務所';
 
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+        const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
         const prompt = `
 あなたは${businessLabel}の代表で、プロのコンテンツライターです。

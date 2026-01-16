@@ -9,7 +9,7 @@ const KNOWLEDGE_DIR = path.join(process.cwd(), 'knowledge');
 // Geminiモデル初期化
 function getModel() {
   return new ChatGoogleGenerativeAI({
-    model: 'gemini-2.0-flash-exp',
+    model: 'gemini-3-flash-preview',
     apiKey: process.env.GEMINI_API_KEY,
     temperature: 0.8,
   });
@@ -18,7 +18,7 @@ function getModel() {
 // 品質チェック用モデル（低温度で安定した評価）
 function getEvaluatorModel() {
   return new ChatGoogleGenerativeAI({
-    model: 'gemini-2.0-flash-exp',
+    model: 'gemini-3-flash-preview',
     apiKey: process.env.GEMINI_API_KEY,
     temperature: 0.2,
   });

@@ -18,7 +18,10 @@
       "Bash(vercel env:*)",
       "Bash(npx tsc:*)",
       "Bash(dir \"c:\\\\Users\\\\user\\\\.gemini\\\\antigravity\\\\playground\\\\charged-tyson\\\\frontend\\\\knowledge\" /b)",
-      "Bash(timeout /t 3 /nobreak)"
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(powershell -Command:*)",
+      "Bash(node:*)",
+      "Bash(chcp:*)"
     ]
   }
 }

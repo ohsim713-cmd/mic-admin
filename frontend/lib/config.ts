@@ -4,9 +4,9 @@
 export const AI_CONFIG = {
   // 使用するGeminiモデル
   models: {
-    default: 'gemini-2.0-flash',
-    fast: 'gemini-2.0-flash',
-    advanced: 'gemini-2.5-flash-preview-04-17',
+    default: 'gemini-3-flash-preview',
+    fast: 'gemini-3-flash-preview',
+    advanced: 'gemini-3-flash-preview',
   },
 
   // 生成設定

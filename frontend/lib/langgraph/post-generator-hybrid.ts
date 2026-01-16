@@ -25,7 +25,7 @@ import { sendClaudeMessage } from '../claude/client';
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
 const geminiModel = new ChatGoogleGenerativeAI({
-  model: 'gemini-2.0-flash',
+  model: 'gemini-3-flash-preview',
   temperature: 0.8,
   apiKey,
 });

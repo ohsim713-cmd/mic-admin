@@ -143,6 +143,7 @@ export async function postToTwitterAccount(
     }
 
     const formatted = formatForTwitter(text);
+    console.log(`[Twitter] Posting to ${accountName}, text length: ${formatted.length}`);
     const tweet = await client.v2.tweet(formatted);
 
     return {
@@ -152,6 +153,13 @@ export async function postToTwitterAccount(
       id: tweet.data.id,
     };
   } catch (error: any) {
+    // 詳細なエラーログ
+    console.error(`[Twitter] Error posting to ${accountName}:`, {
+      message: error.message,
+      code: error.code,
+      data: error.data,
+      errors: error.errors,
+    });
     return {
       platform: 'twitter',
       account: accountName,
