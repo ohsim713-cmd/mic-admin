@@ -13,6 +13,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSessionManager } from './session-manager';
 import { getExecutionVerifier, VerificationResult } from './execution-verifier';
+import { getEventBus, AgentEvent, emitStockLow, emitSystemError } from './event-bus';
 
 // Gemini AI ヘルパー
 let _genai: GoogleGenerativeAI | null = null;
@@ -106,6 +107,27 @@ export class ReActLoop {
 
   constructor(config: Partial<ReActConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
+    this.setupEventListeners();
+  }
+
+  /**
+   * イベントバスからの通知を受信
+   */
+  private setupEventListeners(): void {
+    const bus = getEventBus();
+
+    // ストック低下イベントを受信したら即座に補充
+    bus.subscribe('stock:low', async (event) => {
+      console.log('[ReAct] 📢 Received stock:low event, triggering replenishment');
+      if (this.isRunning && this.state === 'idle') {
+        await this.executeReplenishStock();
+      }
+    });
+
+    // エラーイベントを受信
+    bus.subscribe('system:error', (event) => {
+      console.error('[ReAct] 🚨 System error:', event.data);
+    });
   }
 
   // ========================================
@@ -124,6 +146,14 @@ export class ReActLoop {
     console.log('[ReAct] 🚀 Starting autonomous loop...');
     this.isRunning = true;
     this.state = 'idle';
+
+    // サイクル開始イベントを発行
+    getEventBus().emit({
+      type: 'cycle:start',
+      source: 'react-loop',
+      data: { config: this.config },
+      priority: 'normal',
+    });
 
     // 即座に1サイクル実行
     this.runCycle();
