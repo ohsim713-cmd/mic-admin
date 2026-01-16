@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     const { generateSinglePost } = await import('@/lib/langgraph/post-generator');
 
     // アカウントタイプ→ジャンル名マッピング
-    const genreMap: Record<string, string> = {
+    const genreMap: Record<string, 'ライバー' | 'チャトレ'> = {
       'liver': 'ライバー',
       'chatre1': 'チャトレ',
       'chatre2': 'チャトレ',
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       try {
         const genre = genreMap[account] || 'ライバー';
         console.log(`[Automation] Generating post for ${account} (${genre})...`);
-        const generated = await generateSinglePost(account, genre);
+        const generated = await generateSinglePost(account, genre as 'ライバー' | 'チャトレ');
 
         const postText = generated.text;
         const target = generated.target;
