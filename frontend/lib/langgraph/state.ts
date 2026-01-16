@@ -170,6 +170,12 @@ export const PostGeneratorState = Annotation.Root({
     default: () => [],
   }),
 
+  // 回避パターン（失敗学習から）
+  avoidPatterns: Annotation<string[]>({
+    reducer: (_, y) => y,
+    default: () => [],
+  }),
+
   // エラー
   error: Annotation<string | null>({
     reducer: (_, y) => y,

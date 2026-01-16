@@ -184,7 +184,7 @@ export async function POST(request: Request) {
             generationConfig: {
                 temperature: 1.0, // 多様性を最大化
                 topP: 0.95,
-                maxOutputTokens: 1024,
+                maxOutputTokens: 2048, // 投稿が途中で切れないように増量
             }
         });
 

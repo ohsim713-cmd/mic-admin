@@ -16,6 +16,8 @@ import {
 import { getSuccessPatterns, getWeightedPatternsByCategory, selectWeighted } from '../database/success-patterns-db';
 import { getRandomHook, buildEnrichedKnowledgeContextWithGoogle, buildChatladyKnowledgeContextWithGoogle, getRandomInsight } from './knowledge-loader';
 import { initPhoenix, tracePostGeneration, recordQualityScore } from '../phoenix/client';
+import { saveBadPattern, checkAgainstBadPatterns, extractBadFeatures } from '../database/bad-patterns-db';
+import { humanizeText, estimateAIScore, rehumanizeIfNeeded, ensureCTA, evaluateCTAStrength } from './humanizer';
 
 // Phoenix 初期化（サーバー起動時に1回だけ）
 try {
@@ -107,10 +109,29 @@ async function researchNode(
     }
   }
 
+  // 失敗パターンから回避すべき特徴を抽出
+  let avoidPatterns: string[] = [];
+  try {
+    const badFeatures = extractBadFeatures();
+    if (badFeatures.badOpenings.length > 0) {
+      avoidPatterns.push(`冒頭を避ける: ${badFeatures.badOpenings.slice(0, 3).map(o => `「${o.substring(0, 10)}...」`).join(', ')}`);
+    }
+    if (badFeatures.badWords.length > 0) {
+      avoidPatterns.push(`使用を避けるワード: ${badFeatures.badWords.slice(0, 5).join(', ')}`);
+    }
+    const currentCombo = `${target}:${benefit}`;
+    if (badFeatures.badTargetBenefitCombos.includes(currentCombo)) {
+      avoidPatterns.push(`⚠️ この組み合わせ（${target}×${benefit}）は過去に低スコア。特に工夫が必要`);
+    }
+  } catch {
+    // エラーは無視
+  }
+
   return {
     target,
     benefit,
     successPatterns,
+    avoidPatterns,
     currentStep: 'draft' as WorkflowStep,
   };
 }
@@ -135,7 +156,7 @@ const WRITING_STYLES = [
 async function draftNode(
   state: PostGeneratorStateType
 ): Promise<Partial<PostGeneratorStateType>> {
-  const { target, benefit, accountType, successPatterns, feedback } = state;
+  const { target, benefit, accountType, successPatterns, avoidPatterns, feedback } = state;
 
   // ランダムにスタイルを選択（幅広い文章を生成するため）
   const selectedStyle = WRITING_STYLES[Math.floor(Math.random() * WRITING_STYLES.length)];
@@ -170,6 +191,10 @@ async function draftNode(
     ? `\n\n【参考にする成功パターン】\n${successPatterns.map((p, i) => `${i + 1}. ${p}`).join('\n')}`
     : '';
 
+  const avoidText = avoidPatterns && avoidPatterns.length > 0
+    ? `\n\n【⚠️ 回避すべきパターン（過去の失敗学習）】\n${avoidPatterns.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n※上記は過去に低スコアだった投稿の特徴。必ず違うアプローチを取ること！`
+    : '';
+
   const feedbackText = feedback
     ? `\n\n【前回のフィードバック（必ず改善すること）】\n${feedback}`
     : '';
@@ -184,7 +209,7 @@ ${selectedStyle.instruction}
 ※このスタイルに沿って書くこと！他の投稿と差別化するため、このスタイル特有の表現を使う。
 
 ${knowledgeContext}${insightContext}
-${patternsText}
+${patternsText}${avoidText}
 ${feedbackText}
 
 【絶対に守るルール】
@@ -393,7 +418,7 @@ async function reviseNode(
 }
 
 /**
- * POLISH: 最終調整
+ * POLISH: 最終調整 + 人間化フィルター（AI臭対策）
  */
 async function polishNode(
   state: PostGeneratorStateType
@@ -412,14 +437,45 @@ ${draftText}
 - 絵文字は1-2個に調整
 - 全角/半角の統一
 - 宣伝臭さを消して自然な語り口に
+- 「めっちゃ」「ガチで」「マジで」などの口語を自然に入れる
+- 文章が完璧すぎないように、たまに「〜」や「！」を使う
 
 調整後の投稿文のみを出力:`;
 
   const response = await model.invoke(prompt);
-  const finalText = response.content as string;
+  let polishedText = (response.content as string).trim();
+
+  // === AI臭対策: 人間化フィルター適用 ===
+  // 1. AI検出スコアをチェック
+  const aiScore = estimateAIScore(polishedText);
+  console.log(`[PostGenerator] AI検出スコア: ${aiScore.score}, フラグ: ${aiScore.flags.join(', ')}`);
+
+  // 2. スコアが60以上の場合は人間化処理を適用
+  if (aiScore.score >= 60) {
+    const { text: humanizedText, newScore } = rehumanizeIfNeeded(polishedText, 60);
+    console.log(`[PostGenerator] 人間化処理適用: ${aiScore.score} → ${newScore}`);
+    polishedText = humanizedText;
+  } else {
+    // スコアが低くても軽い人間化処理を適用（揺らぎを追加）
+    polishedText = humanizeText(polishedText, { emojiLevel: 'low' });
+  }
+
+  // === CTA自動挿入 ===
+  // CTAの強さを評価
+  const ctaStrength = evaluateCTAStrength(polishedText);
+  console.log(`[PostGenerator] CTA強度: ${ctaStrength.score}/10, ${ctaStrength.feedback}`);
+
+  // CTAが弱い（スコア3以下）場合は自動挿入
+  if (ctaStrength.score <= 3) {
+    const { text: textWithCTA, ctaAdded, cta } = ensureCTA(polishedText);
+    if (ctaAdded) {
+      console.log(`[PostGenerator] CTA自動挿入: "${cta}"`);
+      polishedText = textWithCTA;
+    }
+  }
 
   return {
-    finalText: finalText.trim(),
+    finalText: polishedText,
     currentStep: 'complete' as WorkflowStep,
   };
 }
@@ -554,6 +610,20 @@ export async function generateSinglePost(
         recordQualityScore('quality-score', result.score);
       }
 
+      // 低スコア（6点以下）の場合、失敗パターンとして記録
+      if (result.score.total <= 6) {
+        const weaknesses = result.score.weaknesses || [];
+        saveBadPattern({
+          text: result.text,
+          score: result.score.total,
+          target: result.target,
+          benefit: result.benefit,
+          reason: weaknesses.join(', ') || '低スコア',
+          account,
+        });
+        console.log(`[PostGenerator] Bad pattern recorded: score=${result.score.total}`);
+      }
+
       return result;
     }
   );
@@ -630,4 +700,141 @@ export async function generateMultiplePosts(
   }
 
   return results;
+}
+
+/**
+ * 複数候補を生成してベストを選択（品質向上用）
+ * 3案生成して最高スコアを返す
+ */
+export async function generateBestPost(
+  account: string,
+  accountType: 'ライバー' | 'チャトレ',
+  target?: string,
+  benefit?: string,
+  candidateCount: number = 3
+): Promise<{
+  best: {
+    text: string;
+    target: string;
+    benefit: string;
+    score: QualityScore;
+    revisionCount: number;
+  };
+  candidates: Array<{
+    text: string;
+    score: number;
+    selected: boolean;
+  }>;
+  stats: {
+    avgScore: number;
+    maxScore: number;
+    minScore: number;
+    improvement: number; // ベスト選択による改善率
+  };
+}> {
+  console.log(`[BestPost] Generating ${candidateCount} candidates...`);
+
+  // 並列で複数候補を生成
+  const promises = Array.from({ length: candidateCount }, () =>
+    generateSinglePost(account, accountType, target, benefit)
+      .catch(error => {
+        console.error('[BestPost] Candidate generation failed:', error);
+        return null;
+      })
+  );
+
+  const results = await Promise.all(promises);
+  const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null);
+
+  if (validResults.length === 0) {
+    throw new Error('All candidates failed to generate');
+  }
+
+  // スコアで降順ソート
+  const sorted = validResults.sort((a, b) => b.score.total - a.score.total);
+  const best = sorted[0];
+
+  // 統計計算
+  const scores = validResults.map(r => r.score.total);
+  const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+  const maxScore = Math.max(...scores);
+  const minScore = Math.min(...scores);
+  const improvement = ((maxScore - avgScore) / avgScore) * 100;
+
+  console.log(`[BestPost] Best: ${maxScore.toFixed(1)}, Avg: ${avgScore.toFixed(1)}, Improvement: ${improvement.toFixed(1)}%`);
+
+  return {
+    best,
+    candidates: sorted.map((r, i) => ({
+      text: r.text,
+      score: r.score.total,
+      selected: i === 0,
+    })),
+    stats: {
+      avgScore,
+      maxScore,
+      minScore,
+      improvement,
+    },
+  };
+}
+
+/**
+ * 品質保証付き投稿生成
+ * スコアが閾値未満の場合、候補を増やして再試行
+ */
+export async function generateQualityAssuredPost(
+  account: string,
+  accountType: 'ライバー' | 'チャトレ',
+  target?: string,
+  benefit?: string,
+  minScore: number = 8,
+  maxAttempts: number = 3
+): Promise<{
+  text: string;
+  target: string;
+  benefit: string;
+  score: QualityScore;
+  attempts: number;
+  candidatesGenerated: number;
+}> {
+  let attempts = 0;
+  let candidatesGenerated = 0;
+  let candidateCount = 3;
+
+  while (attempts < maxAttempts) {
+    attempts++;
+    console.log(`[QualityAssured] Attempt ${attempts}/${maxAttempts}, generating ${candidateCount} candidates`);
+
+    try {
+      const result = await generateBestPost(account, accountType, target, benefit, candidateCount);
+      candidatesGenerated += candidateCount;
+
+      if (result.best.score.total >= minScore) {
+        console.log(`[QualityAssured] Success! Score: ${result.best.score.total}`);
+        return {
+          ...result.best,
+          attempts,
+          candidatesGenerated,
+        };
+      }
+
+      console.log(`[QualityAssured] Score ${result.best.score.total} < ${minScore}, retrying...`);
+      // 次回は候補数を増やす
+      candidateCount = Math.min(candidateCount + 2, 7);
+    } catch (error) {
+      console.error(`[QualityAssured] Attempt ${attempts} failed:`, error);
+    }
+  }
+
+  // 最後の試行でベストを返す
+  console.log(`[QualityAssured] Max attempts reached, returning best available`);
+  const finalResult = await generateBestPost(account, accountType, target, benefit, 5);
+  candidatesGenerated += 5;
+
+  return {
+    ...finalResult.best,
+    attempts: maxAttempts + 1,
+    candidatesGenerated,
+  };
 }

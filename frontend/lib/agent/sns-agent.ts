@@ -1223,6 +1223,161 @@ async function executeTool(name: string, input: Record<string, unknown>): Promis
         return JSON.stringify(result, null, 2);
       }
 
+      // ========================================
+      // Playwright / Vector Memory / Media ツール
+      // ========================================
+
+      case 'scout_note': {
+        const { getPlaywrightAgent } = await import('./sub-agents/playwright-agent');
+        const agent = getPlaywrightAgent();
+        try {
+          await agent.launch();
+          const articles = await agent.scrapeNoteSearch(
+            input.query as string,
+            (input.maxResults as number) || 10
+          );
+          const ids = await agent.saveToMemory(articles, 'note');
+          return JSON.stringify({
+            success: true,
+            count: articles.length,
+            savedIds: ids,
+            articles: articles.map(a => ({
+              title: a.title,
+              url: a.url,
+              author: a.author,
+              contentLength: a.content.length,
+            })),
+          }, null, 2);
+        } finally {
+          await agent.close();
+        }
+      }
+
+      case 'scout_page': {
+        const { getPlaywrightAgent } = await import('./sub-agents/playwright-agent');
+        const agent = getPlaywrightAgent();
+        try {
+          await agent.launch();
+          const result = await agent.scrapePage(input.url as string, {
+            selector: input.selector as string,
+          });
+          if (input.saveToMemory === 'true') {
+            const ids = await agent.saveToMemory([result], 'web');
+            return JSON.stringify({ success: true, result, savedId: ids[0] }, null, 2);
+          }
+          return JSON.stringify({ success: true, result }, null, 2);
+        } finally {
+          await agent.close();
+        }
+      }
+
+      case 'scout_ocr': {
+        const { getPlaywrightAgent } = await import('./sub-agents/playwright-agent');
+        const agent = getPlaywrightAgent();
+        try {
+          await agent.launch();
+          const result = await agent.captureAndOCR(
+            input.url as string,
+            input.selector as string
+          );
+          return JSON.stringify({ success: true, result }, null, 2);
+        } finally {
+          await agent.close();
+        }
+      }
+
+      case 'memory_search': {
+        const { getVectorMemory } = await import('../database/vector-memory');
+        const memory = getVectorMemory();
+        const results = await memory.search(input.query as string, {
+          limit: (input.limit as number) || 10,
+          filter: { source: input.source as string },
+        });
+        return JSON.stringify({
+          success: true,
+          count: results.length,
+          results,
+        }, null, 2);
+      }
+
+      case 'memory_store': {
+        const { getVectorMemory } = await import('../database/vector-memory');
+        const memory = getVectorMemory();
+        const id = await memory.store({
+          content: input.content as string,
+          metadata: {
+            source: (input.source as string) || 'manual',
+            title: input.title as string,
+            scraped_at: new Date().toISOString(),
+          },
+        });
+        return JSON.stringify({ success: true, id }, null, 2);
+      }
+
+      case 'memory_stats': {
+        const { getVectorMemory } = await import('../database/vector-memory');
+        const memory = getVectorMemory();
+        const stats = await memory.getStats();
+        return JSON.stringify({ success: true, stats }, null, 2);
+      }
+
+      case 'media_info': {
+        const { getMediaSnatcher } = await import('../media/video-downloader');
+        const snatcher = getMediaSnatcher();
+        const info = await snatcher.getInfo(input.url as string);
+        return JSON.stringify({ success: true, info }, null, 2);
+      }
+
+      case 'media_download': {
+        const { getMediaSnatcher } = await import('../media/video-downloader');
+        const snatcher = getMediaSnatcher();
+        const result = await snatcher.download(input.url as string, {
+          format: (input.format as 'best' | 'audio' | 'worst') || 'worst',
+        });
+        return JSON.stringify(result, null, 2);
+      }
+
+      case 'monitor_add': {
+        const { getMonitorAgent } = await import('./sub-agents/monitor-agent');
+        const monitor = getMonitorAgent();
+        monitor.addTarget({
+          url: input.url as string,
+          name: input.name as string,
+          selector: input.selector as string,
+        });
+        return JSON.stringify({
+          success: true,
+          message: `監視対象を追加しました: ${input.name}`,
+          targets: monitor.getTargets().length,
+        }, null, 2);
+      }
+
+      case 'monitor_status': {
+        const { getMonitorAgent } = await import('./sub-agents/monitor-agent');
+        const monitor = getMonitorAgent();
+        return JSON.stringify({
+          success: true,
+          stats: monitor.getStats(),
+          targets: monitor.getTargets().map(t => ({
+            name: t.name,
+            url: t.url,
+            lastChecked: t.lastChecked,
+          })),
+          alerts: monitor.getUnacknowledgedAlerts().length,
+        }, null, 2);
+      }
+
+      case 'monitor_check': {
+        const { getMonitorAgent } = await import('./sub-agents/monitor-agent');
+        const monitor = getMonitorAgent();
+        await monitor.runCheck();
+        return JSON.stringify({
+          success: true,
+          message: '監視チェックを実行しました',
+          stats: monitor.getStats(),
+        }, null, 2);
+      }
+
       default:
         return JSON.stringify({ error: `Unknown tool: ${name}` });
     }
@@ -2456,6 +2611,189 @@ const functionDeclarations = [
           description: 'フィルタタイプ: all, schedule, trigger, batch',
         },
       },
+    },
+  },
+  // ========================================
+  // Playwright / Vector Memory / Media ツール
+  // ========================================
+  {
+    name: 'scout_note',
+    description: '【スカウト】noteで検索して記事を収集し、Vector Memoryに保存。競合リサーチや知識収集に使用。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        query: {
+          type: SchemaType.STRING,
+          description: '検索キーワード（例: "ライバー 収入"）',
+        },
+        maxResults: {
+          type: SchemaType.NUMBER,
+          description: '取得する最大記事数（デフォルト: 10）',
+        },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'scout_page',
+    description: '【スカウト】任意のWebページをスクレイピングしてテキストを抽出。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        url: {
+          type: SchemaType.STRING,
+          description: 'スクレイピングするURL',
+        },
+        selector: {
+          type: SchemaType.STRING,
+          description: 'CSSセレクタ（特定部分のみ取得する場合）',
+        },
+        saveToMemory: {
+          type: SchemaType.STRING,
+          description: 'Vector Memoryに保存するか（true/false）',
+        },
+      },
+      required: ['url'],
+    },
+  },
+  {
+    name: 'scout_ocr',
+    description: '【スカウト】ページのスクリーンショットを撮ってOCR（文字認識）。画像内のテキストを抽出。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        url: {
+          type: SchemaType.STRING,
+          description: 'スクリーンショットを撮るURL',
+        },
+        selector: {
+          type: SchemaType.STRING,
+          description: '特定要素のみ撮影する場合のCSSセレクタ',
+        },
+      },
+      required: ['url'],
+    },
+  },
+  {
+    name: 'memory_search',
+    description: '【メモリ】Vector Memoryでセマンティック検索。関連する記事や知識を検索。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        query: {
+          type: SchemaType.STRING,
+          description: '検索クエリ（自然言語）',
+        },
+        limit: {
+          type: SchemaType.NUMBER,
+          description: '取得件数（デフォルト: 10）',
+        },
+        source: {
+          type: SchemaType.STRING,
+          description: 'ソースフィルタ: note, web, competitor, success_pattern',
+        },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'memory_store',
+    description: '【メモリ】Vector Memoryに知識を保存。後でセマンティック検索可能に。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        content: {
+          type: SchemaType.STRING,
+          description: '保存するテキスト内容',
+        },
+        source: {
+          type: SchemaType.STRING,
+          description: 'ソース種別: manual, note, web, insight',
+        },
+        title: {
+          type: SchemaType.STRING,
+          description: 'タイトル（オプション）',
+        },
+      },
+      required: ['content'],
+    },
+  },
+  {
+    name: 'memory_stats',
+    description: '【メモリ】Vector Memoryの統計情報を取得。ソース別のドキュメント数など。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {},
+    },
+  },
+  {
+    name: 'media_info',
+    description: '【メディア】動画のメタデータを取得（タイトル、再生数、いいね数など）。YouTube, TikTok, Instagram, Twitter対応。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        url: {
+          type: SchemaType.STRING,
+          description: '動画のURL',
+        },
+      },
+      required: ['url'],
+    },
+  },
+  {
+    name: 'media_download',
+    description: '【メディア】動画をダウンロード。リサーチや素材収集に使用。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        url: {
+          type: SchemaType.STRING,
+          description: '動画のURL',
+        },
+        format: {
+          type: SchemaType.STRING,
+          description: 'フォーマット: best, audio, worst（最小サイズ）',
+        },
+      },
+      required: ['url'],
+    },
+  },
+  {
+    name: 'monitor_add',
+    description: '【監視】競合サイトを監視対象に追加。変更があればアラート。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        url: {
+          type: SchemaType.STRING,
+          description: '監視するURL',
+        },
+        name: {
+          type: SchemaType.STRING,
+          description: '監視対象の名前（例: "競合A社 採用ページ"）',
+        },
+        selector: {
+          type: SchemaType.STRING,
+          description: '監視する要素のCSSセレクタ（オプション）',
+        },
+      },
+      required: ['url', 'name'],
+    },
+  },
+  {
+    name: 'monitor_status',
+    description: '【監視】監視システムの状態を確認。未確認アラート、監視対象一覧など。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {},
+    },
+  },
+  {
+    name: 'monitor_check',
+    description: '【監視】今すぐ監視チェックを実行。',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {},
     },
   },
 ];

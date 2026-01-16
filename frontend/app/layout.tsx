@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Sidebar from "./components/Sidebar";
+import MobileNav from "../components/navigation/MobileNav";
 import SchedulerInitializer from "./components/SchedulerInitializer";
 import { BusinessTypeProvider } from "./context/BusinessTypeContext";
 import { ToastProvider } from "./components/Toast";
@@ -27,8 +28,12 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <head>
+        <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="MIC" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <meta name="theme-color" content="#eb5a3c" />
       </head>
       <body>
         <BusinessTypeProvider>
@@ -36,12 +41,11 @@ export default function RootLayout({
             <GlobalActivityProvider>
               <SchedulerInitializer />
               <AutoRunInitializer />
-              <div style={{ display: 'flex' }}>
-                <Sidebar />
-                <main className="main-content">
-                  {children}
-                </main>
-              </div>
+              <Sidebar />
+              <main className="page-container">
+                {children}
+              </main>
+              <MobileNav />
               <GlobalActivityBar />
             </GlobalActivityProvider>
           </ToastProvider>

@@ -1,5 +1,23 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "crons": [
+    {
+      "path": "/api/cron/autonomous",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/auto-post",
+      "schedule": "0 7-23 * * *"
+    },
+    {
+      "path": "/api/cron/refill-stock",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/auto-learn",
+      "schedule": "0 3,15 * * *"
+    }
+  ]
 }

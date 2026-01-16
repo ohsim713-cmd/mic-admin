@@ -1,33 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import {
   Network, Radio, Brain, CheckCircle, AlertTriangle,
-  Crown, Shield, Megaphone, Sparkles,
-  MessageCircle, TrendingUp, Globe,
-  PenTool, Lightbulb, Layers,
-  RefreshCw, Target, Search,
-  Database, Users, Eye,
-  Video, Bot, ChevronDown, ChevronUp,
-  Mail, Send, BarChart3, Activity
+  Activity, Users, Zap
 } from 'lucide-react';
 
-// Dynamic import to avoid SSR issues with React Flow
-const OrganizationFlow = dynamic(() => import('./OrganizationFlow'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
-        <p className="text-stone-500 text-sm">組織図を読み込み中...</p>
-      </div>
-    </div>
-  ),
-});
-
 // ========================================
-// Activity Feed Component
+// Types
 // ========================================
 
 interface ActivityItem {
@@ -38,37 +18,110 @@ interface ActivityItem {
   type: 'info' | 'success' | 'warning' | 'thinking';
 }
 
+interface AgentStatus {
+  name: string;
+  dept: string;
+  color: string;
+  status: 'active' | 'idle' | 'thinking';
+}
+
+// ========================================
+// Agent Data
+// ========================================
+
+const AGENTS: AgentStatus[] = [
+  { name: '社長', dept: 'Executive', color: '#8b5cf6', status: 'active' },
+  { name: '番頭', dept: 'Executive', color: '#8b5cf6', status: 'active' },
+  { name: 'CMO', dept: 'Marketing', color: '#06b6d4', status: 'idle' },
+  { name: 'Creative', dept: 'Creative', color: '#f59e0b', status: 'thinking' },
+  { name: 'DM対応', dept: 'Customer', color: '#ec4899', status: 'idle' },
+  { name: 'トレンド分析', dept: 'Analytics', color: '#3b82f6', status: 'active' },
+  { name: 'アフィリエイト', dept: 'Marketing', color: '#06b6d4', status: 'idle' },
+  { name: 'PDCA分析', dept: 'Analytics', color: '#3b82f6', status: 'thinking' },
+  { name: '戦略立案', dept: 'Executive', color: '#8b5cf6', status: 'idle' },
+  { name: 'SEO', dept: 'Marketing', color: '#06b6d4', status: 'active' },
+  { name: 'ナレッジ', dept: 'Operations', color: '#10b981', status: 'idle' },
+  { name: 'ベネフィット', dept: 'Creative', color: '#f59e0b', status: 'idle' },
+  { name: 'リサーチャー', dept: 'Analytics', color: '#3b82f6', status: 'thinking' },
+  { name: 'コピーライター', dept: 'Creative', color: '#f59e0b', status: 'active' },
+  { name: 'エンパサイザー', dept: 'Customer', color: '#ec4899', status: 'idle' },
+  { name: 'パターンマスター', dept: 'Analytics', color: '#3b82f6', status: 'idle' },
+  { name: '動画監督', dept: 'Creative', color: '#f59e0b', status: 'idle' },
+  { name: 'マルチスカウト', dept: 'Operations', color: '#10b981', status: 'idle' },
+  { name: 'スクレイパー', dept: 'Operations', color: '#10b981', status: 'active' },
+];
+
+// ========================================
+// Activity Feed Component
+// ========================================
+
 function ActivityFeed({ activities }: { activities: ActivityItem[] }) {
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-stone-200">
-        <Activity size={16} className="text-orange-500" />
-        <span className="text-sm font-medium text-stone-700">アクティビティ</span>
-        <div className="w-2 h-2 rounded-full bg-green-500 ml-auto animate-pulse" />
+    <div style={{
+      backgroundColor: 'var(--bg-elevated)',
+      borderRadius: 'var(--radius-lg)',
+      border: '1px solid var(--border)',
+      overflow: 'hidden',
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'var(--space-2)',
+        padding: 'var(--space-3) var(--space-4)',
+        borderBottom: '1px solid var(--border)',
+        backgroundColor: 'var(--bg-secondary)',
+      }}>
+        <Activity size={16} color="var(--accent)" />
+        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+          リアルタイムログ
+        </span>
+        <div style={{
+          width: '8px',
+          height: '8px',
+          borderRadius: 'var(--radius-full)',
+          backgroundColor: 'var(--success)',
+          marginLeft: 'auto',
+          animation: 'pulse 2s infinite',
+        }} />
       </div>
-      <div className="flex-1 p-3 space-y-2 overflow-y-auto">
-        {activities.slice(-15).reverse().map((activity) => (
+      <div style={{
+        maxHeight: '300px',
+        overflowY: 'auto',
+        padding: 'var(--space-2)',
+      }}>
+        {activities.slice(-10).reverse().map((activity) => (
           <div
             key={activity.id}
-            className={`flex items-start gap-3 p-3 rounded-xl text-sm transition-all ${
-              activity.type === 'success' ? 'bg-green-50' :
-              activity.type === 'warning' ? 'bg-amber-50' :
-              activity.type === 'thinking' ? 'bg-blue-50' :
-              'bg-stone-50'
-            }`}
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 'var(--space-3)',
+              padding: 'var(--space-3)',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: 'var(--space-1)',
+              backgroundColor:
+                activity.type === 'success' ? 'var(--success-light)' :
+                activity.type === 'warning' ? 'var(--warning-light)' :
+                activity.type === 'thinking' ? 'var(--accent-light)' :
+                'var(--bg-tertiary)',
+            }}
           >
-            {activity.type === 'thinking' && <Brain size={14} className="text-blue-500 mt-0.5 shrink-0" />}
-            {activity.type === 'success' && <CheckCircle size={14} className="text-green-500 mt-0.5 shrink-0" />}
-            {activity.type === 'warning' && <AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />}
-            {activity.type === 'info' && <Radio size={14} className="text-stone-400 mt-0.5 shrink-0" />}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-stone-800">{activity.agent}</span>
-                <span className="text-xs text-stone-400">
+            {activity.type === 'thinking' && <Brain size={14} color="var(--accent)" style={{ marginTop: '2px', flexShrink: 0 }} />}
+            {activity.type === 'success' && <CheckCircle size={14} color="var(--success)" style={{ marginTop: '2px', flexShrink: 0 }} />}
+            {activity.type === 'warning' && <AlertTriangle size={14} color="var(--warning)" style={{ marginTop: '2px', flexShrink: 0 }} />}
+            {activity.type === 'info' && <Radio size={14} color="var(--text-tertiary)" style={{ marginTop: '2px', flexShrink: 0 }} />}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {activity.agent}
+                </span>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
                   {new Date(activity.timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
-              <p className="text-stone-600 text-xs mt-0.5">{activity.action}</p>
+              <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                {activity.action}
+              </p>
             </div>
           </div>
         ))}
@@ -78,87 +131,76 @@ function ActivityFeed({ activities }: { activities: ActivityItem[] }) {
 }
 
 // ========================================
-// KPI Card Component
+// Agent Card Component
 // ========================================
 
-interface KPIData {
-  inquiries: { today: number; thisMonth: number };
-  posts: { today: number; thisMonth: number };
-  impressions: { today: number; total: number };
-}
+function AgentCard({ agent }: { agent: AgentStatus }) {
+  const statusColors = {
+    active: 'var(--success)',
+    idle: 'var(--text-tertiary)',
+    thinking: 'var(--accent)',
+  };
 
-function KPICards() {
-  const [kpi, setKpi] = useState<KPIData | null>(null);
-
-  useEffect(() => {
-    const fetchKPI = async () => {
-      try {
-        const res = await fetch('/api/kpi');
-        const data = await res.json();
-        setKpi(data.kpi);
-      } catch {
-        // エラーは無視
-      }
-    };
-
-    fetchKPI();
-    const interval = setInterval(fetchKPI, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const cards = [
-    {
-      icon: Mail,
-      label: '問い合わせ',
-      today: kpi?.inquiries?.today || 0,
-      month: kpi?.inquiries?.thisMonth || 0,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50',
-    },
-    {
-      icon: Send,
-      label: '投稿数',
-      today: kpi?.posts?.today || 0,
-      month: kpi?.posts?.thisMonth || 0,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-    },
-    {
-      icon: BarChart3,
-      label: 'インプレッション',
-      today: kpi?.impressions?.today || 0,
-      month: Math.round((kpi?.impressions?.total || 0) / 1000),
-      suffix: 'K',
-      color: 'text-orange-600',
-      bg: 'bg-orange-50',
-    },
-  ];
+  const statusLabels = {
+    active: '稼働中',
+    idle: '待機中',
+    thinking: '処理中',
+  };
 
   return (
-    <div className="grid grid-cols-3 gap-4">
-      {cards.map((card) => {
-        const Icon = card.icon;
-        return (
-          <div
-            key={card.label}
-            className="bg-white rounded-2xl border border-stone-200 p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className={`w-10 h-10 ${card.bg} rounded-xl flex items-center justify-center`}>
-                <Icon size={20} className={card.color} />
-              </div>
-              <span className="text-sm text-stone-500">{card.label}</span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-semibold text-stone-800">{card.today}</span>
-              <span className="text-sm text-stone-400">今日{card.suffix || ''}</span>
-            </div>
-            <div className="text-xs text-stone-400 mt-1">
-              月間: {card.month}{card.suffix || ''}
-            </div>
-          </div>
-        );
-      })}
+    <div style={{
+      backgroundColor: 'var(--bg-elevated)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-lg)',
+      padding: 'var(--space-3)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 'var(--space-3)',
+      transition: 'all 0.15s ease',
+    }}>
+      <div style={{
+        width: '40px',
+        height: '40px',
+        borderRadius: 'var(--radius-md)',
+        backgroundColor: `${agent.color}20`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+      }}>
+        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: agent.color }}>
+          {agent.name.charAt(0)}
+        </span>
+        <div style={{
+          position: 'absolute',
+          bottom: '-2px',
+          right: '-2px',
+          width: '12px',
+          height: '12px',
+          borderRadius: 'var(--radius-full)',
+          backgroundColor: statusColors[agent.status],
+          border: '2px solid var(--bg-elevated)',
+        }} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 'var(--text-sm)',
+          fontWeight: 500,
+          color: 'var(--text-primary)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>
+          {agent.name}
+        </div>
+        <div style={{
+          fontSize: 'var(--text-xs)',
+          color: statusColors[agent.status],
+          fontWeight: 500,
+        }}>
+          {statusLabels[agent.status]}
+        </div>
+      </div>
     </div>
   );
 }
@@ -167,28 +209,13 @@ function KPICards() {
 // Main Dashboard Component
 // ========================================
 
-const AGENTS = [
-  '社長', '番頭', 'CMO', 'Creative',
-  'DM対応', 'トレンド分析', 'アフィリエイト',
-  'PDCA分析', '戦略立案', 'SEO',
-  'ナレッジ', 'ベネフィット', 'リサーチャー',
-  'コピーライター', 'エンパサイザー', 'パターンマスター',
-  '動画監督', 'マルチスカウト', 'スクレイパー'
-];
-
-export default function OrganizationDashboard() {
+export default function AgentsDashboard() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [agents, setAgents] = useState<AgentStatus[]>(AGENTS);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  // Time update
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
   }, []);
 
   // Initialize activities and simulate agent activity
@@ -198,114 +225,219 @@ export default function OrganizationDashboard() {
       { id: '2', timestamp: new Date().toISOString(), agent: 'System', action: '全エージェント監視開始', type: 'info' },
     ]);
 
+    const agentNames = AGENTS.map(a => a.name);
+    const statuses: ('active' | 'idle' | 'thinking')[] = ['active', 'idle', 'thinking'];
+
     const interval = setInterval(() => {
-      const randomAgent = AGENTS[Math.floor(Math.random() * AGENTS.length)];
+      // Random activity
+      const randomAgent = agentNames[Math.floor(Math.random() * agentNames.length)];
       const actions = [
         { action: 'タスクを受信', type: 'thinking' as const },
         { action: '処理完了', type: 'success' as const },
         { action: 'データを更新', type: 'info' as const },
         { action: '分析実行中', type: 'thinking' as const },
         { action: 'レポート生成', type: 'success' as const },
+        { action: 'コンテンツ作成中', type: 'thinking' as const },
+        { action: 'API連携完了', type: 'success' as const },
       ];
       const randomAction = actions[Math.floor(Math.random() * actions.length)];
 
-      setActivities(prev => [...prev.slice(-20), {
+      setActivities(prev => [...prev.slice(-15), {
         id: Date.now().toString(),
         timestamp: new Date().toISOString(),
         agent: randomAgent,
         ...randomAction,
       }]);
-    }, 4000);
+
+      // Random status change
+      setAgents(prev => prev.map(agent => {
+        if (Math.random() < 0.15) {
+          return { ...agent, status: statuses[Math.floor(Math.random() * statuses.length)] };
+        }
+        return agent;
+      }));
+    }, 3000);
 
     return () => clearInterval(interval);
   }, []);
 
+  const activeCount = agents.filter(a => a.status === 'active').length;
+  const thinkingCount = agents.filter(a => a.status === 'thinking').length;
+
   if (!mounted) {
     return (
-      <div className="min-h-screen w-full bg-stone-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
-          <p className="text-stone-500 text-sm">読み込み中...</p>
-        </div>
+      <div style={{
+        height: 'calc(100dvh - var(--mobile-nav-height))',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)' }}>読み込み中...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-full bg-stone-50 text-stone-800 flex flex-col">
+    <div style={{
+      minHeight: 'calc(100dvh - var(--mobile-nav-height))',
+      maxWidth: '1200px',
+      margin: '0 auto',
+      padding: 'var(--space-4)',
+      width: '100%',
+    }}>
       {/* Header */}
-      <header className="bg-white border-b border-stone-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center shadow-sm">
-              <Network size={20} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-stone-800">
-                Organization Map
-              </h1>
-              <p className="text-xs text-stone-400">19 AI Agents</p>
-            </div>
+      <header style={{
+        marginBottom: 'var(--space-6)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: 'var(--radius-lg)',
+            background: 'linear-gradient(135deg, var(--accent), var(--accent-hover))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Network size={20} color="white" />
           </div>
-
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-full">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs font-medium text-green-700">Live</span>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-mono text-stone-700">
-                {currentTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-              </div>
-              <div className="text-xs text-stone-400">
-                {currentTime.toLocaleDateString('ja-JP')}
-              </div>
-            </div>
+          <div>
+            <h1 style={{
+              fontSize: 'var(--text-xl)',
+              fontWeight: 600,
+              color: 'var(--text-primary)',
+              margin: 0,
+            }}>
+              エージェント管理
+            </h1>
+            <p style={{
+              fontSize: 'var(--text-xs)',
+              color: 'var(--text-tertiary)',
+              margin: 0,
+            }}>
+              {agents.length} AIエージェント
+            </p>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left: Organization Flow */}
-        <div className="flex-1 flex flex-col p-6 overflow-hidden">
-          {/* KPI Cards */}
-          <div className="mb-6">
-            <KPICards />
+      {/* Stats */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+        gap: 'var(--space-3)',
+        marginBottom: 'var(--space-6)',
+      }}>
+        <div style={{
+          backgroundColor: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)',
+          padding: 'var(--space-4)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-3)',
+        }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: 'var(--radius-md)',
+            backgroundColor: 'var(--success-light)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Zap size={20} color="var(--success)" />
           </div>
-
-          {/* Organization Flow */}
-          <div className="flex-1 bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
-            <div className="h-full w-full">
-              <OrganizationFlow />
+          <div>
+            <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 600, color: 'var(--text-primary)' }}>
+              {activeCount}
             </div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>稼働中</div>
           </div>
         </div>
 
-        {/* Right: Activity Feed */}
-        <div className="w-80 bg-white border-l border-stone-200 flex flex-col">
-          <ActivityFeed activities={activities} />
+        <div style={{
+          backgroundColor: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)',
+          padding: 'var(--space-4)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-3)',
+        }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: 'var(--radius-md)',
+            backgroundColor: 'var(--accent-light)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Brain size={20} color="var(--accent)" />
+          </div>
+          <div>
+            <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 600, color: 'var(--text-primary)' }}>
+              {thinkingCount}
+            </div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>処理中</div>
+          </div>
+        </div>
+
+        <div style={{
+          backgroundColor: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)',
+          padding: 'var(--space-4)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-3)',
+        }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: 'var(--radius-md)',
+            backgroundColor: 'var(--bg-tertiary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Users size={20} color="var(--text-secondary)" />
+          </div>
+          <div>
+            <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 600, color: 'var(--text-primary)' }}>
+              {agents.length}
+            </div>
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>総数</div>
+          </div>
         </div>
       </div>
 
-      {/* Footer Legend */}
-      <footer className="bg-white border-t border-stone-200 px-6 py-3">
-        <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-stone-500">
-          {[
-            { name: 'Executive', color: 'bg-violet-500' },
-            { name: 'Marketing', color: 'bg-cyan-500' },
-            { name: 'Creative', color: 'bg-amber-500' },
-            { name: 'Operations', color: 'bg-emerald-500' },
-            { name: 'Analytics', color: 'bg-blue-500' },
-            { name: 'Customer', color: 'bg-pink-500' },
-          ].map((item) => (
-            <div key={item.name} className="flex items-center gap-2">
-              <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
-              <span>{item.name}</span>
-            </div>
+      {/* Activity Feed */}
+      <div style={{ marginBottom: 'var(--space-6)' }}>
+        <ActivityFeed activities={activities} />
+      </div>
+
+      {/* Agent Grid */}
+      <div>
+        <h2 style={{
+          fontSize: 'var(--text-base)',
+          fontWeight: 600,
+          color: 'var(--text-primary)',
+          marginBottom: 'var(--space-4)',
+        }}>
+          エージェント一覧
+        </h2>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+          gap: 'var(--space-3)',
+        }}>
+          {agents.map((agent) => (
+            <AgentCard key={agent.name} agent={agent} />
           ))}
         </div>
-      </footer>
+      </div>
     </div>
   );
 }

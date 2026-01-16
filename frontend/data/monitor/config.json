@@ -1,0 +1,11 @@
+{
+  "targets": [
+    {
+      "url": "https://example.com",
+      "name": "�e�X�g�Ď�"
+    }
+  ],
+  "checkInterval": 60,
+  "alertThreshold": 10,
+  "enabled": true
+}

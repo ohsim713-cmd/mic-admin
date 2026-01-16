@@ -10,6 +10,7 @@
  */
 
 import { AccountType, ACCOUNTS } from '../dm-hunter/sns-adapter';
+import { getRandomizedPostTime, shouldTakeBreak, getRandomizedDailyPostCount } from '../langgraph/humanizer';
 
 // アクティブアカウント（@tt_liverのみ稼働中）
 // チャトレアカウントを有効化するには: ['liver', 'chatre1', 'chatre2']
@@ -86,18 +87,33 @@ export interface ScheduledPost {
   impressions?: number;
 }
 
-// 本日のスケジュールを生成
-export function generateTodaySchedule(): ScheduledPost[] {
+// 本日のスケジュールを生成（ランダム化対応）
+export function generateTodaySchedule(randomize: boolean = false): ScheduledPost[] {
   const today = new Date();
   const schedule: ScheduledPost[] = [];
+
+  // AI臭対策: たまに「休み」を入れる（週1回程度）
+  const takingBreak = randomize && shouldTakeBreak();
 
   for (const slot of POSTING_SCHEDULE.slots) {
     const [hours, minutes] = slot.time.split(':').map(Number);
 
+    // 休みの場合、午後のスロット（13:00-17:00）をスキップ
+    if (takingBreak && hours >= 13 && hours <= 17) {
+      continue;
+    }
+
     for (const accountId of slot.accounts) {
       const accountInfo = ACCOUNTS.find(a => a.id === accountId);
       const scheduledAt = new Date(today);
-      scheduledAt.setHours(hours, minutes, 0, 0);
+
+      // AI臭対策: 投稿時間をランダム化（±15分）
+      if (randomize) {
+        const { hour, minute } = getRandomizedPostTime(hours, minutes);
+        scheduledAt.setHours(hour, minute, 0, 0);
+      } else {
+        scheduledAt.setHours(hours, minutes, 0, 0);
+      }
 
       // 過去の時間はスキップしない（完了済みとして記録）
       const isPast = scheduledAt < new Date();

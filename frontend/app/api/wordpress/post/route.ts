@@ -19,7 +19,16 @@ export async function POST(request: Request) {
     const credentials = JSON.parse(settingsData);
 
     // リクエストデータの取得
-    const { title, content, status = 'draft', categories = [], tags = [], featuredImageId } = await request.json();
+    const {
+      title,
+      content,
+      status = 'draft',
+      categories = [],
+      tags = [],
+      featuredImageId,
+      metaDescription,
+      schemaScripts  // 構造化データ（AIO最適化用）
+    } = await request.json();
 
     if (!title || !content) {
       return NextResponse.json(
@@ -31,11 +40,24 @@ export async function POST(request: Request) {
     // WordPress REST APIに投稿
     const auth = Buffer.from(`${credentials.username}:${credentials.appPassword}`).toString('base64');
 
+    // 構造化データをコンテンツ末尾に追加（AIO最適化）
+    let finalContent = content;
+    if (schemaScripts) {
+      finalContent = content + '\n\n<!-- Schema.org Structured Data for AIO -->\n' + schemaScripts;
+    }
+
     const postData: any = {
       title,
-      content,
+      content: finalContent,
       status, // draft, publish, private
     };
+
+    // メタディスクリプション（Yoast SEO対応）
+    if (metaDescription) {
+      postData.meta = {
+        _yoast_wpseo_metadesc: metaDescription,
+      };
+    }
 
     // カテゴリーとタグを追加（IDの配列として）
     if (categories.length > 0) {

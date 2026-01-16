@@ -1,28 +1,24 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Menu, X, MessageSquare, LayoutDashboard,
-  Settings, Sparkles, Heart
+  MessageSquare, Network, Settings, Sparkles
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 const menuItems = [
   {
     id: 'chat',
     label: 'チャット',
-    sublabel: 'AIと対話',
+    sublabel: 'AIアシスタント',
     icon: MessageSquare,
     href: '/',
   },
   {
-    id: 'dashboard',
-    label: 'ダッシュボード',
-    sublabel: '全データ一覧',
-    icon: LayoutDashboard,
+    id: 'agents',
+    label: 'エージェント',
+    sublabel: '稼働状況',
+    icon: Network,
     href: '/dashboard',
   },
   {
@@ -36,190 +32,176 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <motion.button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-6 left-6 z-50 w-12 h-12 rounded-2xl bg-white border border-stone-200 shadow-md flex items-center justify-center md:hidden"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <AnimatePresence mode="wait">
-          {isOpen ? (
-            <motion.div
-              key="close"
-              initial={{ rotate: -90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: 90, opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              <X size={22} className="text-stone-600" />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="menu"
-              initial={{ rotate: 90, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              exit={{ rotate: -90, opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              <Menu size={22} className="text-stone-600" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.button>
-
-      {/* Overlay */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={() => setIsOpen(false)}
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar */}
-      <motion.aside
-        initial={false}
-        animate={{ x: isOpen ? 0 : -280 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className={cn(
-          "w-[280px] h-screen fixed top-0 left-0 z-50",
-          "flex flex-col p-6",
-          "bg-white border-r border-stone-200",
-          "md:translate-x-0"
-        )}
+      {/* Sidebar - Desktop Only */}
+      <aside
+        style={{
+          width: 'var(--sidebar-width)',
+          height: '100vh',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          zIndex: 40,
+          display: 'none',
+          flexDirection: 'column',
+          backgroundColor: 'var(--bg-secondary)',
+          borderRight: '1px solid var(--border)',
+        }}
+        className="sidebar"
       >
         {/* Logo */}
-        <motion.div
-          className="mb-10 px-2"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-200">
-              <Sparkles size={20} className="text-white" />
+        <div style={{
+          padding: 'var(--space-5)',
+          borderBottom: '1px solid var(--border)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: 'var(--radius-lg)',
+                background: 'linear-gradient(135deg, var(--accent), var(--accent-hover))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(235, 90, 60, 0.25)',
+              }}
+            >
+              <Sparkles size={20} color="white" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-stone-800">
+              <h1 style={{
+                fontSize: 'var(--text-lg)',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                margin: 0,
+              }}>
                 MIC
               </h1>
-              <p className="text-[11px] text-stone-400">
-                あなたのアシスタント
+              <p style={{
+                fontSize: 'var(--text-xs)',
+                color: 'var(--text-tertiary)',
+                margin: 0,
+              }}>
+                AI Automation Hub
               </p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto -mx-2 px-2">
-          <div className="flex flex-col gap-1">
-            {menuItems.map((item, index) => {
+        <nav style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: 'var(--space-3)',
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+            {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
 
               return (
-                <motion.div
+                <Link
                   key={item.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.05 * index }}
+                  href={item.href}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--space-3)',
+                    padding: 'var(--space-3)',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: isActive ? 'var(--bg-elevated)' : 'transparent',
+                    boxShadow: isActive ? 'var(--shadow-sm)' : 'none',
+                    textDecoration: 'none',
+                    transition: 'all 0.15s ease',
+                  }}
                 >
-                  <Link
-                    href={item.href}
-                    onClick={() => setIsOpen(false)}
-                    className={cn(
-                      "group flex items-center gap-4 px-4 py-3.5 rounded-xl",
-                      "transition-all duration-200",
-                      isActive
-                        ? "bg-orange-50 border border-orange-200"
-                        : "hover:bg-stone-50 border border-transparent"
-                    )}
+                  <div
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: 'var(--radius-md)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: isActive ? 'var(--accent-light)' : 'var(--bg-tertiary)',
+                    }}
                   >
-                    {/* Icon */}
+                    <Icon
+                      size={18}
+                      color={isActive ? 'var(--accent)' : 'var(--text-secondary)'}
+                      strokeWidth={isActive ? 2.5 : 2}
+                    />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div
-                      className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center",
-                        "transition-all duration-200",
-                        isActive
-                          ? "bg-gradient-to-br from-orange-400 to-orange-500 shadow-lg shadow-orange-200"
-                          : "bg-stone-100 group-hover:bg-stone-200"
-                      )}
+                      style={{
+                        fontSize: 'var(--text-sm)',
+                        fontWeight: isActive ? 600 : 500,
+                        color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      }}
                     >
-                      <Icon
-                        size={18}
-                        className={cn(
-                          "transition-colors duration-200",
-                          isActive
-                            ? "text-white"
-                            : "text-stone-500 group-hover:text-stone-700"
-                        )}
-                      />
+                      {item.label}
                     </div>
-
-                    {/* Text */}
-                    <div className="flex-1 min-w-0">
-                      <div
-                        className={cn(
-                          "text-sm font-medium truncate",
-                          "transition-colors duration-200",
-                          isActive
-                            ? "text-stone-800"
-                            : "text-stone-600 group-hover:text-stone-800"
-                        )}
-                      >
-                        {item.label}
-                      </div>
-                      <div
-                        className={cn(
-                          "text-[11px] truncate",
-                          "transition-colors duration-200",
-                          isActive
-                            ? "text-orange-500"
-                            : "text-stone-400 group-hover:text-stone-500"
-                        )}
-                      >
-                        {item.sublabel}
-                      </div>
+                    <div
+                      style={{
+                        fontSize: 'var(--text-xs)',
+                        color: isActive ? 'var(--accent)' : 'var(--text-tertiary)',
+                      }}
+                    >
+                      {item.sublabel}
                     </div>
-
-                    {/* Active Indicator */}
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeIndicator"
-                        className="w-1 h-8 rounded-full bg-orange-500"
-                        transition={{ type: 'spring', damping: 25, stiffness: 400 }}
-                      />
-                    )}
-                  </Link>
-                </motion.div>
+                  </div>
+                  {isActive && (
+                    <div
+                      style={{
+                        width: '4px',
+                        height: '24px',
+                        borderRadius: 'var(--radius-full)',
+                        backgroundColor: 'var(--accent)',
+                      }}
+                    />
+                  )}
+                </Link>
               );
             })}
           </div>
         </nav>
 
         {/* Footer */}
-        <motion.div
-          className="pt-6 mt-auto border-t border-stone-200"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
+        <div
+          style={{
+            padding: 'var(--space-4)',
+            borderTop: '1px solid var(--border)',
+          }}
         >
-          <div className="px-2 py-3 flex items-center justify-center gap-1.5">
-            <span className="text-[11px] text-stone-400">v1.0</span>
-            <Heart size={10} className="text-orange-400" />
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 'var(--space-2)',
+            }}
+          >
+            <span style={{
+              fontSize: 'var(--text-xs)',
+              color: 'var(--text-tertiary)'
+            }}>
+              MIC v1.0
+            </span>
           </div>
-        </motion.div>
-      </motion.aside>
+        </div>
+      </aside>
+
+      <style jsx>{`
+        @media (min-width: 768px) {
+          .sidebar {
+            display: flex !important;
+          }
+        }
+      `}</style>
     </>
   );
 }
