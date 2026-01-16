@@ -1,55 +1,55 @@
 @import "tailwindcss";
 
 /* ===================================
-   Design Tokens - 墨色 + 深い紫
+   Design Tokens - Light Theme (Orange Accent)
    =================================== */
 :root {
-  /* 墨色系 (背景・テキスト) */
-  --ink-50: #fafafa;
-  --ink-100: #f4f4f5;
-  --ink-200: #e4e4e7;
-  --ink-300: #d4d4d8;
-  --ink-400: #a1a1aa;
-  --ink-500: #71717a;
-  --ink-600: #52525b;
-  --ink-700: #3f3f46;
-  --ink-800: #27272a;
-  --ink-900: #18181b;
-  --ink-950: #09090b;
+  /* Stone系 (背景・テキスト) */
+  --stone-50: #fafaf9;
+  --stone-100: #f5f5f4;
+  --stone-200: #e7e5e4;
+  --stone-300: #d6d3d1;
+  --stone-400: #a8a29e;
+  --stone-500: #78716c;
+  --stone-600: #57534e;
+  --stone-700: #44403c;
+  --stone-800: #292524;
+  --stone-900: #1c1917;
+  --stone-950: #0c0a09;
 
-  /* 深い紫系 (アクセント) */
-  --violet-50: #f5f3ff;
-  --violet-100: #ede9fe;
-  --violet-200: #ddd6fe;
-  --violet-300: #c4b5fd;
-  --violet-400: #a78bfa;
-  --violet-500: #8b5cf6;
-  --violet-600: #7c3aed;
-  --violet-700: #6d28d9;
-  --violet-800: #5b21b6;
-  --violet-900: #4c1d95;
-  --violet-950: #2e1065;
+  /* Orange系 (アクセント) */
+  --orange-50: #fff7ed;
+  --orange-100: #ffedd5;
+  --orange-200: #fed7aa;
+  --orange-300: #fdba74;
+  --orange-400: #fb923c;
+  --orange-500: #f97316;
+  --orange-600: #ea580c;
+  --orange-700: #c2410c;
+  --orange-800: #9a3412;
+  --orange-900: #7c2d12;
+  --orange-950: #431407;
 
-  /* セマンティックカラー */
-  --background: var(--ink-950);
-  --foreground: var(--ink-50);
-  --card: var(--ink-900);
-  --card-foreground: var(--ink-100);
-  --popover: var(--ink-900);
-  --popover-foreground: var(--ink-100);
-  --primary: var(--violet-500);
+  /* セマンティックカラー - Light Theme */
+  --background: var(--stone-50);
+  --foreground: var(--stone-800);
+  --card: white;
+  --card-foreground: var(--stone-800);
+  --popover: white;
+  --popover-foreground: var(--stone-800);
+  --primary: var(--orange-500);
   --primary-foreground: white;
-  --secondary: var(--ink-800);
-  --secondary-foreground: var(--ink-100);
-  --muted: var(--ink-800);
-  --muted-foreground: var(--ink-400);
-  --accent: var(--violet-600);
+  --secondary: var(--stone-100);
+  --secondary-foreground: var(--stone-800);
+  --muted: var(--stone-100);
+  --muted-foreground: var(--stone-500);
+  --accent: var(--orange-500);
   --accent-foreground: white;
   --destructive: #ef4444;
   --destructive-foreground: white;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.05);
-  --ring: var(--violet-500);
+  --border: var(--stone-200);
+  --input: var(--stone-100);
+  --ring: var(--orange-500);
 
   /* Spacing (2x余白) */
   --space-1: 0.5rem;   /* 8px */
@@ -96,8 +96,8 @@ html {
 body {
   max-width: 100vw;
   overflow-x: hidden;
-  background: var(--background);
-  color: var(--foreground);
+  background: #fafaf9;
+  color: #292524;
   line-height: 1.6;
 }
 
@@ -119,13 +119,12 @@ a {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--violet-500);
-  background: rgba(139, 92, 246, 0.4);
+  background: rgba(251, 146, 60, 0.4);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.6);
+  background: rgba(251, 146, 60, 0.6);
 }
 
 /* ===================================
@@ -149,39 +148,39 @@ input, textarea, select {
 input:focus, textarea:focus, select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 0 0 2px rgba(251, 146, 60, 0.2);
 }
 
 /* ===================================
-   Glassmorphism Utilities
+   Glassmorphism Utilities (Light Theme)
    =================================== */
 .glass {
-  background: rgba(24, 24, 27, 0.6);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .glass-card {
-  background: rgba(24, 24, 27, 0.4);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: var(--radius-2xl);
 }
 
 .glass-subtle {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 /* ===================================
-   Gradient Utilities
+   Gradient Utilities (Light Theme - Orange)
    =================================== */
 .gradient-text {
-  background: linear-gradient(135deg, var(--violet-400), var(--violet-600));
+  background: linear-gradient(135deg, #fb923c, #ea580c);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -198,7 +197,7 @@ input:focus, textarea:focus, select:focus {
   position: absolute;
   inset: -1px;
   border-radius: inherit;
-  background: linear-gradient(135deg, var(--violet-500), var(--violet-700));
+  background: linear-gradient(135deg, #fb923c, #ea580c);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -255,10 +254,10 @@ input:focus, textarea:focus, select:focus {
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 0 8px rgba(251, 146, 60, 0.3);
   }
   50% {
-    box-shadow: 0 0 24px rgba(139, 92, 246, 0.5);
+    box-shadow: 0 0 24px rgba(251, 146, 60, 0.5);
   }
 }
 
@@ -329,7 +328,7 @@ input:focus, textarea:focus, select:focus {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 2px;
 }
 
@@ -356,18 +355,18 @@ input:focus, textarea:focus, select:focus {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, var(--violet-500), var(--violet-600));
+  background: linear-gradient(135deg, #fb923c, #f97316);
   color: white;
   font-weight: 500;
   border: none;
   border-radius: var(--radius-xl);
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 2px 8px rgba(251, 146, 60, 0.3);
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 4px 16px rgba(251, 146, 60, 0.4);
 }
 
 .btn-primary:active {
@@ -386,17 +385,17 @@ input:focus, textarea:focus, select:focus {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--stone-100);
   color: var(--foreground);
   font-weight: 500;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--stone-200);
   border-radius: var(--radius-xl);
   transition: all 0.2s ease;
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--stone-200);
+  border-color: var(--stone-300);
 }
 
 .btn-ghost {
@@ -414,7 +413,7 @@ input:focus, textarea:focus, select:focus {
 }
 
 .btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--stone-100);
   color: var(--foreground);
 }
 
@@ -436,17 +435,17 @@ input:focus, textarea:focus, select:focus {
 }
 
 .card-interactive:hover {
-  border-color: rgba(139, 92, 246, 0.3);
+  border-color: rgba(251, 146, 60, 0.3);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 /* Input Styles */
 .input {
   width: 100%;
   padding: 0.875rem 1rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: white;
+  border: 1px solid var(--stone-200);
   border-radius: var(--radius-xl);
   color: var(--foreground);
   font-size: 0.9375rem;
@@ -456,7 +455,7 @@ input:focus, textarea:focus, select:focus {
 .input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+  box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.15);
 }
 
 .input::placeholder {
@@ -471,9 +470,9 @@ input:focus, textarea:focus, select:focus {
   font-size: 0.75rem;
   font-weight: 500;
   border-radius: 9999px;
-  background: rgba(139, 92, 246, 0.15);
-  color: var(--violet-400);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: rgba(251, 146, 60, 0.15);
+  color: #ea580c;
+  border: 1px solid rgba(251, 146, 60, 0.2);
 }
 
 .badge-success {
@@ -495,42 +494,42 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* ===================================
-   React Flow Custom Styles
+   React Flow Custom Styles (Light Theme)
    =================================== */
 .react-flow {
-  --rf-background-color: #09090b;
+  --rf-background-color: #fafaf9;
 }
 
 .react-flow__background {
-  background-color: #09090b !important;
+  background-color: #fafaf9 !important;
 }
 
 .react-flow__background-pattern {
-  fill: #27272a !important;
+  fill: #e7e5e4 !important;
 }
 
 /* Custom Controls */
 .react-flow__controls {
-  background: rgba(24, 24, 27, 0.9) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid #e7e5e4 !important;
   border-radius: 0.75rem !important;
   overflow: hidden;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
 }
 
 .react-flow__controls-button {
   background: transparent !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-bottom: 1px solid #e7e5e4 !important;
   padding: 8px !important;
   width: 32px !important;
   height: 32px !important;
-  fill: #71717a !important;
+  fill: #78716c !important;
   transition: all 0.2s ease !important;
 }
 
 .react-flow__controls-button:hover {
-  background: rgba(139, 92, 246, 0.1) !important;
-  fill: #a78bfa !important;
+  background: rgba(251, 146, 60, 0.1) !important;
+  fill: #f97316 !important;
 }
 
 .react-flow__controls-button:last-child {
@@ -543,23 +542,23 @@ input:focus, textarea:focus, select:focus {
 
 /* Custom MiniMap */
 .react-flow__minimap {
-  background: rgba(24, 24, 27, 0.9) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid #e7e5e4 !important;
   border-radius: 0.75rem !important;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
 }
 
 .react-flow__minimap-mask {
-  fill: rgba(0, 0, 0, 0.7) !important;
+  fill: rgba(255, 255, 255, 0.7) !important;
 }
 
 /* Edge Labels */
 .react-flow__edge-textbg {
-  fill: #18181b !important;
+  fill: white !important;
 }
 
 .react-flow__edge-text {
-  fill: #a1a1aa !important;
+  fill: #78716c !important;
 }
 
 /* Animated edges */
@@ -593,7 +592,7 @@ input:focus, textarea:focus, select:focus {
 }
 
 .react-flow__node.selected > div {
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.5), 0 0 30px rgba(139, 92, 246, 0.3) !important;
+  box-shadow: 0 0 0 2px rgba(251, 146, 60, 0.5), 0 0 20px rgba(251, 146, 60, 0.2) !important;
 }
 
 /* Handle styles */
@@ -627,10 +626,10 @@ input:focus, textarea:focus, select:focus {
 /* Glow effects for active nodes */
 @keyframes nodeGlow {
   0%, 100% {
-    filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.4));
+    filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.4));
   }
   50% {
-    filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.6));
+    filter: drop-shadow(0 0 20px rgba(251, 146, 60, 0.6));
   }
 }
 
@@ -668,19 +667,11 @@ input:focus, textarea:focus, select:focus {
   flex: 1;
   min-width: 0;
   overflow: hidden;
+  margin-left: 280px;
 }
 
-/* Light theme overrides for dashboard */
-.light-theme .react-flow__controls {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border: 1px solid #e7e5e4 !important;
-}
-
-.light-theme .react-flow__controls-button {
-  fill: #78716c !important;
-}
-
-.light-theme .react-flow__controls-button:hover {
-  background: rgba(251, 146, 60, 0.1) !important;
-  fill: #f97316 !important;
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+  }
 }

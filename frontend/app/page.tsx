@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Hand, Sparkles, Lightbulb, BarChart3, PenLine, TrendingUp, Search, Rocket } from 'lucide-react';
+import { Hand, Sparkles, Lightbulb, BarChart3, PenLine, TrendingUp, Search, Rocket, X, Menu, Image as ImageIcon, Send as SendIcon } from 'lucide-react';
 
 type ChatMode = 'agent' | 'think';
 type SettingsTab = 'posts' | 'dm' | 'analytics' | 'settings';
@@ -31,9 +31,9 @@ interface Insight {
 }
 
 const ACCOUNTS = [
-  { id: 'liver', name: 'ライバー', color: '#ec4899', gradient: 'from-pink-500 to-pink-400' },
-  { id: 'chatre1', name: 'チャトレ①', color: '#8b5cf6', gradient: 'from-violet-500 to-violet-400' },
-  { id: 'chatre2', name: 'チャトレ②', color: '#3b82f6', gradient: 'from-blue-500 to-blue-400' },
+  { id: 'liver', name: 'ライバー', color: '#ec4899', bg: 'bg-pink-50', text: 'text-pink-600' },
+  { id: 'chatre1', name: 'チャトレ①', color: '#8b5cf6', bg: 'bg-violet-50', text: 'text-violet-600' },
+  { id: 'chatre2', name: 'チャトレ②', color: '#3b82f6', bg: 'bg-blue-50', text: 'text-blue-600' },
 ];
 
 export default function MainPage() {
@@ -61,7 +61,6 @@ export default function MainPage() {
   const currentMessages = mode === 'agent' ? agentMessages : thinkMessages;
   const setCurrentMessages = mode === 'agent' ? setAgentMessages : setThinkMessages;
 
-  // 初期読み込み
   useEffect(() => {
     loadAgentHistory();
     loadDashboardData();
@@ -106,7 +105,6 @@ export default function MainPage() {
     } catch {}
   };
 
-  // 画像選択
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -115,7 +113,6 @@ export default function MainPage() {
     reader.readAsDataURL(file);
   };
 
-  // メッセージ送信
   const sendMessage = useCallback(async () => {
     if (!input.trim() && !selectedImage) return;
     if (isLoading) return;
@@ -231,7 +228,6 @@ export default function MainPage() {
     }
   };
 
-  // 壁打ち保存
   const saveInsights = async () => {
     if (thinkMessages.length < 2) return;
     const conversation = thinkMessages.map(m => `${m.role}: ${m.content}`).join('\n\n');
@@ -246,7 +242,6 @@ export default function MainPage() {
     } catch {}
   };
 
-  // 投稿生成
   const generatePosts = async (count: number) => {
     setGenerating(true);
     try {
@@ -264,7 +259,6 @@ export default function MainPage() {
     setGenerating(false);
   };
 
-  // 投稿承認/却下
   const updatePostStatus = async (postId: string, status: string) => {
     try {
       await fetch('/api/dm-hunter/stock', {
@@ -276,7 +270,6 @@ export default function MainPage() {
     } catch {}
   };
 
-  // DM記録
   const recordDM = async (account: string) => {
     try {
       await fetch('/api/inquiries', {
@@ -306,47 +299,36 @@ export default function MainPage() {
   const postedCount = posts.filter(p => p.status === 'posted').length;
 
   return (
-    <div className="flex h-dvh bg-[#050505] text-gray-100 font-sans antialiased relative overflow-hidden">
-      {/* Ambient Background */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(102,126,234,0.15),transparent)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_100%_100%,rgba(168,85,247,0.1),transparent)]" />
-      </div>
-
+    <div className="flex h-dvh bg-stone-50 text-stone-800 font-sans antialiased relative overflow-hidden">
       {/* Sidebar Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-90 animate-fade-in md:hidden"
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside className={`
-        fixed md:relative left-0 top-0 bottom-0 w-80 z-100
-        bg-[rgba(20,20,25,0.85)] backdrop-blur-xl
-        border-r border-white/[0.08]
+        fixed md:relative left-0 top-0 bottom-0 w-80 z-50
+        bg-white border-r border-stone-200
         transform transition-transform duration-300 ease-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        flex flex-col
+        flex flex-col shadow-lg md:shadow-none
       `}>
         {/* Sidebar Header */}
-        <div className="flex justify-between items-center px-6 py-5 border-b border-white/[0.06]">
-          <h2 className="text-[17px] font-semibold bg-gradient-to-br from-gray-100 to-gray-400 bg-clip-text text-transparent">
-            管理パネル
-          </h2>
+        <div className="flex justify-between items-center px-6 py-5 border-b border-stone-200">
+          <h2 className="text-lg font-semibold text-stone-800">管理パネル</h2>
           <button
-            className="p-2 rounded-lg bg-white/5 text-gray-500 hover:bg-white/10 hover:text-white transition-all md:hidden"
+            className="p-2 rounded-lg hover:bg-stone-100 text-stone-500 transition-all md:hidden"
             onClick={() => setSidebarOpen(false)}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
+            <X size={20} />
           </button>
         </div>
 
         {/* Sidebar Nav */}
-        <nav className="flex p-3 gap-1.5 border-b border-white/[0.06]">
+        <nav className="flex p-3 gap-1.5 border-b border-stone-200">
           {[
             { id: 'posts', label: '投稿', icon: '📝' },
             { id: 'dm', label: 'DM', icon: '📩' },
@@ -357,13 +339,11 @@ export default function MainPage() {
               key={tab.id}
               className={`
                 flex-1 flex flex-col items-center gap-1 py-3 px-2
-                rounded-xl text-[11px] font-medium
-                transition-all duration-200
+                rounded-xl text-xs font-medium transition-all duration-200
                 ${settingsTab === tab.id
-                  ? 'bg-indigo-500/15 text-indigo-400'
-                  : 'text-gray-500 hover:bg-white/5 hover:text-gray-400'
+                  ? 'bg-orange-50 text-orange-600'
+                  : 'text-stone-500 hover:bg-stone-100'
                 }
-                active:scale-[0.92]
               `}
               onClick={() => setSettingsTab(tab.id as SettingsTab)}
             >
@@ -374,20 +354,20 @@ export default function MainPage() {
         </nav>
 
         {/* Sidebar Content */}
-        <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-white/10">
+        <div className="flex-1 overflow-y-auto p-4">
           {/* Posts Tab */}
           {settingsTab === 'posts' && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {/* Generate Card */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 hover:bg-white/[0.05] hover:border-white/10 transition-all hover:-translate-y-0.5">
-                <div className="flex items-center gap-2 mb-3.5">
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg">✨</span>
-                  <h3 className="text-sm font-semibold text-gray-300">投稿生成</h3>
+                  <h3 className="text-sm font-semibold text-stone-700">投稿生成</h3>
                 </div>
                 <select
                   value={selectedAccount}
                   onChange={e => setSelectedAccount(e.target.value)}
-                  className="w-full px-3.5 py-3 bg-black/30 border border-white/10 rounded-xl text-white text-sm mb-3 outline-none focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/10 transition-all cursor-pointer"
+                  className="w-full px-4 py-3 bg-white border border-stone-200 rounded-xl text-stone-800 text-sm mb-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all"
                 >
                   {ACCOUNTS.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
@@ -395,7 +375,7 @@ export default function MainPage() {
                   {[1, 3, 5].map(n => (
                     <button
                       key={n}
-                      className="flex-1 py-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl text-white text-sm font-semibold hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/35 active:scale-95 transition-all disabled:opacity-50"
+                      className="flex-1 py-3 bg-gradient-to-br from-orange-400 to-orange-500 rounded-xl text-white text-sm font-semibold hover:shadow-lg hover:shadow-orange-200 active:scale-95 transition-all disabled:opacity-50"
                       onClick={() => generatePosts(n)}
                       disabled={generating}
                     >
@@ -406,29 +386,29 @@ export default function MainPage() {
               </div>
 
               {/* Pending Card */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 hover:bg-white/[0.05] hover:border-white/10 transition-all hover:-translate-y-0.5">
-                <div className="flex items-center gap-2 mb-3.5">
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg">📋</span>
-                  <h3 className="text-sm font-semibold text-gray-300 flex-1">承認待ち</h3>
-                  <span className="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-lg text-xs font-semibold">
+                  <h3 className="text-sm font-semibold text-stone-700 flex-1">承認待ち</h3>
+                  <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-lg text-xs font-semibold">
                     {pendingPosts.length}
                   </span>
                 </div>
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {pendingPosts.slice(0, 3).map(post => (
-                    <div key={post.id} className="bg-black/20 rounded-xl p-3">
-                      <p className="text-[13px] text-gray-400 leading-relaxed mb-2.5">
+                    <div key={post.id} className="bg-white border border-stone-200 rounded-xl p-3">
+                      <p className="text-sm text-stone-600 leading-relaxed mb-3">
                         {post.text.substring(0, 60)}...
                       </p>
                       <div className="flex gap-2">
                         <button
-                          className="flex-1 py-2.5 bg-gradient-to-br from-green-500 to-green-600 rounded-lg text-white text-[15px] font-semibold hover:-translate-y-0.5 active:scale-90 transition-all"
+                          className="flex-1 py-2.5 bg-emerald-500 rounded-lg text-white text-sm font-semibold hover:bg-emerald-600 active:scale-95 transition-all"
                           onClick={() => updatePostStatus(post.id, 'approved')}
                         >
                           ✓
                         </button>
                         <button
-                          className="flex-1 py-2.5 bg-gradient-to-br from-red-500 to-red-600 rounded-lg text-white text-[15px] font-semibold hover:-translate-y-0.5 active:scale-90 transition-all"
+                          className="flex-1 py-2.5 bg-red-500 rounded-lg text-white text-sm font-semibold hover:bg-red-600 active:scale-95 transition-all"
                           onClick={() => updatePostStatus(post.id, 'rejected')}
                         >
                           ✕
@@ -437,7 +417,7 @@ export default function MainPage() {
                     </div>
                   ))}
                   {pendingPosts.length === 0 && (
-                    <div className="text-center py-5 text-gray-600 text-[13px]">承認待ちなし</div>
+                    <div className="text-center py-6 text-stone-400 text-sm">承認待ちなし</div>
                   )}
                 </div>
               </div>
@@ -446,32 +426,32 @@ export default function MainPage() {
 
           {/* DM Tab */}
           {settingsTab === 'dm' && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {/* DM Progress Card */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 hover:bg-white/[0.05] hover:border-white/10 transition-all hover:-translate-y-0.5">
-                <div className="flex items-center gap-2 mb-3.5">
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg">🎯</span>
-                  <h3 className="text-sm font-semibold text-gray-300">今日の目標</h3>
+                  <h3 className="text-sm font-semibold text-stone-700">今日の目標</h3>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-5xl font-bold bg-gradient-to-br from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+                    <span className="text-5xl font-bold text-orange-500">
                       {dmStats.total}
                     </span>
-                    <span className="text-2xl text-gray-700">/</span>
-                    <span className="text-2xl text-gray-500">{dmStats.goal}</span>
+                    <span className="text-2xl text-stone-300">/</span>
+                    <span className="text-2xl text-stone-400">{dmStats.goal}</span>
                   </div>
                   <div className="relative w-20 h-20">
                     <svg viewBox="0 0 100 100" className="-rotate-90">
-                      <circle cx="50" cy="50" r="40" fill="none" strokeWidth="8" className="stroke-white/[0.08]" />
+                      <circle cx="50" cy="50" r="40" fill="none" strokeWidth="8" className="stroke-stone-200" />
                       <circle
                         cx="50" cy="50" r="40"
                         fill="none" strokeWidth="8" strokeLinecap="round"
-                        className="stroke-indigo-500 transition-all duration-500"
+                        className="stroke-orange-500 transition-all duration-500"
                         style={{ strokeDasharray: `${dmStats.progress * 2.51} 251` }}
                       />
                     </svg>
-                    <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-gray-500">
+                    <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-stone-600">
                       {Math.round(dmStats.progress)}%
                     </span>
                   </div>
@@ -479,22 +459,22 @@ export default function MainPage() {
               </div>
 
               {/* DM Record Card */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 hover:bg-white/[0.05] hover:border-white/10 transition-all hover:-translate-y-0.5">
-                <div className="flex items-center gap-2 mb-3.5">
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg">➕</span>
-                  <h3 className="text-sm font-semibold text-gray-300">DM記録</h3>
+                  <h3 className="text-sm font-semibold text-stone-700">DM記録</h3>
                 </div>
                 <div className="space-y-2.5">
                   {ACCOUNTS.map(a => (
                     <button
                       key={a.id}
-                      className="w-full flex items-center gap-3 px-4 py-3.5 bg-black/30 border-2 rounded-xl text-white text-sm font-medium hover:bg-black/50 hover:-translate-y-0.5 hover:shadow-lg active:scale-95 transition-all"
+                      className={`w-full flex items-center gap-3 px-4 py-3.5 ${a.bg} border-2 rounded-xl ${a.text} text-sm font-medium hover:shadow-md active:scale-95 transition-all`}
                       style={{ borderColor: a.color }}
                       onClick={() => recordDM(a.id)}
                     >
                       <span
                         className="w-2.5 h-2.5 rounded-full"
-                        style={{ background: `linear-gradient(135deg, ${a.color}, ${a.color}88)` }}
+                        style={{ backgroundColor: a.color }}
                       />
                       {a.name}
                     </button>
@@ -507,61 +487,45 @@ export default function MainPage() {
           {/* Analytics Tab */}
           {settingsTab === 'analytics' && (
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 text-center hover:bg-white/[0.05] hover:border-white/10 transition-all hover:-translate-y-0.5">
-                <div className="text-3xl font-bold bg-gradient-to-br from-gray-100 to-gray-500 bg-clip-text text-transparent">
-                  {posts.length}
+              {[
+                { label: '総投稿数', value: posts.length, color: 'text-stone-700' },
+                { label: '承認待ち', value: pendingPosts.length, color: 'text-amber-500' },
+                { label: '承認済み', value: approvedCount, color: 'text-emerald-500' },
+                { label: '投稿済み', value: postedCount, color: 'text-orange-500' },
+              ].map(item => (
+                <div key={item.label} className="bg-stone-50 border border-stone-200 rounded-2xl p-5 text-center">
+                  <div className={`text-3xl font-bold ${item.color}`}>{item.value}</div>
+                  <div className="text-xs text-stone-500 mt-1">{item.label}</div>
                 </div>
-                <div className="text-xs text-gray-500 mt-1">総投稿数</div>
-              </div>
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 text-center hover:bg-white/[0.05] hover:border-white/10 transition-all hover:-translate-y-0.5">
-                <div className="text-3xl font-bold bg-gradient-to-br from-amber-400 to-amber-500 bg-clip-text text-transparent">
-                  {pendingPosts.length}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">承認待ち</div>
-              </div>
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 text-center hover:bg-white/[0.05] hover:border-white/10 transition-all hover:-translate-y-0.5">
-                <div className="text-3xl font-bold bg-gradient-to-br from-emerald-400 to-emerald-500 bg-clip-text text-transparent">
-                  {approvedCount}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">承認済み</div>
-              </div>
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 text-center hover:bg-white/[0.05] hover:border-white/10 transition-all hover:-translate-y-0.5">
-                <div className="text-3xl font-bold bg-gradient-to-br from-indigo-500 to-purple-600 bg-clip-text text-transparent">
-                  {postedCount}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">投稿済み</div>
-              </div>
+              ))}
             </div>
           )}
 
           {/* Settings Tab */}
           {settingsTab === 'settings' && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {/* Accounts Card */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 hover:bg-white/[0.05] hover:border-white/10 transition-all hover:-translate-y-0.5">
-                <div className="flex items-center gap-2 mb-3.5">
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg">👤</span>
-                  <h3 className="text-sm font-semibold text-gray-300">アカウント</h3>
+                  <h3 className="text-sm font-semibold text-stone-700">アカウント</h3>
                 </div>
                 <div className="space-y-2">
                   {ACCOUNTS.map(a => (
-                    <div key={a.id} className="flex items-center gap-3 px-3 py-3 bg-black/20 rounded-lg text-sm">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ background: `linear-gradient(135deg, ${a.color}, ${a.color}88)` }}
-                      />
-                      <span>{a.name}</span>
-                      <span className="ml-auto text-xs text-green-500">有効</span>
+                    <div key={a.id} className="flex items-center gap-3 px-3 py-3 bg-white border border-stone-200 rounded-lg text-sm">
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: a.color }} />
+                      <span className="text-stone-700">{a.name}</span>
+                      <span className="ml-auto text-xs text-emerald-500 font-medium">有効</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Cron Card */}
-              <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 hover:bg-white/[0.05] hover:border-white/10 transition-all hover:-translate-y-0.5">
-                <div className="flex items-center gap-2 mb-3.5">
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-4">
                   <span className="text-lg">⏰</span>
-                  <h3 className="text-sm font-semibold text-gray-300">自動化</h3>
+                  <h3 className="text-sm font-semibold text-stone-700">自動化</h3>
                 </div>
                 <div className="space-y-2">
                   {[
@@ -569,9 +533,9 @@ export default function MainPage() {
                     { name: 'ストック補充', time: '毎日 6:30' },
                     { name: 'インプレ取得', time: '毎日 0:00' },
                   ].map(item => (
-                    <div key={item.name} className="flex justify-between px-3 py-3 bg-black/20 rounded-lg text-[13px]">
-                      <span className="text-gray-400">{item.name}</span>
-                      <span className="text-indigo-500 font-medium">{item.time}</span>
+                    <div key={item.name} className="flex justify-between px-3 py-3 bg-white border border-stone-200 rounded-lg text-sm">
+                      <span className="text-stone-600">{item.name}</span>
+                      <span className="text-orange-500 font-medium">{item.time}</span>
                     </div>
                   ))}
                 </div>
@@ -580,7 +544,7 @@ export default function MainPage() {
               {/* Quick Link */}
               <Link
                 href="/auto-hub"
-                className="flex items-center justify-between w-full px-4 py-3 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/30 rounded-xl text-indigo-400 text-sm hover:bg-indigo-500/20 transition-all"
+                className="flex items-center justify-between w-full px-4 py-3 bg-orange-50 border border-orange-200 rounded-xl text-orange-600 text-sm font-medium hover:bg-orange-100 transition-all"
               >
                 <span className="flex items-center gap-2">
                   <span>🚀</span>
@@ -596,34 +560,30 @@ export default function MainPage() {
       </aside>
 
       {/* Main Chat Area */}
-      <main className="flex-1 flex flex-col min-w-0 relative z-1">
+      <main className="flex-1 flex flex-col min-w-0 relative">
         {/* Header */}
-        <header className="flex items-center px-5 py-3.5 gap-4 bg-[rgba(10,10,15,0.7)] backdrop-blur-xl border-b border-white/5 sticky top-0 z-10">
+        <header className="flex items-center px-5 py-3.5 gap-4 bg-white border-b border-stone-200 sticky top-0 z-10">
           <button
-            className="p-2.5 rounded-xl bg-white/5 text-gray-500 hover:bg-white/10 hover:text-white transition-all flex md:hidden"
+            className="p-2.5 rounded-xl hover:bg-stone-100 text-stone-500 transition-all flex md:hidden"
             onClick={() => setSidebarOpen(true)}
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
+            <Menu size={22} />
           </button>
 
           {/* Mode Toggle */}
-          <div className="relative flex bg-white/5 rounded-xl p-1">
+          <div className="relative flex bg-stone-100 rounded-xl p-1">
             <div
-              className="absolute top-1 left-1 w-[calc(50%-4px)] h-[calc(100%-8px)] bg-white/10 rounded-lg transition-transform duration-300"
+              className="absolute top-1 left-1 w-[calc(50%-4px)] h-[calc(100%-8px)] bg-white shadow-sm rounded-lg transition-transform duration-300"
               style={{ transform: mode === 'think' ? 'translateX(100%)' : 'translateX(0)' }}
             />
             <button
-              className={`relative px-5 py-2.5 text-[13px] font-medium rounded-lg transition-colors z-1 ${mode === 'agent' ? 'text-white' : 'text-gray-500'}`}
+              className={`relative px-5 py-2.5 text-sm font-medium rounded-lg transition-colors z-1 ${mode === 'agent' ? 'text-stone-800' : 'text-stone-500'}`}
               onClick={() => setMode('agent')}
             >
               エージェント
             </button>
             <button
-              className={`relative px-5 py-2.5 text-[13px] font-medium rounded-lg transition-colors z-1 ${mode === 'think' ? 'text-white' : 'text-gray-500'}`}
+              className={`relative px-5 py-2.5 text-sm font-medium rounded-lg transition-colors z-1 ${mode === 'think' ? 'text-stone-800' : 'text-stone-500'}`}
               onClick={() => setMode('think')}
             >
               壁打ち
@@ -633,7 +593,7 @@ export default function MainPage() {
           <div className="ml-auto flex gap-2.5">
             {mode === 'think' && thinkMessages.length > 1 && (
               <button
-                className="flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-lg hover:-translate-y-0.5 hover:shadow-lg hover:shadow-indigo-500/30 transition-all"
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all"
                 onClick={saveInsights}
               >
                 <span>💾</span> 保存
@@ -641,7 +601,7 @@ export default function MainPage() {
             )}
             {currentMessages.length > 0 && (
               <button
-                className="px-4 py-2 text-[13px] font-medium bg-white/[0.08] text-gray-500 rounded-lg hover:bg-white/[0.12] hover:text-gray-300 active:scale-[0.92] transition-all"
+                className="px-4 py-2 text-sm font-medium bg-stone-100 text-stone-600 rounded-lg hover:bg-stone-200 transition-all"
                 onClick={clearChat}
               >
                 クリア
@@ -651,28 +611,25 @@ export default function MainPage() {
         </header>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-white/10">
+        <div className="flex-1 overflow-y-auto p-6">
           {currentMessages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center relative px-6">
-              {/* Soft Ambient Glow */}
-              <div className="absolute w-[400px] h-[400px] bg-[radial-gradient(circle,rgba(139,92,246,0.08),transparent_70%)] rounded-full blur-[60px]" />
-
               {/* Friendly Greeting */}
-              <div className="mb-6 relative z-1 w-16 h-16 rounded-3xl bg-gradient-to-br from-[var(--violet-500)]/20 to-[var(--violet-600)]/10 border border-[var(--violet-500)]/20 flex items-center justify-center">
+              <div className="mb-6 w-16 h-16 rounded-3xl bg-orange-100 flex items-center justify-center">
                 {mode === 'agent' ? (
-                  <Hand size={28} className="text-[var(--violet-400)]" />
+                  <Hand size={28} className="text-orange-500" />
                 ) : (
-                  <Sparkles size={28} className="text-[var(--violet-400)]" />
+                  <Sparkles size={28} className="text-orange-500" />
                 )}
               </div>
-              <h2 className="text-2xl font-semibold text-white/90 relative z-1">
+              <h2 className="text-2xl font-semibold text-stone-800">
                 {mode === 'agent' ? 'こんにちは！' : '何を考えましょうか？'}
               </h2>
-              <p className="text-white/40 text-sm mt-2 mb-10 relative z-1 max-w-md">
+              <p className="text-stone-500 text-sm mt-2 mb-10 max-w-md">
                 {mode === 'agent' ? '今日も一緒に頑張りましょう。何かお手伝いできることはありますか？' : '一緒にアイデアを広げていきましょう'}
               </p>
 
-              <div className="flex flex-wrap justify-center gap-3 max-w-lg relative z-1">
+              <div className="flex flex-wrap justify-center gap-3 max-w-lg">
                 {(mode === 'agent' ? [
                   { icon: BarChart3, text: '今日の結果を教えて' },
                   { icon: PenLine, text: '投稿を3件生成して' },
@@ -686,10 +643,10 @@ export default function MainPage() {
                   return (
                     <button
                       key={i}
-                      className="flex items-center gap-3 px-5 py-3.5 bg-white/[0.04] border border-white/[0.08] rounded-2xl text-white/70 cursor-pointer transition-all duration-200 hover:bg-white/[0.08] hover:border-white/[0.15] hover:text-white active:scale-[0.98]"
+                      className="flex items-center gap-3 px-5 py-3.5 bg-white border border-stone-200 rounded-2xl text-stone-600 cursor-pointer transition-all duration-200 hover:border-orange-300 hover:shadow-md hover:text-stone-800 active:scale-[0.98]"
                       onClick={() => setInput(s.text)}
                     >
-                      <Icon size={18} className="text-[var(--violet-400)]" />
+                      <Icon size={18} className="text-orange-500" />
                       <span className="text-sm">{s.text}</span>
                     </button>
                   );
@@ -701,22 +658,22 @@ export default function MainPage() {
               {currentMessages.map((msg, i) => (
                 <div
                   key={i}
-                  className={`flex gap-3 mb-5 animate-message-slide ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+                  className={`flex gap-3 mb-5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
                 >
                   {msg.role === 'assistant' && (
-                    <div className="w-9 h-9 bg-gradient-to-br from-violet-500/20 to-purple-500/10 border border-violet-500/20 rounded-xl flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center shrink-0">
                       {mode === 'agent' ? (
-                        <Sparkles size={16} className="text-[var(--violet-400)]" />
+                        <Sparkles size={16} className="text-orange-500" />
                       ) : (
-                        <Lightbulb size={16} className="text-[var(--violet-400)]" />
+                        <Lightbulb size={16} className="text-orange-500" />
                       )}
                     </div>
                   )}
                   <div className={`
-                    max-w-[75%] px-4.5 py-3.5 rounded-[20px]
+                    max-w-[75%] px-4 py-3 rounded-2xl
                     ${msg.role === 'user'
-                      ? 'bg-gradient-to-br from-indigo-500 to-purple-600 rounded-br-sm'
-                      : `bg-white/5 border border-white/[0.08] rounded-bl-sm ${msg.isStreaming ? 'border-indigo-500/40' : ''}`
+                      ? 'bg-orange-500 text-white rounded-br-sm'
+                      : `bg-white border border-stone-200 text-stone-700 rounded-bl-sm ${msg.isStreaming ? 'border-orange-300' : ''}`
                     }
                   `}>
                     {msg.image && (
@@ -727,13 +684,13 @@ export default function MainPage() {
                         msg.content.split('\n').map((line, j) => <p key={j} className="mb-2 last:mb-0">{line || <br />}</p>)
                       ) : msg.isStreaming ? (
                         <div className="flex gap-1.5 py-1.5">
-                          <span className="w-2 h-2 bg-white/30 rounded-full animate-bounce [animation-delay:-0.32s]" />
-                          <span className="w-2 h-2 bg-white/30 rounded-full animate-bounce [animation-delay:-0.16s]" />
-                          <span className="w-2 h-2 bg-white/30 rounded-full animate-bounce" />
+                          <span className="w-2 h-2 bg-orange-300 rounded-full animate-bounce [animation-delay:-0.32s]" />
+                          <span className="w-2 h-2 bg-orange-300 rounded-full animate-bounce [animation-delay:-0.16s]" />
+                          <span className="w-2 h-2 bg-orange-300 rounded-full animate-bounce" />
                         </div>
                       ) : null}
                       {msg.isStreaming && msg.content && (
-                        <span className="inline-block w-0.5 h-[1em] bg-indigo-500 ml-0.5 animate-blink align-text-bottom" />
+                        <span className="inline-block w-0.5 h-[1em] bg-orange-500 ml-0.5 animate-pulse align-text-bottom" />
                       )}
                     </div>
                   </div>
@@ -746,7 +703,7 @@ export default function MainPage() {
 
         {/* Saved Insights Toast */}
         {savedInsights.length > 0 && (
-          <div className="absolute bottom-[100px] left-1/2 -translate-x-1/2 flex items-center gap-2.5 px-5 py-3 bg-green-500/15 border border-green-500/30 rounded-xl text-green-400 text-sm animate-slide-up">
+          <div className="absolute bottom-[100px] left-1/2 -translate-x-1/2 flex items-center gap-2.5 px-5 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-600 text-sm shadow-lg">
             <span>✨</span>
             <span>{savedInsights.length}件の気づきを保存しました</span>
             <button className="p-1 hover:opacity-70" onClick={() => setSavedInsights([])}>✕</button>
@@ -754,28 +711,24 @@ export default function MainPage() {
         )}
 
         {/* Input Area */}
-        <div className="px-6 pt-4 pb-6">
+        <div className="px-6 pt-4 pb-6 bg-stone-50 border-t border-stone-200">
           {selectedImage && (
             <div className="relative inline-block mb-3">
-              <img src={selectedImage} alt="" className="max-h-[100px] rounded-xl border border-white/10" />
+              <img src={selectedImage} alt="" className="max-h-[100px] rounded-xl border border-stone-200" />
               <button
-                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white border-2 border-[#050505] text-xs hover:scale-110 transition-transform"
+                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white text-xs hover:scale-110 transition-transform"
                 onClick={() => setSelectedImage(null)}
               >
                 ✕
               </button>
             </div>
           )}
-          <div className="flex items-end gap-3 max-w-[800px] mx-auto bg-[rgba(30,30,35,0.8)] backdrop-blur-xl border border-white/10 rounded-3xl pl-5 pr-2 py-2 transition-all focus-within:border-indigo-500/50 focus-within:shadow-[0_0_0_4px_rgba(102,126,234,0.1),0_10px_40px_rgba(0,0,0,0.3)]">
+          <div className="flex items-end gap-3 max-w-[800px] mx-auto bg-white border border-stone-200 rounded-2xl pl-4 pr-2 py-2 shadow-sm transition-all focus-within:border-orange-400 focus-within:shadow-md">
             <button
-              className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-white/10 hover:text-white transition-all shrink-0"
+              className="w-10 h-10 flex items-center justify-center rounded-xl text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-all shrink-0"
               onClick={() => fileInputRef.current?.click()}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <polyline points="21 15 16 10 5 21"/>
-              </svg>
+              <ImageIcon size={20} />
             </button>
             <input
               ref={fileInputRef}
@@ -791,14 +744,14 @@ export default function MainPage() {
               onKeyDown={handleKeyDown}
               placeholder="メッセージを入力..."
               rows={1}
-              className="flex-1 py-3 bg-transparent text-gray-100 text-[15px] leading-normal resize-none max-h-[120px] outline-none placeholder:text-gray-600"
+              className="flex-1 py-3 bg-transparent text-stone-800 text-[15px] leading-normal resize-none max-h-[120px] outline-none placeholder:text-stone-400"
             />
             <button
               className={`
                 w-11 h-11 flex items-center justify-center rounded-xl shrink-0 transition-all duration-250
                 ${(!input.trim() && !selectedImage)
-                  ? 'bg-gray-800 opacity-30 cursor-not-allowed'
-                  : 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:scale-105 hover:shadow-lg hover:shadow-indigo-500/40 active:scale-95'
+                  ? 'bg-stone-100 text-stone-300 cursor-not-allowed'
+                  : 'bg-orange-500 text-white hover:bg-orange-600 hover:shadow-lg active:scale-95'
                 }
               `}
               onClick={sendMessage}
@@ -811,10 +764,7 @@ export default function MainPage() {
                   <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" />
                 </div>
               ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <line x1="12" y1="19" x2="12" y2="5" />
-                  <polyline points="5 12 12 5 19 12" />
-                </svg>
+                <SendIcon size={18} />
               )}
             </button>
           </div>
