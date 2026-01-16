@@ -660,3 +660,27 @@ input:focus, textarea:focus, select:focus {
 .react-flow__viewport {
   transition: transform 0.3s ease-out;
 }
+
+/* ===================================
+   Main Content Layout
+   =================================== */
+.main-content {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Light theme overrides for dashboard */
+.light-theme .react-flow__controls {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid #e7e5e4 !important;
+}
+
+.light-theme .react-flow__controls-button {
+  fill: #78716c !important;
+}
+
+.light-theme .react-flow__controls-button:hover {
+  background: rgba(251, 146, 60, 0.1) !important;
+  fill: #f97316 !important;
+}

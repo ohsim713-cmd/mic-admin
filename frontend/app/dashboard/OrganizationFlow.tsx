@@ -67,13 +67,12 @@ function AgentNode({ data }: { data: AgentNodeData }) {
 
   return (
     <div
-      className={`px-4 py-3 rounded-xl border-2 min-w-[140px] transition-all duration-300 relative ${
-        isActive ? 'animate-pulse' : ''
+      className={`px-4 py-3 rounded-xl border min-w-[140px] transition-all duration-300 relative ${
+        isActive ? 'shadow-lg' : 'shadow-sm hover:shadow-md'
       }`}
       style={{
-        background: `linear-gradient(135deg, ${data.color}15, ${data.color}08)`,
-        borderColor: isActive ? data.color : `${data.color}40`,
-        boxShadow: isActive ? `0 0 25px ${data.color}50` : 'none',
+        background: isActive ? `${data.color}10` : '#ffffff',
+        borderColor: isActive ? data.color : '#e7e5e4',
       }}
     >
       {/* Active indicator */}
@@ -94,21 +93,20 @@ function AgentNode({ data }: { data: AgentNodeData }) {
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
           style={{
-            backgroundColor: `${data.color}20`,
-            boxShadow: isActive ? `0 0 10px ${data.color}` : 'none'
+            backgroundColor: `${data.color}15`,
           }}
         >
           <Icon size={16} style={{ color: data.color }} />
         </div>
-        <span className="font-bold text-white text-sm">{data.name}</span>
+        <span className="font-semibold text-stone-800 text-sm">{data.name}</span>
       </div>
-      <p className="text-[10px] text-zinc-400 pl-9">{data.role}</p>
+      <p className="text-[10px] text-stone-500 pl-9">{data.role}</p>
 
       {/* Current action */}
       {isActive && data.currentAction && (
         <div
           className="mt-2 px-2 py-1 rounded text-[9px] font-medium truncate"
-          style={{ backgroundColor: `${data.color}20`, color: data.color }}
+          style={{ backgroundColor: `${data.color}15`, color: data.color }}
         >
           {data.currentAction}
         </div>
@@ -124,14 +122,11 @@ function CEONode({ data }: { data: AgentNodeData }) {
   return (
     <div
       className={`px-6 py-4 rounded-2xl border-2 min-w-[180px] relative transition-all duration-300 ${
-        isActive ? 'animate-pulse' : ''
+        isActive ? 'shadow-xl' : 'shadow-md hover:shadow-lg'
       }`}
       style={{
-        background: `linear-gradient(135deg, ${data.color}25, ${data.color}10)`,
+        background: '#ffffff',
         borderColor: data.color,
-        boxShadow: isActive
-          ? `0 0 40px ${data.color}50`
-          : `0 0 30px ${data.color}30`,
       }}
     >
       {isActive && (
@@ -148,22 +143,21 @@ function CEONode({ data }: { data: AgentNodeData }) {
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center"
           style={{
-            backgroundColor: `${data.color}30`,
-            boxShadow: isActive ? `0 0 15px ${data.color}` : 'none'
+            backgroundColor: `${data.color}15`,
           }}
         >
           <Icon size={24} style={{ color: data.color }} />
         </div>
         <div>
-          <span className="font-bold text-white text-lg">{data.name}</span>
-          <p className="text-xs text-zinc-400">{data.role}</p>
+          <span className="font-bold text-stone-800 text-lg">{data.name}</span>
+          <p className="text-xs text-stone-500">{data.role}</p>
         </div>
       </div>
 
       {isActive && data.currentAction && (
         <div
           className="mt-2 px-2 py-1 rounded text-[10px] font-medium"
-          style={{ backgroundColor: `${data.color}20`, color: data.color }}
+          style={{ backgroundColor: `${data.color}15`, color: data.color }}
         >
           {data.currentAction}
         </div>
@@ -175,11 +169,11 @@ function CEONode({ data }: { data: AgentNodeData }) {
 function ClusterNode({ data }: { data: { name: string; color: string } }) {
   return (
     <div
-      className="px-3 py-1.5 rounded-full text-xs font-medium"
+      className="px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm"
       style={{
-        backgroundColor: `${data.color}20`,
+        backgroundColor: '#ffffff',
         color: data.color,
-        border: `1px solid ${data.color}40`,
+        border: `1px solid ${data.color}`,
       }}
     >
       {data.name}
@@ -556,7 +550,7 @@ function OrganizationFlowInner({ activities = [] }: OrganizationFlowProps) {
   }, [activities.length, setNodes]);
 
   return (
-    <div style={{ width: '100%', height: '100%', minHeight: '500px', background: '#09090b' }}>
+    <div style={{ width: '100%', height: '100%', minHeight: '400px', background: '#fafaf9' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -564,22 +558,22 @@ function OrganizationFlowInner({ activities = [] }: OrganizationFlowProps) {
         onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.2, includeHiddenNodes: false }}
+        fitViewOptions={{ padding: 0.15 }}
         minZoom={0.3}
         maxZoom={1.5}
         proOptions={{ hideAttribution: true }}
-        style={{ background: '#09090b' }}
+        style={{ background: '#fafaf9' }}
       >
-        <Background color="#27272a" gap={24} size={1} style={{ background: '#09090b' }} />
+        <Background color="#e7e5e4" gap={20} size={1} style={{ background: '#fafaf9' }} />
         <Controls showInteractive={false} position="bottom-right" />
         <MiniMap
           nodeColor={(node) => {
             const data = node.data as AgentNodeData;
             return data.isActive ? '#22c55e' : (data.color || '#8b5cf6');
           }}
-          maskColor="rgba(0, 0, 0, 0.8)"
+          maskColor="rgba(255, 255, 255, 0.8)"
           position="bottom-left"
-          style={{ background: '#18181b' }}
+          style={{ background: '#ffffff', border: '1px solid #e7e5e4' }}
         />
       </ReactFlow>
     </div>
