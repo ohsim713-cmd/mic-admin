@@ -161,8 +161,8 @@ async function runAllAccounts(dryRun: boolean, startTime: number) {
     })
   );
 
-  // 投稿後にストックを補充（バックグラウンド）- 自動生成停止中
-  // refillAllStocks().catch(err => console.error('[DM Hunter] Stock refill error:', err));
+  // 投稿後にストックを補充（バックグラウンド）
+  refillAllStocks().catch(err => console.error('[DM Hunter] Stock refill error:', err));
 
   // 品質チェックを通過したもののみ
   const validPosts = postsWithScore.filter(p => p.score.passed);

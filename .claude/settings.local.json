@@ -23,7 +23,16 @@
       "Bash(node:*)",
       "Bash(chcp:*)",
       "Bash(wc:*)",
-      "Bash(timeout /t 1)"
+      "Bash(timeout /t 1)",
+      "Bash(gcloud --version:*)",
+      "Bash(winget install:*)",
+      "Bash(\"/c/Program Files \\(x86\\)/Google/Cloud SDK/google-cloud-sdk/bin/gcloud.cmd\" --version)",
+      "Bash(\"/c/Users/user/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud\" --version)",
+      "Bash(GCLOUD=\"/c/Users/user/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud\")",
+      "Bash(\"$GCLOUD\" auth list)",
+      "Bash(\"$GCLOUD\" config set project micpro)",
+      "Bash(\"$GCLOUD\" services enable cloudscheduler.googleapis.com --project micpro)",
+      "Bash(xargs ls:*)"
     ]
   }
 }

@@ -49,98 +49,105 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log(`[Automation] Current slot: ${currentSlot.time} (${currentSlot.label})`);
+    console.log(`[Automation] Current slot: ${currentSlot.time} (${currentSlot.label}), accounts: ${currentSlot.accounts.join(', ')}`);
 
-    // @tt_liver のみに投稿
-    const account = 'liver';
+    // スロットに設定された全アカウントに投稿
     const results: any[] = [];
+    const { generateSinglePost } = await import('@/lib/langgraph/post-generator');
 
-    try {
-      // LangGraphで投稿を動的生成
-      const { generateSinglePost } = await import('@/lib/langgraph/post-generator');
+    // アカウントタイプ→ジャンル名マッピング
+    const genreMap: Record<string, string> = {
+      'liver': 'ライバー',
+      'chatre1': 'チャトレ',
+      'chatre2': 'チャトレ',
+    };
 
-      console.log(`[Automation] Generating post for ${account}...`);
-      const generated = await generateSinglePost(account, 'ライバー');
+    for (const account of currentSlot.accounts) {
+      try {
+        const genre = genreMap[account] || 'ライバー';
+        console.log(`[Automation] Generating post for ${account} (${genre})...`);
+        const generated = await generateSinglePost(account, genre);
 
-      const postText = generated.text;
-      const target = generated.target;
-      const benefit = generated.benefit;
-      const score = generated.score.total;
+        const postText = generated.text;
+        const target = generated.target;
+        const benefit = generated.benefit;
+        const score = generated.score.total;
 
-      console.log(`[Automation] ${account}: generated, score=${score}`);
+        console.log(`[Automation] ${account}: generated, score=${score}`);
 
-      // ドライラン
-      if (dryRun) {
-        results.push({
-          account,
-          success: true,
-          dryRun: true,
-          text: postText.substring(0, 100) + '...',
-          target,
-          benefit,
-          score,
-        });
-      } else {
-        // 実際に投稿
-        const [postResult] = await postToAllAccounts([{ account, text: postText }]);
-
-        results.push({
-          account,
-          accountName: ACCOUNTS.find(a => a.id === account)?.name,
-          success: postResult.success,
-          tweetId: postResult.id,
-          text: postText.substring(0, 100) + '...',
-          target,
-          benefit,
-          score,
-          error: postResult.error,
-        });
-
-        // 投稿履歴に記録（SDK分析用）
-        if (postResult.success) {
-          await addToPostsHistory({
-            id: postResult.id || `post_${Date.now()}`,
-            text: postText,
+        // ドライラン
+        if (dryRun) {
+          results.push({
             account,
+            success: true,
+            dryRun: true,
+            text: postText.substring(0, 100) + '...',
             target,
             benefit,
             score,
+          });
+        } else {
+          // 実際に投稿
+          const [postResult] = await postToAllAccounts([{ account, text: postText }]);
+
+          results.push({
+            account,
+            accountName: ACCOUNTS.find(a => a.id === account)?.name,
+            success: postResult.success,
             tweetId: postResult.id,
-            timestamp: new Date().toISOString(),
+            text: postText.substring(0, 100) + '...',
+            target,
+            benefit,
+            score,
+            error: postResult.error,
           });
 
-          // Discord通知（投稿成功）
-          notifyPostSuccess({
-            account,
-            tweetId: postResult.id || '',
-            postText,
-            qualityScore: score,
-            slot: POSTING_SCHEDULE.slots.indexOf(currentSlot) + 1,
-          }).catch(console.error);
-        } else {
-          // Discord通知（投稿失敗）
-          notifyError({
-            title: '自動投稿失敗',
-            error: postResult.error || 'Unknown error',
-            context: `${account} - ${currentSlot.time}`,
-          }).catch(console.error);
+          // 投稿履歴に記録（SDK分析用）
+          if (postResult.success) {
+            await addToPostsHistory({
+              id: postResult.id || `post_${Date.now()}`,
+              text: postText,
+              account,
+              target,
+              benefit,
+              score,
+              tweetId: postResult.id,
+              timestamp: new Date().toISOString(),
+            });
+
+            // Discord通知（投稿成功）
+            notifyPostSuccess({
+              account,
+              tweetId: postResult.id || '',
+              postText,
+              qualityScore: score,
+              slot: POSTING_SCHEDULE.slots.indexOf(currentSlot) + 1,
+            }).catch(console.error);
+          } else {
+            // Discord通知（投稿失敗）
+            notifyError({
+              title: '自動投稿失敗',
+              error: postResult.error || 'Unknown error',
+              context: `${account} - ${currentSlot.time}`,
+            }).catch(console.error);
+          }
         }
+      } catch (error: any) {
+        console.error(`[Automation] Error for ${account}:`, error);
+
+        // Discord通知（エラー）
+        notifyError({
+          title: '投稿生成エラー',
+          error: error.message,
+          context: `${account}`,
+        }).catch(console.error);
+
+        results.push({
+          account,
+          success: false,
+          error: error.message,
+        });
       }
-    } catch (error: any) {
-      console.error(`[Automation] Error for ${account}:`, error);
-
-      // Discord通知（エラー）
-      notifyError({
-        title: '投稿生成エラー',
-        error: error.message,
-        context: `${account}`,
-      }).catch(console.error);
-
-      results.push({
-        account,
-        success: false,
-        error: error.message,
-      });
     }
 
     const successCount = results.filter(r => r.success).length;
