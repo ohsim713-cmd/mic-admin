@@ -32,10 +32,7 @@ export async function POST(req: NextRequest) {
           replyToId,
         });
 
-        return NextResponse.json({
-          success: result.success,
-          ...result,
-        });
+        return NextResponse.json(result);
       }
 
       // ログイン状態を確認

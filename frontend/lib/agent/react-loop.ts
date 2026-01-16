@@ -10,9 +10,20 @@
  * 4. Reflect（振り返り）: 結果を検証して次に活かす
  */
 
-import { getGenAI } from '@/lib/gemini';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSessionManager } from './session-manager';
 import { getExecutionVerifier, VerificationResult } from './execution-verifier';
+
+// Gemini AI ヘルパー
+let _genai: GoogleGenerativeAI | null = null;
+function getGenAI(): GoogleGenerativeAI {
+  if (!_genai) {
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || '';
+    if (!apiKey) throw new Error('GEMINI_API_KEY is not configured');
+    _genai = new GoogleGenerativeAI(apiKey);
+  }
+  return _genai;
+}
 
 // ========================================
 // Types

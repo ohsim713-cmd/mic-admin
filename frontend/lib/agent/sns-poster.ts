@@ -216,7 +216,8 @@ export class SNSPoster {
       await page.waitForTimeout(3000);
 
       // スクリーンショットで検証
-      const screenshot = await page.screenshot({ encoding: 'base64' });
+      const screenshotBuffer = await page.screenshot();
+      const screenshot = screenshotBuffer.toString('base64');
       const verification = await this.verifier.verifyFromScreenshot(
         screenshot,
         'ツイートが正常に投稿された画面'
@@ -242,7 +243,8 @@ export class SNSPoster {
       };
 
     } catch (error) {
-      const screenshot = await page.screenshot({ encoding: 'base64' }).catch(() => undefined);
+      const screenshotBuffer = await page.screenshot().catch(() => undefined);
+      const screenshot = screenshotBuffer?.toString('base64');
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
