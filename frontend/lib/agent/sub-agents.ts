@@ -31,6 +31,137 @@ const DATA_DIR = path.join(process.cwd(), 'data');
 const KNOWLEDGE_DIR = path.join(process.cwd(), 'knowledge');
 
 // ========================================
+// スキル実行機能
+// ========================================
+
+export type SkillType = 'status' | 'stock' | 'generate' | 'pdca' | 'wordpress' | 'post';
+
+// 各エージェントが使えるスキル
+const AGENT_SKILLS: Partial<Record<AgentId, SkillType[]>> = {
+  coo: ['status', 'pdca', 'stock'],
+  creative: ['generate', 'stock'],
+  pdca_analyst: ['pdca', 'status'],
+  seo: ['wordpress'],
+  post_pattern_master: ['generate', 'stock'],
+};
+
+// スキル実行関数
+async function executeSkill(skill: SkillType, params?: Record<string, any>): Promise<any> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+  try {
+    switch (skill) {
+      case 'status': {
+        // ストック状況と統計を取得
+        const [stockRes, statsRes] = await Promise.all([
+          fetch(`${baseUrl}/api/automation/stock?view=full`),
+          fetch(`${baseUrl}/api/db/stats`),
+        ]);
+        const stock = await stockRes.json();
+        const stats = await statsRes.json();
+        return { stock, stats, success: true };
+      }
+
+      case 'stock': {
+        const action = params?.action || 'check';
+        if (action === 'refill') {
+          const res = await fetch(`${baseUrl}/api/automation/stock`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'refill-all', secret: process.env.AUTO_POST_SECRET }),
+          });
+          return await res.json();
+        }
+        const res = await fetch(`${baseUrl}/api/automation/stock?view=full`);
+        return await res.json();
+      }
+
+      case 'generate': {
+        const count = params?.count || 5;
+        const account = params?.account || 'liver';
+        const res = await fetch(`${baseUrl}/api/generate/langgraph`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ count, account }),
+        });
+        return await res.json();
+      }
+
+      case 'pdca': {
+        // 成功パターン分析
+        const patternsPath = path.join(DATA_DIR, 'success_patterns.json');
+        let patterns: any = { patterns: [] };
+        if (fs.existsSync(patternsPath)) {
+          patterns = JSON.parse(fs.readFileSync(patternsPath, 'utf-8'));
+        }
+
+        // 統計情報
+        const summaryPath = path.join(DATA_DIR, 'sdk_analysis_summary.json');
+        let summary: any = {};
+        if (fs.existsSync(summaryPath)) {
+          summary = JSON.parse(fs.readFileSync(summaryPath, 'utf-8'));
+        }
+
+        return {
+          patterns: patterns.patterns?.slice(-20) || [],
+          summary,
+          success: true,
+        };
+      }
+
+      case 'wordpress': {
+        const topic = params?.topic || 'ライバー 始め方';
+        const type = params?.type || 'liver';
+        const res = await fetch(`${baseUrl}/api/wordpress/generate-article`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic, type }),
+        });
+        return await res.json();
+      }
+
+      case 'post': {
+        const dryRun = params?.dryRun ?? true;
+        const res = await fetch(`${baseUrl}/api/automation/post`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dryRun, secret: process.env.AUTO_POST_SECRET }),
+        });
+        return await res.json();
+      }
+
+      default:
+        return { error: `Unknown skill: ${skill}`, success: false };
+    }
+  } catch (e: any) {
+    return { error: e.message, success: false };
+  }
+}
+
+// エージェントがスキルを使えるか確認
+export function canUseSkill(agentId: AgentId, skill: SkillType): boolean {
+  return AGENT_SKILLS[agentId]?.includes(skill) ?? false;
+}
+
+// エージェントの使用可能スキル一覧
+export function getAgentSkills(agentId: AgentId): SkillType[] {
+  return AGENT_SKILLS[agentId] || [];
+}
+
+// スキルの説明を取得
+function getSkillDescription(skill: SkillType): string {
+  const descriptions: Record<SkillType, string> = {
+    status: 'システム全体のステータス（ストック数、統計、スケジュール）を取得',
+    stock: 'ストック状況の確認・補充。params: { action: "check" | "refill" }',
+    generate: '投稿を生成してストックに追加。params: { count: 数, account: "liver" | "chatre1" | "chatre2" }',
+    pdca: '成功パターンの分析と改善提案を取得',
+    wordpress: 'WordPress記事を生成。params: { topic: "トピック", type: "liver" | "chatlady" }',
+    post: '投稿を実行。params: { dryRun: true/false }',
+  };
+  return descriptions[skill];
+}
+
+// ========================================
 // 型定義
 // ========================================
 
@@ -1191,14 +1322,80 @@ export const AGENTS: Record<string, AgentRole> = {
 async function runAgent(
   agent: AgentRole,
   task: string,
-  context?: string
+  context?: string,
+  options?: { useSkills?: boolean }
 ): Promise<TaskResult> {
   const startTime = Date.now();
 
-  const systemPrompt = `${agent.directive}\n\nあなたの名前: ${agent.name}\n性格: ${agent.personality}`;
+  // スキル情報をシステムプロンプトに追加
+  const skills = getAgentSkills(agent.id);
+  let skillInfo = '';
+  if (skills.length > 0 && options?.useSkills !== false) {
+    skillInfo = `\n\n【使用可能なスキル】
+あなたは以下のスキルを実行できます。タスクに応じて適切にスキルを使用してください。
+${skills.map(s => `- ${s}: ${getSkillDescription(s)}`).join('\n')}
+
+スキルを使う場合は以下のJSON形式で出力してください:
+{"use_skill": "スキル名", "params": {パラメータ}}
+
+スキルの結果を待ってから、最終的な回答を生成します。`;
+  }
+
+  const systemPrompt = `${agent.directive}\n\nあなたの名前: ${agent.name}\n性格: ${agent.personality}${skillInfo}`;
   const prompt = context
     ? `【コンテキスト】\n${context}\n\n【タスク】\n${task}`
     : task;
+
+  // スキル実行ヘルパー
+  async function processWithSkills(initialResponse: string): Promise<TaskResult> {
+    let response = initialResponse;
+    let skillResults: any[] = [];
+
+    // スキル呼び出しをチェック（最大3回まで）
+    for (let i = 0; i < 3; i++) {
+      const skillMatch = response.match(/\{"use_skill"\s*:\s*"(\w+)"(?:\s*,\s*"params"\s*:\s*(\{[^}]*\}))?\}/);
+      if (!skillMatch) break;
+
+      const skillName = skillMatch[1] as SkillType;
+      const skillParams = skillMatch[2] ? JSON.parse(skillMatch[2]) : {};
+
+      if (!skills.includes(skillName)) {
+        console.warn(`[${agent.id}] Tried to use unauthorized skill: ${skillName}`);
+        break;
+      }
+
+      console.log(`[${agent.id}] Executing skill: ${skillName}`, skillParams);
+      const skillResult = await executeSkill(skillName, skillParams);
+      skillResults.push({ skill: skillName, result: skillResult });
+
+      // スキル結果を含めて再度AIに問い合わせ
+      const followUpPrompt = `${prompt}\n\n【スキル実行結果】\nスキル: ${skillName}\n結果:\n${JSON.stringify(skillResult, null, 2)}\n\nこの結果を踏まえて、最終的な回答を生成してください。もう一度スキルを使う必要がある場合は、同じJSON形式で指定してください。`;
+
+      if (USE_CLAUDE_FOR_AGENTS && process.env.ANTHROPIC_API_KEY) {
+        try {
+          const message = await anthropic.messages.create({
+            model: 'claude-3-5-haiku-20241022',
+            max_tokens: 2048,
+            system: systemPrompt,
+            messages: [{ role: 'user', content: followUpPrompt }],
+          });
+          response = message.content[0].type === 'text' ? message.content[0].text : '';
+        } catch (e) {
+          break;
+        }
+      } else {
+        break;
+      }
+    }
+
+    return {
+      agent: agent.id,
+      success: true,
+      output: response,
+      duration: Date.now() - startTime,
+      data: skillResults.length > 0 ? { skillResults } : undefined,
+    };
+  }
 
   // Claude Haikuを使用
   if (USE_CLAUDE_FOR_AGENTS && process.env.ANTHROPIC_API_KEY) {
@@ -1213,6 +1410,11 @@ async function runAgent(
       const response = message.content[0].type === 'text'
         ? message.content[0].text
         : '';
+
+      // スキル実行が必要かチェック
+      if (skills.length > 0 && options?.useSkills !== false && response.includes('"use_skill"')) {
+        return await processWithSkills(response);
+      }
 
       return {
         agent: agent.id,
