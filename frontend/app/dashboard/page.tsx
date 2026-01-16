@@ -9,7 +9,8 @@ import {
   PenTool, Lightbulb, Layers,
   RefreshCw, Target, Search,
   Database, Users, Eye,
-  Video, Bot, ChevronDown, ChevronUp
+  Video, Bot, ChevronDown, ChevronUp,
+  Mail, Send, BarChart3
 } from 'lucide-react';
 
 // Dynamic import to avoid SSR issues with React Flow
@@ -235,6 +236,103 @@ function ActivityFeed({ activities }: { activities: ActivityItem[] }) {
 }
 
 // ========================================
+// KPI Panel Component
+// ========================================
+
+interface KPIData {
+  inquiries: { today: number; thisMonth: number };
+  posts: { today: number; thisMonth: number };
+  impressions: { today: number; total: number };
+}
+
+function KPIPanel() {
+  const [kpi, setKpi] = useState<KPIData | null>(null);
+
+  useEffect(() => {
+    const fetchKPI = async () => {
+      try {
+        const res = await fetch('/api/kpi');
+        const data = await res.json();
+        setKpi(data.kpi);
+      } catch {
+        // エラーは無視
+      }
+    };
+
+    fetchKPI();
+    const interval = setInterval(fetchKPI, 30000); // 30秒ごとに更新
+    return () => clearInterval(interval);
+  }, []);
+
+  const cards = [
+    {
+      icon: Mail,
+      label: '問い合わせ',
+      today: kpi?.inquiries?.today || 0,
+      month: kpi?.inquiries?.thisMonth || 0,
+      target: 3,
+      color: '#10b981',
+    },
+    {
+      icon: Send,
+      label: '投稿数',
+      today: kpi?.posts?.today || 0,
+      month: kpi?.posts?.thisMonth || 0,
+      target: 15,
+      color: '#3b82f6',
+    },
+    {
+      icon: BarChart3,
+      label: 'インプレ',
+      today: kpi?.impressions?.today || 0,
+      month: Math.round((kpi?.impressions?.total || 0) / 1000),
+      target: 15000,
+      color: '#f59e0b',
+      suffix: 'K',
+    },
+  ];
+
+  return (
+    <div className="flex gap-2 p-2 bg-zinc-900/50 border-b border-zinc-800/50">
+      {cards.map((card) => {
+        const Icon = card.icon;
+        const progressPercent = card.label === '問い合わせ'
+          ? Math.round((card.month / card.target) * 100)
+          : Math.round((card.today / card.target) * 100);
+
+        return (
+          <div
+            key={card.label}
+            className="flex-1 p-2 rounded-lg bg-zinc-800/50 border border-zinc-700/50"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <Icon size={14} style={{ color: card.color }} />
+              <span className="text-[10px] text-zinc-400">{card.label}</span>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-lg font-bold text-white">{card.today}</span>
+              <span className="text-[10px] text-zinc-500">今日{card.suffix || ''}</span>
+              <span className="text-[10px] text-zinc-600 ml-auto">
+                月{card.month}{card.suffix || ''}
+              </span>
+            </div>
+            <div className="mt-1 h-1 bg-zinc-700 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${Math.min(100, progressPercent)}%`,
+                  backgroundColor: card.color,
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ========================================
 // Main Dashboard Component
 // ========================================
 
@@ -341,20 +439,25 @@ export default function OrganizationDashboard() {
         </div>
       </header>
 
+      {/* KPI Panel */}
+      <KPIPanel />
+
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+      <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* Organization View - React Flow on desktop, Accordion on mobile */}
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 relative overflow-hidden" style={{ minHeight: '400px' }}>
           {isMobile ? (
             <MobileOrgView />
           ) : (
-            <OrganizationFlow />
+            <div className="absolute inset-0 w-full h-full">
+              <OrganizationFlow />
+            </div>
           )}
         </div>
 
         {/* Activity Feed - Hidden on mobile, sidebar on desktop */}
         {!isMobile && (
-          <div className="w-80 h-full border-l border-zinc-800/50">
+          <div className="w-72 shrink-0 border-l border-zinc-800/50 bg-[#09090b]">
             <ActivityFeed activities={activities} />
           </div>
         )}
