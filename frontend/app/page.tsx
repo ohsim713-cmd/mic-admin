@@ -8,6 +8,15 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  isCoT?: boolean;
+  cotSteps?: CoTStep[];
+}
+
+interface CoTStep {
+  step: 'thinking' | 'draft' | 'analysis' | 'improvement' | 'final';
+  title: string;
+  content: string;
+  timestamp: string;
 }
 
 interface ChatSession {
@@ -192,32 +201,118 @@ export default function ChatPage() {
       textareaRef.current.style.height = 'auto';
     }
 
+    // 投稿生成キーワードを検出
+    const isPostGenRequest = /投稿.*(作|書|生成)|作って.*投稿|新しい投稿/.test(userMessage.content);
+
     try {
-      const response = await fetch('/api/agent/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage.content }),
-      });
+      if (isPostGenRequest) {
+        // CoT投稿生成モード
+        const cotMessageId = (Date.now() + 1).toString();
+        const cotSteps: CoTStep[] = [];
 
-      const data = await response.json();
+        // 初期メッセージを追加
+        const cotMessage: Message = {
+          id: cotMessageId,
+          role: 'assistant',
+          content: '',
+          timestamp: new Date().toISOString(),
+          isCoT: true,
+          cotSteps: [],
+        };
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.response || data.message || 'エラーが発生しました。',
-        timestamp: new Date().toISOString(),
-      };
+        setSessions(prev => prev.map(s => {
+          if (s.id === currentSessionId) {
+            return {
+              ...s,
+              messages: [...s.messages, cotMessage],
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return s;
+        }));
 
-      setSessions(prev => prev.map(s => {
-        if (s.id === currentSessionId) {
-          return {
-            ...s,
-            messages: [...s.messages, assistantMessage],
-            updatedAt: new Date().toISOString(),
-          };
+        // SSEでCoT生成
+        const response = await fetch('/api/generate/cot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic: userMessage.content,
+            stream: true,
+          }),
+        });
+
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') break;
+
+                try {
+                  const step: CoTStep = JSON.parse(data);
+                  cotSteps.push(step);
+
+                  // 最終ステップの場合はcontentにも保存
+                  const finalContent = step.step === 'final' ? step.content : '';
+
+                  setSessions(prev => prev.map(s => {
+                    if (s.id === currentSessionId) {
+                      return {
+                        ...s,
+                        messages: s.messages.map(m =>
+                          m.id === cotMessageId
+                            ? { ...m, cotSteps: [...cotSteps], content: finalContent }
+                            : m
+                        ),
+                        updatedAt: new Date().toISOString(),
+                      };
+                    }
+                    return s;
+                  }));
+                } catch {
+                  // JSON parse error
+                }
+              }
+            }
+          }
         }
-        return s;
-      }));
+      } else {
+        // 通常のチャット
+        const response = await fetch('/api/agent/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: userMessage.content }),
+        });
+
+        const data = await response.json();
+
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: data.response || data.message || 'エラーが発生しました。',
+          timestamp: new Date().toISOString(),
+        };
+
+        setSessions(prev => prev.map(s => {
+          if (s.id === currentSessionId) {
+            return {
+              ...s,
+              messages: [...s.messages, assistantMessage],
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return s;
+        }));
+      }
     } catch {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -272,13 +367,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      height: '100%',
-      maxHeight: 'calc(100dvh - var(--mobile-nav-height))',
-      overflow: 'hidden',
-      position: 'relative',
-    }}>
+    <div className="chat-page-wrapper">
       {/* Sidebar Overlay (モバイル) */}
       {isSidebarOpen && (
         <div
@@ -293,21 +382,20 @@ export default function ChatPage() {
       )}
 
       {/* Sidebar */}
-      <aside style={{
-        position: isSidebarOpen ? 'fixed' : 'relative',
-        left: 0,
-        top: 0,
-        bottom: 0,
-        width: '260px',
-        backgroundColor: 'var(--bg-secondary)',
-        borderRight: '1px solid var(--border)',
-        display: 'flex',
-        flexDirection: 'column',
-        zIndex: 50,
-        transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-        transition: 'transform 0.2s ease',
-      }}
-      className="chat-sidebar"
+      <aside
+        className="chat-sidebar"
+        style={{
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: '260px',
+          backgroundColor: 'var(--bg-secondary)',
+          borderRight: '1px solid var(--border)',
+          display: isSidebarOpen ? 'flex' : 'none',
+          flexDirection: 'column',
+          zIndex: 50,
+        }}
       >
         {/* New Chat Button */}
         <div style={{ padding: 'var(--space-3)' }}>
@@ -525,23 +613,26 @@ export default function ChatPage() {
 
               <div style={{
                 display: 'flex',
-                flexWrap: 'wrap',
+                flexDirection: 'column',
                 gap: 'var(--space-2)',
                 marginTop: 'var(--space-4)',
-                justifyContent: 'center',
+                width: '100%',
+                maxWidth: '280px',
               }}>
                 {['今日の投稿状況', '新しい投稿を作成', 'エージェント状況'].map((suggestion) => (
                   <button
                     key={suggestion}
                     onClick={() => setInput(suggestion)}
                     style={{
-                      padding: 'var(--space-2) var(--space-3)',
+                      padding: 'var(--space-3)',
                       backgroundColor: 'var(--bg-elevated)',
                       border: '1px solid var(--border)',
-                      borderRadius: 'var(--radius-full)',
-                      fontSize: 'var(--text-xs)',
+                      borderRadius: 'var(--radius-lg)',
+                      fontSize: 'var(--text-sm)',
                       color: 'var(--text-secondary)',
                       cursor: 'pointer',
+                      textAlign: 'center',
+                      width: '100%',
                     }}
                   >
                     {suggestion}
@@ -593,15 +684,65 @@ export default function ChatPage() {
                       {formatTime(message.timestamp)}
                     </span>
                   </div>
-                  <div style={{
-                    fontSize: 'var(--text-sm)',
-                    color: 'var(--text-primary)',
-                    lineHeight: 1.6,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                  }}>
-                    {message.content}
-                  </div>
+                  {/* CoTメッセージの場合はステップ表示 */}
+                  {message.isCoT && message.cotSteps && message.cotSteps.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                      {message.cotSteps.map((step, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            padding: 'var(--space-2) var(--space-3)',
+                            backgroundColor: step.step === 'final'
+                              ? 'var(--success-light)'
+                              : step.step === 'thinking'
+                              ? 'var(--accent-light)'
+                              : 'var(--bg-secondary)',
+                            borderRadius: 'var(--radius-md)',
+                            borderLeft: `3px solid ${
+                              step.step === 'final'
+                                ? 'var(--success)'
+                                : step.step === 'thinking'
+                                ? 'var(--accent)'
+                                : step.step === 'draft'
+                                ? '#6366f1'
+                                : step.step === 'analysis'
+                                ? '#f59e0b'
+                                : '#10b981'
+                            }`,
+                          }}
+                        >
+                          <div style={{
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            color: 'var(--text-secondary)',
+                            marginBottom: '4px',
+                          }}>
+                            {step.title}
+                          </div>
+                          {step.content && (
+                            <div style={{
+                              fontSize: 'var(--text-sm)',
+                              color: 'var(--text-primary)',
+                              lineHeight: 1.5,
+                              whiteSpace: 'pre-wrap',
+                            }}>
+                              {step.content}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{
+                      fontSize: 'var(--text-sm)',
+                      color: 'var(--text-primary)',
+                      lineHeight: 1.6,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                    }}>
+                      {message.content}
+                    </div>
+                  )}
                   {message.role === 'assistant' && (
                     <button
                       onClick={() => copyToClipboard(message.content, message.id)}
@@ -729,10 +870,25 @@ export default function ChatPage() {
           50% { opacity: 1; transform: scale(1); }
         }
 
+        /* チャットページ用のコンテナ調整 */
+        .chat-page-wrapper {
+          display: flex;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: var(--mobile-nav-height);
+          overflow: hidden;
+        }
+
         @media (min-width: 768px) {
+          .chat-page-wrapper {
+            left: var(--sidebar-width);
+            bottom: 0;
+          }
           .chat-sidebar {
+            display: flex !important;
             position: relative !important;
-            transform: translateX(0) !important;
           }
           .sidebar-toggle {
             display: none !important;

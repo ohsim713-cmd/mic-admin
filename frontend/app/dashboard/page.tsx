@@ -41,6 +41,7 @@ interface AgentNode {
     dataCount?: number;
     lastUpdate?: string;
     metrics?: Record<string, number | string>;
+    tech?: Record<string, string>;
   };
 }
 
@@ -70,209 +71,124 @@ const AGENTS: AgentStatus[] = [
   { name: 'スクレイパー', dept: 'Operations', color: '#10b981', status: 'active' },
 ];
 
-// ノードデータ（SNSアカウント情報付き）
+// サブエージェント管理用のノードデータ（日本語化 + 詳細説明 + 技術情報）
 const AGENT_NODES: AgentNode[] = [
-  // コア
+  // 中央: メインコントローラー
   {
-    id: 'react-loop',
-    name: 'ReAct Loop',
+    id: 'controller',
+    name: '司令塔',
     type: 'core',
-    description: '自律思考エンジン',
+    description: '全体を統括する自律AIエンジン。5分ごとに状況を判断し、各エージェントに指示を出す。',
     status: 'idle',
-    connections: ['sns-agent', 'scheduler'],
+    connections: ['generator', 'scheduler', 'analytics'],
     icon: '🧠',
     details: {
       metrics: {
-        'サイクル間隔': '5分',
-        '稼働モード': '自律',
+        '動作モード': '自律',
+        '判断サイクル': '5分',
         '連続エラー': 0,
-      }
+      },
+      tech: {
+        'AI': 'Gemini 2.0 Flash',
+        'アーキテクチャ': 'ReActループ',
+        'API': '/api/react-loop',
+        '実装': 'lib/agents/react-loop.ts',
+      },
     }
   },
-  {
-    id: 'sns-agent',
-    name: 'SNS Agent',
-    type: 'core',
-    description: 'SNS統括マネージャー',
-    status: 'idle',
-    connections: ['generator', 'poster', 'analytics'],
-    icon: '📱',
-  },
-  // SNSプラットフォーム
-  {
-    id: 'twitter-node',
-    name: 'X (Twitter)',
-    type: 'sns',
-    description: 'Xへの投稿',
-    status: 'active',
-    connections: [],
-    icon: '𝕏',
-    details: {
-      accounts: [
-        { platform: 'X', handle: '@tt_liver', status: 'active' },
-        { platform: 'X', handle: '@tt_chatlady', status: 'idle' },
-      ],
-      metrics: {
-        '今日の投稿': 8,
-        '予定': 7,
-      }
-    }
-  },
-  {
-    id: 'threads-node',
-    name: 'Threads',
-    type: 'sns',
-    description: 'Threadsへの投稿',
-    status: 'idle',
-    connections: [],
-    icon: '🧵',
-    details: {
-      accounts: [
-        { platform: 'Threads', handle: '@liver_recruit', status: 'idle' },
-      ],
-      metrics: {
-        '今日の投稿': 0,
-        '予定': 0,
-      }
-    }
-  },
-  // サブエージェント
+  // 左上: 投稿生成
   {
     id: 'generator',
-    name: 'Post Generator',
+    name: '投稿作成',
     type: 'sub',
-    description: '投稿文を生成',
+    description: 'ナレッジと成功パターンを元に、高品質な投稿文を生成。10点以上になるまで最大5回リトライ。',
     status: 'idle',
-    connections: ['knowledge', 'patterns'],
+    connections: ['sns'],
     icon: '✍️',
     details: {
       metrics: {
-        '生成モード': '粘り強い',
         '目標スコア': '10点以上',
-        '最大リトライ': 5,
-      }
+        '最大リトライ': '5回',
+        '生成モード': '粘り強い',
+      },
+      tech: {
+        'AI': 'Gemini 2.0 Flash',
+        '品質評価': 'LLM自己評価',
+        'API': '/api/generate/persistent',
+        'データソース': 'knowledge/*.json',
+      },
     }
   },
-  {
-    id: 'poster',
-    name: 'SNS Poster',
-    type: 'sub',
-    description: 'Playwrightで投稿実行',
-    status: 'idle',
-    connections: ['twitter-node', 'threads-node', 'session'],
-    icon: '🚀',
-  },
+  // 右上: スケジューラー
   {
     id: 'scheduler',
-    name: 'Scheduler',
+    name: 'スケジューラー',
     type: 'sub',
-    description: '投稿スケジュール管理',
+    description: '投稿の時間管理。ストックから最適な時間に自動投稿。1日15枠でバランス良く配信。',
     status: 'active',
-    connections: ['stock', 'poster'],
+    connections: ['sns'],
     icon: '📅',
     details: {
       metrics: {
         '1日の投稿枠': 15,
-        '次の投稿': '19:00',
-      }
+        '次回投稿': '19:00',
+        'ストック残': '---',
+      },
+      tech: {
+        '実行': 'setInterval (1分)',
+        'ストレージ': 'Supabase',
+        'API': '/api/automation/post',
+        'スケジュール生成': '/api/automation/create-schedules',
+      },
     }
   },
+  // 左下: 分析
   {
     id: 'analytics',
-    name: 'Analytics',
+    name: '分析',
     type: 'sub',
-    description: 'パフォーマンス分析',
+    description: '投稿のパフォーマンスを分析し、成功パターンを学習。何が効果的かを常に改善。',
     status: 'idle',
-    connections: ['patterns'],
+    connections: [],
     icon: '📊',
+    details: {
+      metrics: {
+        '学習済みパターン': 47,
+        '高スコアパターン': 12,
+        '分析頻度': '6時間ごと',
+      },
+      tech: {
+        'AI': 'Gemini 2.0 Flash',
+        'データ取得': 'X API (インプレッション)',
+        'API': '/api/automation/learn',
+        '保存先': 'lib/knowledge/success-patterns.json',
+      },
+    }
   },
+  // 右下: SNS出力
   {
-    id: 'scout',
-    name: 'Scout',
-    type: 'sub',
-    description: 'Webスクレイピング',
-    status: 'idle',
-    connections: ['memory'],
-    icon: '🔍',
-  },
-  // ツール
-  {
-    id: 'session',
-    name: 'Session Manager',
-    type: 'tool',
-    description: 'ログイン状態を管理',
+    id: 'sns',
+    name: 'SNS投稿',
+    type: 'sns',
+    description: 'X(Twitter)やThreadsに実際に投稿を行う。Playwrightでブラウザ操作。',
     status: 'active',
     connections: [],
-    icon: '🔐',
+    icon: '📱',
     details: {
       accounts: [
-        { platform: 'X', handle: '@tt_liver', status: 'logged_in' },
+        { platform: 'X', handle: '@tt_liver', status: 'active' },
+        { platform: 'Threads', handle: '@liver_recruit', status: 'idle' },
       ],
-    }
-  },
-  // データ
-  {
-    id: 'knowledge',
-    name: 'Knowledge Base',
-    type: 'data',
-    description: 'ナレッジJSON',
-    status: 'active',
-    connections: [],
-    icon: '📚',
-    details: {
-      dataCount: 12,
-      lastUpdate: '2024-01-15',
       metrics: {
-        'ライバー系': '8ファイル',
-        'チャトレ系': '4ファイル',
-      }
-    }
-  },
-  {
-    id: 'stock',
-    name: 'Post Stock',
-    type: 'data',
-    description: '投稿ストック',
-    status: 'active',
-    connections: [],
-    icon: '📦',
-    details: {
-      dataCount: 23,
-      metrics: {
-        'ライバー用': 18,
-        'チャトレ用': 5,
-      }
-    }
-  },
-  {
-    id: 'patterns',
-    name: 'Success Patterns',
-    type: 'data',
-    description: '成功パターンDB',
-    status: 'active',
-    connections: [],
-    icon: '🏆',
-    details: {
-      dataCount: 47,
-      metrics: {
-        '高スコア': 12,
-        '学習済み': 47,
-      }
-    }
-  },
-  {
-    id: 'memory',
-    name: 'Vector Memory',
-    type: 'data',
-    description: 'セマンティック検索DB',
-    status: 'active',
-    connections: [],
-    icon: '🧬',
-    details: {
-      metrics: {
-        'ドキュメント数': '---',
-        '検索精度': '0.7+',
-      }
+        '今日の投稿': 8,
+        '本日予定': 7,
+      },
+      tech: {
+        'ブラウザ自動化': 'Playwright',
+        'セッション管理': 'Cookies保存',
+        'X投稿': '/api/sns/twitter',
+        'Threads投稿': '/api/sns/threads',
+      },
     }
   },
 ];
@@ -435,7 +351,7 @@ function AgentCard({ agent }: { agent: AgentStatus }) {
 }
 
 // ========================================
-// n8n-Style Node Graph
+// シンプル組織図コンポーネント
 // ========================================
 
 function NodeGraph({
@@ -449,71 +365,64 @@ function NodeGraph({
   onToggleReactLoop: () => void;
   onNodeSelect: (node: AgentNode) => void;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  // ノードを役割別に取得
+  const coreNode = nodes.find(n => n.type === 'core');
+  const subNodes = nodes.filter(n => n.type === 'sub');
+  const snsNode = nodes.find(n => n.type === 'sns');
 
-  // ノードの位置を計算（モバイル対応のグリッドレイアウト）
-  const getNodePosition = (nodeId: string): { x: number; y: number } => {
-    const positions: Record<string, { x: number; y: number }> = {
-      // Row 1: Core
-      'react-loop': { x: 25, y: 8 },
-      'sns-agent': { x: 75, y: 8 },
-      // Row 2: Sub-agents
-      'generator': { x: 10, y: 28 },
-      'scheduler': { x: 40, y: 28 },
-      'poster': { x: 70, y: 28 },
-      'analytics': { x: 90, y: 28 },
-      // Row 3: SNS
-      'twitter-node': { x: 55, y: 48 },
-      'threads-node': { x: 85, y: 48 },
-      // Row 4: Tools & Data
-      'session': { x: 85, y: 68 },
-      'scout': { x: 10, y: 48 },
-      'knowledge': { x: 10, y: 68 },
-      'stock': { x: 35, y: 68 },
-      'patterns': { x: 60, y: 68 },
-      'memory': { x: 10, y: 88 },
-    };
-    return positions[nodeId] || { x: 50, y: 50 };
-  };
+  // ノードカードコンポーネント
+  const NodeCard = ({ node, size = 'normal' }: { node: AgentNode; size?: 'large' | 'normal' | 'small' }) => {
+    const colors = NODE_COLORS[node.type];
+    const isActive = node.status === 'active';
+    const isLarge = size === 'large';
 
-  // 接続線を描画
-  const renderConnections = () => {
-    const lines: React.ReactElement[] = [];
-
-    nodes.forEach(node => {
-      const fromPos = getNodePosition(node.id);
-
-      node.connections.forEach(targetId => {
-        const toPos = getNodePosition(targetId);
-        const targetNode = nodes.find(n => n.id === targetId);
-
-        if (toPos) {
-          const isActive = node.status === 'active' || targetNode?.status === 'active';
-          lines.push(
-            <line
-              key={`${node.id}-${targetId}`}
-              x1={`${fromPos.x}%`}
-              y1={`${fromPos.y + 4}%`}
-              x2={`${toPos.x}%`}
-              y2={`${toPos.y}%`}
-              stroke={isActive ? 'rgba(39, 174, 96, 0.6)' : 'rgba(255,255,255,0.15)'}
-              strokeWidth={isActive ? 2 : 1}
-              strokeDasharray={isActive ? '0' : '4 4'}
-              style={{
-                filter: isActive ? 'drop-shadow(0 0 4px rgba(39, 174, 96, 0.5))' : 'none',
-              }}
-            />
-          );
-        }
-      });
-    });
-
-    return lines;
+    return (
+      <div
+        onClick={() => onNodeSelect(node)}
+        style={{
+          padding: isLarge ? '16px 20px' : '12px 16px',
+          backgroundColor: colors.bg,
+          border: `2px solid ${colors.border}`,
+          borderRadius: '12px',
+          cursor: 'pointer',
+          textAlign: 'center',
+          position: 'relative',
+          boxShadow: isActive
+            ? `0 0 16px ${colors.glow}, 0 4px 12px rgba(0,0,0,0.15)`
+            : '0 2px 8px rgba(0,0,0,0.1)',
+          transition: 'transform 0.15s, box-shadow 0.15s',
+          minWidth: isLarge ? '120px' : '90px',
+        }}
+      >
+        <div style={{ fontSize: isLarge ? '28px' : '20px', marginBottom: '4px' }}>
+          {node.icon}
+        </div>
+        <div style={{
+          fontSize: isLarge ? '14px' : '12px',
+          fontWeight: 600,
+          color: colors.text,
+        }}>
+          {node.name}
+        </div>
+        {/* ステータスドット */}
+        <div style={{
+          position: 'absolute',
+          top: '-4px',
+          right: '-4px',
+          width: '12px',
+          height: '12px',
+          borderRadius: '50%',
+          backgroundColor: isActive ? '#27ae60' : '#888',
+          border: '2px solid var(--bg-elevated)',
+          boxShadow: isActive ? '0 0 6px rgba(39, 174, 96, 0.6)' : 'none',
+        }} />
+      </div>
+    );
   };
 
   return (
     <div>
-      {/* ReActループ制御 */}
+      {/* 自律モード制御 */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -533,7 +442,6 @@ function NodeGraph({
             borderRadius: '50%',
             backgroundColor: reactLoopStatus === 'running' ? '#27ae60' : 'var(--text-tertiary)',
             animation: reactLoopStatus === 'running' ? 'pulse 2s infinite' : 'none',
-            boxShadow: reactLoopStatus === 'running' ? '0 0 8px rgba(39, 174, 96, 0.6)' : 'none',
           }} />
           <div>
             <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>
@@ -558,7 +466,6 @@ function NodeGraph({
             fontSize: 'var(--text-sm)',
             fontWeight: 600,
             cursor: 'pointer',
-            boxShadow: `0 2px 8px ${reactLoopStatus === 'running' ? 'rgba(233, 69, 96, 0.3)' : 'rgba(39, 174, 96, 0.3)'}`,
           }}
         >
           {reactLoopStatus === 'running' ? <Square size={14} /> : <Play size={14} />}
@@ -566,144 +473,84 @@ function NodeGraph({
         </button>
       </div>
 
-      {/* ノードグラフ */}
-      <div
-        ref={containerRef}
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: '420px',
-          backgroundColor: 'var(--bg-secondary)',
-          borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--border)',
-          overflow: 'hidden',
-        }}
-      >
-        {/* グリッド背景 */}
-        <svg
-          style={{
-            position: 'absolute',
-            width: '100%',
-            height: '100%',
-            opacity: 0.3,
-          }}
-        >
-          <defs>
-            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="var(--border)" strokeWidth="0.5" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
-        </svg>
-
-        {/* 接続線 */}
-        <svg
-          style={{
-            position: 'absolute',
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none',
-          }}
-        >
-          {renderConnections()}
-        </svg>
-
-        {/* ノード */}
-        {nodes.map(node => {
-          const pos = getNodePosition(node.id);
-          const colors = NODE_COLORS[node.type];
-          const isActive = node.status === 'active';
-
-          return (
-            <div
-              key={node.id}
-              onClick={() => onNodeSelect(node)}
-              style={{
-                position: 'absolute',
-                left: `${pos.x}%`,
-                top: `${pos.y}%`,
-                transform: 'translate(-50%, -50%)',
-                padding: '8px 10px',
-                backgroundColor: colors.bg,
-                border: `2px solid ${colors.border}`,
-                borderRadius: '10px',
-                cursor: 'pointer',
-                minWidth: '70px',
-                maxWidth: '90px',
-                textAlign: 'center',
-                boxShadow: isActive
-                  ? `0 0 12px ${colors.glow}, 0 2px 8px rgba(0,0,0,0.2)`
-                  : '0 2px 8px rgba(0,0,0,0.2)',
-                transition: 'transform 0.15s, box-shadow 0.15s',
-                zIndex: 10,
-              }}
-            >
-              {/* アイコン */}
-              <div style={{
-                fontSize: '16px',
-                marginBottom: '2px',
-              }}>
-                {node.icon || '⚡'}
-              </div>
-              {/* 名前 */}
-              <div style={{
-                fontSize: '10px',
-                fontWeight: 600,
-                color: colors.text,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}>
-                {node.name}
-              </div>
-              {/* ステータスドット */}
-              <div style={{
-                position: 'absolute',
-                top: '-4px',
-                right: '-4px',
-                width: '10px',
-                height: '10px',
-                borderRadius: '50%',
-                backgroundColor: isActive ? '#27ae60' : node.status === 'error' ? '#e94560' : '#666',
-                border: '2px solid var(--bg-secondary)',
-                boxShadow: isActive ? '0 0 6px rgba(39, 174, 96, 0.6)' : 'none',
-              }} />
-            </div>
-          );
-        })}
-
-        {/* 凡例 */}
+      {/* 組織図（上から下へのフロー） */}
+      <div style={{
+        backgroundColor: 'var(--bg-secondary)',
+        borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border)',
+        padding: 'var(--space-4)',
+        overflow: 'auto',
+      }}>
+        {/* レベル1: 司令塔 */}
         <div style={{
-          position: 'absolute',
-          bottom: '8px',
-          left: '8px',
           display: 'flex',
-          gap: '8px',
-          flexWrap: 'wrap',
+          justifyContent: 'center',
+          marginBottom: 'var(--space-2)',
         }}>
-          {(['core', 'sub', 'sns', 'data'] as NodeType[]).map(type => (
-            <div
-              key={type}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '2px 6px',
-                backgroundColor: 'rgba(0,0,0,0.4)',
-                borderRadius: '4px',
-                fontSize: '9px',
-                color: NODE_COLORS[type].text,
-              }}
-            >
-              <div style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: NODE_COLORS[type].border,
-              }} />
-              {type === 'core' ? 'コア' : type === 'sub' ? 'エージェント' : type === 'sns' ? 'SNS' : 'データ'}
-            </div>
+          {coreNode && <NodeCard node={coreNode} size="large" />}
+        </div>
+
+        {/* 接続線（司令塔 → サブエージェント） */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginBottom: 'var(--space-2)',
+        }}>
+          <svg width="200" height="30" style={{ overflow: 'visible' }}>
+            <line x1="100" y1="0" x2="40" y2="30" stroke="var(--border)" strokeWidth="2" />
+            <line x1="100" y1="0" x2="100" y2="30" stroke="var(--border)" strokeWidth="2" />
+            <line x1="100" y1="0" x2="160" y2="30" stroke="var(--border)" strokeWidth="2" />
+          </svg>
+        </div>
+
+        {/* レベル2: サブエージェント（横並び） */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 'var(--space-3)',
+          flexWrap: 'wrap',
+          marginBottom: 'var(--space-2)',
+        }}>
+          {subNodes.map(node => (
+            <NodeCard key={node.id} node={node} />
           ))}
+        </div>
+
+        {/* 接続線（サブエージェント → SNS） */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginBottom: 'var(--space-2)',
+        }}>
+          <svg width="200" height="30" style={{ overflow: 'visible' }}>
+            <line x1="40" y1="0" x2="100" y2="30" stroke="var(--success)" strokeWidth="2" />
+            <line x1="160" y1="0" x2="100" y2="30" stroke="var(--success)" strokeWidth="2" />
+          </svg>
+        </div>
+
+        {/* レベル3: SNS出力 */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+        }}>
+          {snsNode && <NodeCard node={snsNode} />}
+        </div>
+      </div>
+
+      {/* 凡例 */}
+      <div style={{
+        display: 'flex',
+        gap: 'var(--space-3)',
+        marginTop: 'var(--space-2)',
+        justifyContent: 'center',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#27ae60' }} />
+          稼働中
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#888' }} />
+          待機中
         </div>
       </div>
     </div>
@@ -933,6 +780,65 @@ function NodeDetailModal({
           </div>
         )}
 
+        {/* 技術情報 */}
+        {node.details?.tech && (
+          <div style={{
+            backgroundColor: 'var(--bg-secondary)',
+            borderRadius: '12px',
+            padding: '12px',
+            marginBottom: '12px',
+          }}>
+            <div style={{
+              fontSize: '11px',
+              fontWeight: 600,
+              color: 'var(--text-tertiary)',
+              marginBottom: '8px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}>
+              <Zap size={12} />
+              技術スタック
+            </div>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+            }}>
+              {Object.entries(node.details.tech).map(([key, value]) => (
+                <div
+                  key={key}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 10px',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    borderRadius: '8px',
+                  }}
+                >
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                    {key}
+                  </span>
+                  <span style={{
+                    fontSize: '11px',
+                    color: colors.text,
+                    fontWeight: 600,
+                    fontFamily: 'monospace',
+                    backgroundColor: colors.bg,
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                  }}>
+                    {value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 接続情報 */}
         <div style={{ marginBottom: '16px' }}>
           <div style={{
@@ -1050,12 +956,12 @@ export default function AgentsDashboard() {
       if (data.status?.isRunning) {
         setReactLoopStatus('running');
         setMapNodes(prev => prev.map(n =>
-          n.id === 'react-loop' ? { ...n, status: 'active' } : n
+          n.id === 'controller' ? { ...n, status: 'active' } : n
         ));
       } else {
         setReactLoopStatus('stopped');
         setMapNodes(prev => prev.map(n =>
-          n.id === 'react-loop' ? { ...n, status: 'idle' } : n
+          n.id === 'controller' ? { ...n, status: 'idle' } : n
         ));
       }
     } catch {
