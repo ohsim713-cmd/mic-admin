@@ -32,12 +32,16 @@ export async function POST(request: NextRequest) {
     // 現在時刻（JST）を確認
     const now = new Date();
     const jstHour = (now.getUTCHours() + 9) % 24;
-    const currentTime = `${jstHour.toString().padStart(2, '0')}:00`;
+    const jstMinute = now.getMinutes();
+    const currentTime = `${jstHour.toString().padStart(2, '0')}:${jstMinute.toString().padStart(2, '0')}`;
 
-    // 現在のスロットを取得
+    // 現在のスロットを取得（1.5時間間隔対応、±30分の誤差を許容）
     const currentSlot = POSTING_SCHEDULE.slots.find(slot => {
-      const [slotHour] = slot.time.split(':').map(Number);
-      return Math.abs(jstHour - slotHour) <= 1; // 1時間の誤差を許容
+      const [slotHour, slotMinute] = slot.time.split(':').map(Number);
+      const slotTotalMinutes = slotHour * 60 + slotMinute;
+      const currentTotalMinutes = jstHour * 60 + jstMinute;
+      const diff = Math.abs(currentTotalMinutes - slotTotalMinutes);
+      return diff <= 30; // 30分の誤差を許容
     });
 
     if (!currentSlot) {

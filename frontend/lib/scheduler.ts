@@ -1,106 +1,88 @@
 import cron from 'node-cron';
-import fs from 'fs';
-import path from 'path';
+import { POSTING_SCHEDULE } from './automation/scheduler';
 
-const SCHEDULES_FILE = path.join(process.cwd(), '..', 'knowledge', 'schedules.json');
+// 投稿済みスロットを記録（日付ごとにリセット）
+let lastPostDate = '';
+const postedSlots = new Set<string>();
 
-type Schedule = {
-  id: string;
-  enabled: boolean;
-  intervalHours: number;
-  target: string;
-  postType: string;
-  keywords: string;
-  lastRun?: string;
-  nextRun?: string;
-};
-
-function loadSchedules(): Schedule[] {
+/**
+ * 自動投稿を実行
+ */
+async function executeAutoPost(slotTime: string, slotLabel: string) {
   try {
-    if (!fs.existsSync(SCHEDULES_FILE)) {
-      return [];
-    }
-    const data = fs.readFileSync(SCHEDULES_FILE, 'utf-8');
-    const parsed = JSON.parse(data);
-    return parsed.schedules || [];
-  } catch (e) {
-    console.error('Failed to load schedules:', e);
-    return [];
-  }
-}
+    console.log(`[Scheduler] 🚀 Executing auto-post for slot ${slotTime} (${slotLabel})...`);
 
-function saveSchedules(schedules: Schedule[]) {
-  try {
-    const dir = path.dirname(SCHEDULES_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(SCHEDULES_FILE, JSON.stringify({ schedules }, null, 2));
-  } catch (e) {
-    console.error('Failed to save schedules:', e);
-  }
-}
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
-async function executeSchedule(schedule: Schedule) {
-  try {
-    console.log(`Executing schedule ${schedule.id}...`);
-
-    // APIエンドポイントを呼び出してXに投稿
-    const response = await fetch('http://localhost:3000/api/post-to-x', {
+    const response = await fetch(`${baseUrl}/api/automation/post`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        target: schedule.target,
-        postType: schedule.postType,
-        keywords: schedule.keywords
-      })
+        secret: process.env.AUTO_POST_SECRET,
+        dryRun: false,
+      }),
     });
 
     const result = await response.json();
 
-    if (response.ok) {
-      console.log(`Successfully posted to X for schedule ${schedule.id}`);
-
-      // スケジュールを更新
-      const schedules = loadSchedules();
-      const index = schedules.findIndex(s => s.id === schedule.id);
-
-      if (index !== -1) {
-        const now = new Date();
-        schedules[index].lastRun = now.toISOString();
-        const nextRun = new Date(now.getTime() + schedule.intervalHours * 60 * 60 * 1000);
-        schedules[index].nextRun = nextRun.toISOString();
-        saveSchedules(schedules);
-      }
+    if (response.ok && result.success) {
+      console.log(`[Scheduler] ✅ Auto-post success for ${slotTime}:`, result.message);
+      postedSlots.add(slotTime);
     } else {
-      console.error(`Failed to post to X for schedule ${schedule.id}:`, result.error);
+      console.error(`[Scheduler] ❌ Auto-post failed for ${slotTime}:`, result.error || result);
     }
+
+    return result;
   } catch (error) {
-    console.error(`Error executing schedule ${schedule.id}:`, error);
+    console.error(`[Scheduler] ❌ Error executing auto-post for ${slotTime}:`, error);
+    return { success: false, error: String(error) };
   }
 }
 
-// 毎分実行して、実行すべきスケジュールをチェック
+/**
+ * 毎分実行して、スケジュールされた時間帯に投稿
+ */
 export function startScheduler() {
-  console.log('Starting auto-post scheduler...');
+  console.log('[Scheduler] 🎯 Starting auto-post scheduler...');
+  console.log(`[Scheduler] 📅 ${POSTING_SCHEDULE.slots.length} slots configured for @tt_liver`);
 
+  // 毎分チェック
   cron.schedule('* * * * *', () => {
     const now = new Date();
-    const schedules = loadSchedules();
 
-    schedules.forEach(schedule => {
-      if (!schedule.enabled) return;
+    // JST時間を計算
+    const jstHour = (now.getUTCHours() + 9) % 24;
+    const jstMinute = now.getMinutes();
+    const currentDate = now.toISOString().split('T')[0];
 
-      if (schedule.nextRun) {
-        const nextRunTime = new Date(schedule.nextRun);
+    // 日付が変わったらリセット
+    if (currentDate !== lastPostDate) {
+      console.log(`[Scheduler] 📆 New day detected, resetting posted slots`);
+      postedSlots.clear();
+      lastPostDate = currentDate;
+    }
 
-        // 実行時刻を過ぎていたら実行
-        if (now >= nextRunTime) {
-          executeSchedule(schedule);
-        }
+    // 現在のスロットを確認（各スロットの時間 ±5分以内）
+    for (const slot of POSTING_SCHEDULE.slots) {
+      const [slotHour, slotMinute] = slot.time.split(':').map(Number);
+
+      // 既に投稿済みのスロットはスキップ
+      if (postedSlots.has(slot.time)) {
+        continue;
       }
-    });
+
+      // 時間と分が一致（±5分以内）なら投稿
+      const isHourMatch = jstHour === slotHour;
+      const isMinuteMatch = jstMinute >= slotMinute && jstMinute <= slotMinute + 5;
+
+      if (isHourMatch && isMinuteMatch) {
+        console.log(`[Scheduler] ⏰ Time match! ${jstHour}:${jstMinute.toString().padStart(2, '0')} matches slot ${slot.time} (${slot.label})`);
+        executeAutoPost(slot.time, slot.label);
+        break; // 1回のチェックで1スロットのみ実行
+      }
+    }
   });
 
-  console.log('Scheduler started. Checking every minute for scheduled posts.');
+  console.log('[Scheduler] ✅ Scheduler started. Checking every minute for scheduled posts.');
+  console.log('[Scheduler] 📋 Slots:', POSTING_SCHEDULE.slots.map(s => `${s.time} (${s.label})`).join(', '));
 }

@@ -16,54 +16,55 @@ import { getRandomizedPostTime, shouldTakeBreak, getRandomizedDailyPostCount } f
 // チャトレアカウントを有効化するには: ['liver', 'chatre1', 'chatre2']
 const ACTIVE_ACCOUNTS: AccountType[] = ['liver'];
 
-// 投稿スケジュール（JST）
+// 投稿スケジュール（JST）- 1.5時間間隔、24時間対応
 export const POSTING_SCHEDULE = {
   slots: [
-    { time: '07:00', label: '早朝', accounts: ACTIVE_ACCOUNTS },
+    { time: '00:30', label: '深夜', accounts: ACTIVE_ACCOUNTS },
+    { time: '02:00', label: '深夜2', accounts: ACTIVE_ACCOUNTS },
+    { time: '03:30', label: '未明', accounts: ACTIVE_ACCOUNTS },
+    { time: '05:00', label: '早朝', accounts: ACTIVE_ACCOUNTS },
+    { time: '06:30', label: '起床時間', accounts: ACTIVE_ACCOUNTS },
     { time: '08:00', label: '朝活層', accounts: ACTIVE_ACCOUNTS },
-    { time: '09:00', label: '通勤時間', accounts: ACTIVE_ACCOUNTS },
-    { time: '10:00', label: '午前', accounts: ACTIVE_ACCOUNTS },
+    { time: '09:30', label: '通勤時間', accounts: ACTIVE_ACCOUNTS },
     { time: '11:00', label: '昼前', accounts: ACTIVE_ACCOUNTS },
-    { time: '12:00', label: '昼休み', accounts: ACTIVE_ACCOUNTS },
-    { time: '13:00', label: '午後', accounts: ACTIVE_ACCOUNTS },
-    { time: '14:00', label: '午後2', accounts: ACTIVE_ACCOUNTS },
-    { time: '15:00', label: 'おやつ時', accounts: ACTIVE_ACCOUNTS },
-    { time: '16:00', label: '夕方前', accounts: ACTIVE_ACCOUNTS },
+    { time: '12:30', label: '昼休み', accounts: ACTIVE_ACCOUNTS },
+    { time: '14:00', label: '午後', accounts: ACTIVE_ACCOUNTS },
+    { time: '15:30', label: 'おやつ時', accounts: ACTIVE_ACCOUNTS },
     { time: '17:00', label: '退勤前', accounts: ACTIVE_ACCOUNTS },
-    { time: '18:00', label: '退勤時間', accounts: ACTIVE_ACCOUNTS },
+    { time: '18:30', label: '帰宅時間', accounts: ACTIVE_ACCOUNTS },
     { time: '20:00', label: '夜', accounts: ACTIVE_ACCOUNTS },
-    { time: '22:00', label: 'ゴールデンタイム', accounts: ACTIVE_ACCOUNTS },
+    { time: '21:30', label: 'ゴールデンタイム', accounts: ACTIVE_ACCOUNTS },
     { time: '23:00', label: '夜更かし層', accounts: ACTIVE_ACCOUNTS },
   ],
 
-  // 合計: 15スロット × 1アカウント = 15投稿/日
-  totalPostsPerDay: 15,
-  postsPerAccount: 15,
+  // 合計: 16スロット × 1アカウント = 16投稿/日（1.5時間間隔）
+  totalPostsPerDay: 16,
+  postsPerAccount: 16,
 };
 
 // 目標設定
 export const TARGETS = {
   daily: {
-    posts: 15,           // 1日の投稿数
-    impressions: 15000,  // 1日の総インプレッション目標（15投稿 × 1000）
+    posts: 16,           // 1日の投稿数
+    impressions: 16000,  // 1日の総インプレッション目標（16投稿 × 1000）
     dmInquiries: 0.1,    // 1日のDM目標（月3件 ÷ 30日）
   },
   weekly: {
-    posts: 105,          // 週の投稿数
-    impressions: 105000, // 週の総インプレッション
+    posts: 112,          // 週の投稿数
+    impressions: 112000, // 週の総インプレッション
     dmInquiries: 0.7,    // 週のDM目標
   },
   monthly: {
-    posts: 450,          // 月の投稿数
-    impressions: 450000, // 月の総インプレッション
+    posts: 480,          // 月の投稿数
+    impressions: 480000, // 月の総インプレッション
     dmInquiries: 3,      // 月のDM目標
   },
 };
 
-// ストック設定（1日15投稿に対応）
+// ストック設定（1日16投稿に対応）
 export const STOCK_CONFIG = {
-  minStockPerAccount: 15,  // 1日分のストック
-  maxStockPerAccount: 30,  // 2日分のストック
+  minStockPerAccount: 16,  // 1日分のストック
+  maxStockPerAccount: 32,  // 2日分のストック
   refillThreshold: 10,     // この数以下になったら補充
   minQualityScore: 7,
 };
@@ -185,23 +186,24 @@ export function calculateProgress(posted: number, target: number): {
   return { percentage, status, remaining };
 }
 
-// 時間帯ごとの最適なターゲット層
+// 時間帯ごとの最適なターゲット層（1.5時間間隔対応）
 export const TIME_SLOT_TARGETS: Record<string, string[]> = {
-  '07:00': ['副業探し主婦', '学生'],           // 早朝
-  '08:00': ['副業探し主婦', '学生'],           // 朝活層
-  '09:00': ['OL', '副業探し主婦'],             // 通勤時間
-  '10:00': ['副業探し主婦', 'フリーター'],     // 午前
-  '11:00': ['副業探し主婦', 'OL'],             // 昼前
-  '12:00': ['OL', 'フリーター'],               // 昼休み
-  '13:00': ['副業探し主婦', 'フリーター'],     // 午後
-  '14:00': ['副業探し主婦', '学生'],           // 午後2
-  '15:00': ['学生', 'フリーター'],             // おやつ時
-  '16:00': ['学生', 'OL'],                     // 夕方前
-  '17:00': ['OL', 'フリーター'],               // 退勤前
-  '18:00': ['副業探し主婦', 'OL'],             // 退勤時間
-  '20:00': ['フリーター', '学生'],             // 夜
-  '22:00': ['フリーター', '学生', 'ナイトワーク経験者'], // ゴールデンタイム
-  '23:00': ['ナイトワーク経験者', 'フリーター'], // 夜更かし層
+  '00:30': ['ナイトワーク経験者', 'フリーター'],  // 深夜
+  '02:00': ['ナイトワーク経験者', 'フリーター'],  // 深夜2
+  '03:30': ['ナイトワーク経験者', 'フリーター'],  // 未明
+  '05:00': ['副業探し主婦', '学生'],              // 早朝
+  '06:30': ['副業探し主婦', '学生'],              // 起床時間
+  '08:00': ['副業探し主婦', '学生'],              // 朝活層
+  '09:30': ['OL', '副業探し主婦'],                // 通勤時間
+  '11:00': ['副業探し主婦', 'OL'],                // 昼前
+  '12:30': ['OL', 'フリーター'],                  // 昼休み
+  '14:00': ['副業探し主婦', '学生'],              // 午後
+  '15:30': ['学生', 'フリーター'],                // おやつ時
+  '17:00': ['OL', 'フリーター'],                  // 退勤前
+  '18:30': ['副業探し主婦', 'OL'],                // 帰宅時間
+  '20:00': ['フリーター', '学生'],                // 夜
+  '21:30': ['フリーター', '学生', 'ナイトワーク経験者'], // ゴールデンタイム
+  '23:00': ['ナイトワーク経験者', 'フリーター'],  // 夜更かし層
 };
 
 // 本日の残り投稿数を計算

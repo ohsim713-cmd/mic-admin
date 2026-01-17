@@ -89,6 +89,14 @@ jobs:
           echo "=== Stock Refill ==="
           echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
 
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "Error: VERCEL_DEPLOY_URL secret is not set"
+            echo "Please set the secret in GitHub repository settings"
+            exit 0  # Don't fail the job, just skip
+          fi
+
+          echo "Calling: $DEPLOY_URL/api/automation/stock"
+
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/automation/stock" \
             -H "Content-Type: application/json" \
             -d '{"action": "refill-all", "secret": "'"$AUTO_POST_SECRET"'"}')
@@ -110,6 +118,14 @@ jobs:
           echo "=== Auto Post ==="
           echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
           echo "Dry Run: $DRY_RUN"
+
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "Error: VERCEL_DEPLOY_URL secret is not set"
+            echo "Please set the secret in GitHub repository settings"
+            exit 1
+          fi
+
+          echo "Calling: $DEPLOY_URL/api/automation/post"
 
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/automation/post" \
             -H "Content-Type: application/json" \
