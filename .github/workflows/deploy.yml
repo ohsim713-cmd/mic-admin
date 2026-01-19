@@ -3,7 +3,7 @@
 #
 # 必要なSecrets:
 #   GCP_PROJECT_ID: GCPプロジェクトID
-#   GCP_SA_KEY: サービスアカウントのJSONキー (base64エンコード不要)
+#   GCP_SA_KEY: サービスアカウントのJSONキー
 #   GCP_REGION: リージョン (例: asia-northeast1)
 
 name: Deploy to Cloud Run
@@ -40,27 +40,19 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Configure Docker
-        run: gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev
-
-      - name: Build and Push Container
+      - name: Deploy to Cloud Run (using Cloud Build)
         working-directory: frontend
         run: |
-          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/cloud-run-source-deploy/${{ env.SERVICE_NAME }}"
-          docker build -t $IMAGE .
-          docker push $IMAGE
-
-      - name: Deploy to Cloud Run
-        run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/cloud-run-source-deploy/${{ env.SERVICE_NAME }} \
+            --source . \
             --region ${{ secrets.GCP_REGION }} \
             --platform managed \
             --allow-unauthenticated \
             --memory 1Gi \
             --cpu 1 \
             --min-instances 0 \
-            --max-instances 10
+            --max-instances 10 \
+            --quiet
 
       - name: Show URL
         run: |

@@ -38,7 +38,9 @@
       "Bash(npm run dev:*)",
       "Bash(timeout:*)",
       "Read(//c/tmp/**)",
-      "Bash(where:*)"
+      "Bash(where:*)",
+      "Bash(__NEW_LINE_c0092498dad8484b__ gcloud projects add-iam-policy-binding $PROJECT_ID --member=\"serviceAccount:$SA_EMAIL\" --role=\"roles/cloudbuild.builds.editor\" --quiet)",
+      "Bash(__NEW_LINE_c0092498dad8484b__ echo \"Done\")"
     ]
   }
 }
