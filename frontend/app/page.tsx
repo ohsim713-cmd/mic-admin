@@ -13,10 +13,16 @@ interface Message {
 }
 
 interface CoTStep {
-  step: 'thinking' | 'draft' | 'analysis' | 'improvement' | 'final';
+  step: 'thinking' | 'draft' | 'analysis' | 'improvement' | 'final' | 'sources';
   title: string;
   content: string;
   timestamp: string;
+  sources?: {
+    files: string[];
+    stories: Array<{ persona: string; result: string }>;
+    viralStructure: string | null;
+    patterns: { hooks: number; ctas: number; benefits: number };
+  };
 }
 
 interface ChatSession {
@@ -694,6 +700,8 @@ export default function ChatPage() {
                             padding: 'var(--space-2) var(--space-3)',
                             backgroundColor: step.step === 'final'
                               ? 'var(--success-light)'
+                              : step.step === 'sources'
+                              ? 'var(--bg-tertiary)'
                               : step.step === 'thinking'
                               ? 'var(--accent-light)'
                               : 'var(--bg-secondary)',
@@ -701,6 +709,8 @@ export default function ChatPage() {
                             borderLeft: `3px solid ${
                               step.step === 'final'
                                 ? 'var(--success)'
+                                : step.step === 'sources'
+                                ? '#8b5cf6'
                                 : step.step === 'thinking'
                                 ? 'var(--accent)'
                                 : step.step === 'draft'
@@ -719,7 +729,63 @@ export default function ChatPage() {
                           }}>
                             {step.title}
                           </div>
-                          {step.content && (
+                          {/* sources ステップの場合は詳細表示 */}
+                          {step.step === 'sources' && step.sources ? (
+                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                              <div style={{ marginBottom: '6px' }}>
+                                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>📁 ファイル: </span>
+                                {step.sources.files.map((f, i) => (
+                                  <span key={i} style={{
+                                    display: 'inline-block',
+                                    backgroundColor: 'var(--bg-base)',
+                                    padding: '1px 6px',
+                                    borderRadius: '4px',
+                                    margin: '2px 4px 2px 0',
+                                    fontSize: '10px',
+                                    fontFamily: 'monospace',
+                                  }}>
+                                    {f}
+                                  </span>
+                                ))}
+                              </div>
+                              {step.sources.stories.length > 0 && (
+                                <div style={{ marginBottom: '6px' }}>
+                                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>👤 使用事例: </span>
+                                  {step.sources.stories.map((s, i) => (
+                                    <span key={i} style={{
+                                      display: 'inline-block',
+                                      backgroundColor: 'var(--accent-light)',
+                                      padding: '2px 8px',
+                                      borderRadius: '4px',
+                                      margin: '2px 4px 2px 0',
+                                      fontSize: '11px',
+                                    }}>
+                                      {s.persona}: {s.result}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {step.sources.viralStructure && (
+                                <div style={{ marginBottom: '6px' }}>
+                                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>🔥 構造: </span>
+                                  <span style={{
+                                    backgroundColor: '#fef3c7',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px',
+                                    fontSize: '11px',
+                                  }}>
+                                    {step.sources.viralStructure}
+                                  </span>
+                                </div>
+                              )}
+                              <div>
+                                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>📊 パターン: </span>
+                                <span style={{ fontSize: '11px' }}>
+                                  フック{step.sources.patterns.hooks}件 / CTA{step.sources.patterns.ctas}件 / ベネフィット{step.sources.patterns.benefits}件
+                                </span>
+                              </div>
+                            </div>
+                          ) : step.content && (
                             <div style={{
                               fontSize: 'var(--text-sm)',
                               color: 'var(--text-primary)',

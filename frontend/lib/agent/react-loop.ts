@@ -14,6 +14,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getSessionManager } from './session-manager';
 import { getExecutionVerifier, VerificationResult } from './execution-verifier';
 import { getEventBus, AgentEvent, emitStockLow, emitSystemError } from './event-bus';
+import { startTrace, traceAction, traceResult, endTrace } from './trigger-tracer';
 
 // Gemini AI ヘルパー
 let _genai: GoogleGenerativeAI | null = null;
@@ -216,6 +217,10 @@ export class ReActLoop {
     }
 
     const cycleId = `cycle_${Date.now()}`;
+
+    // トレーサー: チェーン開始
+    const traceChainId = startTrace('ReAct Cycle', 'ReActLoop', { cycleId });
+
     this.currentCycle = {
       cycleId,
       startedAt: new Date(),
@@ -228,19 +233,24 @@ export class ReActLoop {
     try {
       // Phase 1: Observe（観察）
       this.state = 'observing';
+      const observeEventId = traceAction(traceChainId, 'Observe', 'ReActLoop');
       const observations = await this.observe();
       this.currentCycle.observations = observations;
+      traceResult(traceChainId, observeEventId, 'success', { count: observations.length });
 
       if (observations.length === 0) {
         console.log('[ReAct] 👀 Nothing notable observed');
         this.completeCycle('completed');
+        endTrace(traceChainId, 'No observations');
         return;
       }
 
       // Phase 2: Think（思考）
       this.state = 'thinking';
+      const thinkEventId = traceAction(traceChainId, 'Think', 'ReActLoop');
       const thoughts = await this.think(observations);
       this.currentCycle.thoughts = thoughts;
+      traceResult(traceChainId, thinkEventId, 'success', { count: thoughts.length });
 
       // 実行すべきアクションを抽出
       const actionsToTake = thoughts
@@ -250,27 +260,34 @@ export class ReActLoop {
       if (actionsToTake.length === 0) {
         console.log('[ReAct] 🤔 No action needed');
         this.completeCycle('completed');
+        endTrace(traceChainId, 'No action needed');
         return;
       }
 
       // Phase 3: Act（行動）
       this.state = 'acting';
       for (const thought of actionsToTake) {
+        const actEventId = traceAction(traceChainId, `Act: ${thought.decidedAction}`, 'ReActLoop');
         const action = await this.act(thought);
         this.currentCycle.actions.push(action);
+        traceResult(traceChainId, actEventId, action.error ? 'failed' : 'success', action.result);
 
         // Phase 4: Reflect（振り返り）
         this.state = 'reflecting';
+        const reflectEventId = traceAction(traceChainId, 'Reflect', 'ReActLoop');
         await this.reflect(action);
+        traceResult(traceChainId, reflectEventId, 'success');
       }
 
       this.consecutiveErrors = 0;
       this.completeCycle('completed');
+      endTrace(traceChainId, `Completed ${actionsToTake.length} actions`);
 
     } catch (error) {
       console.error('[ReAct] Cycle error:', error);
       this.consecutiveErrors++;
       this.completeCycle('failed');
+      endTrace(traceChainId, `Failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

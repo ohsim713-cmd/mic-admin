@@ -1,0 +1,73 @@
+# Cloud Run 自動デプロイ
+# mainブランチにプッシュすると自動でCloud Runにデプロイされます
+#
+# 必要なSecrets:
+#   GCP_PROJECT_ID: GCPプロジェクトID
+#   GCP_SA_KEY: サービスアカウントのJSONキー (base64エンコード不要)
+#   GCP_REGION: リージョン (例: asia-northeast1)
+
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy.yml'
+
+  # 手動実行
+  workflow_dispatch:
+
+env:
+  SERVICE_NAME: mic-agent
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev
+
+      - name: Build and Push Container
+        working-directory: frontend
+        run: |
+          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/cloud-run-source-deploy/${{ env.SERVICE_NAME }}"
+          docker build -t $IMAGE .
+          docker push $IMAGE
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/cloud-run-source-deploy/${{ env.SERVICE_NAME }} \
+            --region ${{ secrets.GCP_REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --memory 1Gi \
+            --cpu 1 \
+            --min-instances 0 \
+            --max-instances 10
+
+      - name: Show URL
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region ${{ secrets.GCP_REGION }} \
+            --format 'value(status.url)')
+          echo "=========================================="
+          echo "  Deployed successfully!"
+          echo "  URL: $URL"
+          echo "=========================================="

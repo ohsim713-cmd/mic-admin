@@ -34,7 +34,11 @@
       "Bash(\"$GCLOUD\" services enable cloudscheduler.googleapis.com --project micpro)",
       "Bash(xargs ls:*)",
       "Bash(npx playwright install:*)",
-      "Bash(npx sharp-cli:*)"
+      "Bash(npx sharp-cli:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Read(//c/tmp/**)",
+      "Bash(where:*)"
     ]
   }
 }

@@ -19,6 +19,20 @@ import { initPhoenix, tracePostGeneration, recordQualityScore } from '../phoenix
 import { saveBadPattern, checkAgainstBadPatterns, extractBadFeatures } from '../database/bad-patterns-db';
 import { humanizeText, estimateAIScore, rehumanizeIfNeeded, ensureCTA, evaluateCTAStrength } from './humanizer';
 
+// 遅延読み込み（クライアントサイドエラー回避）
+let enhancedScout: typeof import('../agent/sub-agents/enhanced-scout').default | null = null;
+async function getEnhancedScout() {
+  if (!enhancedScout) {
+    try {
+      const mod = await import('../agent/sub-agents/enhanced-scout');
+      enhancedScout = mod.default;
+    } catch {
+      // サーバーサイド以外では使えない
+    }
+  }
+  return enhancedScout;
+}
+
 // Phoenix 初期化（サーバー起動時に1回だけ）
 try {
   initPhoenix();
@@ -45,14 +59,39 @@ const reviewModel = new ChatGoogleGenerativeAI({
 
 /**
  * RESEARCH: メリットをメイン軸にし、ターゲットをサブ要素として選定
- * 成功パターンDBから重み付けで高スコアパターンを優先選択
+ * 強化版Scout + 成功パターンDBから重み付けで高スコアパターンを優先選択
  */
 async function researchNode(
   state: PostGeneratorStateType
 ): Promise<Partial<PostGeneratorStateType>> {
-  // メリットをメイン軸として使用（必須）、ターゲットはサブ要素としてランダム付与
-  const benefit = state.benefit || BENEFITS[Math.floor(Math.random() * BENEFITS.length)];
-  const target = state.target || TARGETS[Math.floor(Math.random() * TARGETS.length)];
+  // 業種判定（stateから取得、デフォルトはliver）
+  const industry = (state as { industry?: 'liver' | 'chatlady' }).industry || 'liver';
+
+  // 強化版Scoutからトレンド・実績ベースの素材を取得
+  let scoutData: { topHooks: string[]; topBenefits: string[]; topTargets: string[] } | null = null;
+  try {
+    const scout = await getEnhancedScout();
+    if (scout) {
+      scoutData = await scout.quickScout(industry);
+      console.log('[Research] 🔍 Scout data loaded:', {
+        hooks: scoutData.topHooks.length,
+        benefits: scoutData.topBenefits.length,
+        targets: scoutData.topTargets.length,
+      });
+    }
+  } catch (error) {
+    console.warn('[Research] Scout failed, using defaults:', error);
+  }
+
+  // メリットをメイン軸として使用（Scout推奨 > state指定 > ランダム）
+  const benefit = state.benefit
+    || (scoutData?.topBenefits[Math.floor(Math.random() * Math.min(3, scoutData.topBenefits.length))])
+    || BENEFITS[Math.floor(Math.random() * BENEFITS.length)];
+
+  // ターゲットはサブ要素（Scout推奨 > state指定 > ランダム）
+  const target = state.target
+    || (scoutData?.topTargets[Math.floor(Math.random() * Math.min(3, scoutData.topTargets.length))])
+    || TARGETS[Math.floor(Math.random() * TARGETS.length)];
 
   // 成功パターンをDBから重み付けで取得
   let successPatterns: string[] = [];
@@ -94,6 +133,15 @@ async function researchNode(
       '【CTA】気になったらDMで💬',
       '【メリット表現】月30万以上',
     ];
+  }
+
+  // Scoutからのトレンドフックを追加
+  if (scoutData?.topHooks && scoutData.topHooks.length > 0) {
+    const scoutHook = scoutData.topHooks[Math.floor(Math.random() * Math.min(3, scoutData.topHooks.length))];
+    if (scoutHook && !selectedHook) {
+      selectedHook = scoutHook;
+      successPatterns.push(`【トレンドフック】${scoutHook}（実績/Tavily推奨）`);
+    }
   }
 
   // ナレッジベースからフックパターンを追加（補完）
