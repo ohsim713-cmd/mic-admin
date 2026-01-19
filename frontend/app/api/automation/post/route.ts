@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
               tweetId: postResult.id || '',
               postText,
               qualityScore: score,
-              slot: POSTING_SCHEDULE.slots.indexOf(currentSlot) + 1,
+              slot: POSTING_SCHEDULE.slots.findIndex(s => s.time === currentSlot.time) + 1,
             }).catch(console.error);
           } else {
             // Discord通知（投稿失敗）
