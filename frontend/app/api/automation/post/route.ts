@@ -35,25 +35,14 @@ export async function POST(request: NextRequest) {
     const jstMinute = now.getMinutes();
     const currentTime = `${jstHour.toString().padStart(2, '0')}:${jstMinute.toString().padStart(2, '0')}`;
 
-    // 現在のスロットを取得（1.5時間間隔対応、±30分の誤差を許容）
-    const currentSlot = POSTING_SCHEDULE.slots.find(slot => {
-      const [slotHour, slotMinute] = slot.time.split(':').map(Number);
-      const slotTotalMinutes = slotHour * 60 + slotMinute;
-      const currentTotalMinutes = jstHour * 60 + jstMinute;
-      const diff = Math.abs(currentTotalMinutes - slotTotalMinutes);
-      return diff <= 30; // 30分の誤差を許容
-    });
+    // シンプルに: API が呼ばれたら投稿する（スロット判定は GitHub Actions の cron に任せる）
+    const currentSlot = {
+      time: currentTime,
+      label: `${jstHour}時台`,
+      accounts: ['liver'] as const,
+    };
 
-    if (!currentSlot) {
-      return NextResponse.json({
-        success: false,
-        error: `No scheduled slot for current time (JST ${currentTime})`,
-        currentTime,
-        availableSlots: POSTING_SCHEDULE.slots.map(s => s.time),
-      });
-    }
-
-    console.log(`[Automation] Current slot: ${currentSlot.time} (${currentSlot.label}), accounts: ${currentSlot.accounts.join(', ')}`);
+    console.log(`[Automation] Posting at ${currentTime} JST`);
 
     // スロットに設定された全アカウントに投稿
     const results: any[] = [];

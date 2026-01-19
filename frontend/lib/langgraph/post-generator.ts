@@ -46,12 +46,14 @@ const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const model = new ChatGoogleGenerativeAI({
   model: 'gemini-3-flash-preview',
   temperature: 0.8,
+  maxOutputTokens: 1024,  // 文章が途切れないよう十分な長さを確保
   apiKey,
 });
 
 const reviewModel = new ChatGoogleGenerativeAI({
   model: 'gemini-3-flash-preview',
   temperature: 0.3,
+  maxOutputTokens: 1024,
   apiKey,
 });
 

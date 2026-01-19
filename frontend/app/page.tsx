@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Sparkles, User, Copy, Check, Plus, MessageSquare, Trash2, Menu, X } from 'lucide-react';
+import { Send, Sparkles, User, Copy, Check, Plus, MessageSquare, Trash2, Menu, X, RefreshCw } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -562,6 +562,19 @@ export default function ChatPage() {
               AIアシスタント
             </p>
           </div>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              padding: 'var(--space-2)',
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              borderRadius: 'var(--radius-md)',
+            }}
+            title="リロード"
+          >
+            <RefreshCw size={18} color="var(--text-secondary)" />
+          </button>
         </header>
 
         {/* Messages */}
