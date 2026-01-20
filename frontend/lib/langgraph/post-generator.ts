@@ -18,6 +18,14 @@ import { getRandomHook, buildEnrichedKnowledgeContextWithGoogle, buildChatladyKn
 import { initPhoenix, tracePostGeneration, recordQualityScore } from '../phoenix/client';
 import { saveBadPattern, checkAgainstBadPatterns, extractBadFeatures } from '../database/bad-patterns-db';
 import { humanizeText, estimateAIScore, rehumanizeIfNeeded, ensureCTA, evaluateCTAStrength } from './humanizer';
+import { getTopPatterns, getRandomPattern, getRandomTheme, getThemeIdeas } from '../agent/competitor-analyzer';
+import {
+  buildTrendingPostContext,
+  containsProhibitedPhrase,
+  shouldIncludeCTA,
+  getRandomAllowedCTA,
+  PROHIBITED_PHRASES,
+} from './trending-posts-loader';
 
 // 遅延読み込み（クライアントサイドエラー回避）
 let enhancedScout: typeof import('../agent/sub-agents/enhanced-scout').default | null = null;
@@ -159,6 +167,34 @@ async function researchNode(
     }
   }
 
+  // バズ投稿から学んだパターンを追加（業種問わず → ライバー用にアレンジ済み）
+  let competitorPatterns: string[] = [];
+  let suggestedTheme: string | null = null;
+  try {
+    // テーマ（話題・切り口）を取得 - 最も効果的
+    const themeIdeas = getThemeIdeas(3);
+    if (themeIdeas.length > 0) {
+      // ランダムに1つ選んで今回のテーマとして提案
+      const randomIdx = Math.floor(Math.random() * themeIdeas.length);
+      const selectedTheme = themeIdeas[randomIdx];
+      suggestedTheme = selectedTheme.theme;
+      competitorPatterns.push(`🔥【今回使えるテーマ案】${selectedTheme.theme}\n   例: ${selectedTheme.example}\n   なぜバズる: ${selectedTheme.lesson}`);
+      console.log('[Research] 🎯 Theme idea:', suggestedTheme);
+    }
+
+    // 型（hook, structure等）を取得
+    const topPatterns = getTopPatterns(3).filter(p => p.type !== 'theme');
+    if (topPatterns.length > 0) {
+      for (const p of topPatterns) {
+        const example = p.liverExample || p.example;
+        competitorPatterns.push(`【${p.type}の型】${p.pattern}\n   ライバー用例: ${example}`);
+      }
+      console.log('[Research] 📊 Buzz patterns loaded:', topPatterns.length);
+    }
+  } catch {
+    // パターンがない場合は無視
+  }
+
   // 失敗パターンから回避すべき特徴を抽出
   let avoidPatterns: string[] = [];
   try {
@@ -182,6 +218,7 @@ async function researchNode(
     benefit,
     successPatterns,
     avoidPatterns,
+    competitorPatterns,
     currentStep: 'draft' as WorkflowStep,
   };
 }
@@ -201,15 +238,32 @@ const WRITING_STYLES = [
 ];
 
 /**
- * DRAFT: 投稿文を生成（ナレッジベース活用 + スタイルバリエーション）
+ * DRAFT: 投稿文を生成（ナレッジベース活用 + スタイルバリエーション + お手本参照）
  */
 async function draftNode(
   state: PostGeneratorStateType
 ): Promise<Partial<PostGeneratorStateType>> {
-  const { target, benefit, accountType, successPatterns, avoidPatterns, feedback } = state;
+  const { target, benefit, accountType, successPatterns, avoidPatterns, competitorPatterns, feedback } = state;
 
   // ランダムにスタイルを選択（幅広い文章を生成するため）
   const selectedStyle = WRITING_STYLES[Math.floor(Math.random() * WRITING_STYLES.length)];
+
+  // お手本投稿を取得（他業界からも参照してバリエーション向上）
+  let trendingPostContext = '';
+  try {
+    trendingPostContext = await buildTrendingPostContext();
+    if (trendingPostContext) {
+      console.log('[Draft] 📝 Trending post context loaded');
+    }
+  } catch {
+    // 取得失敗は無視
+  }
+
+  // CTAを入れるかどうか判定（10%の確率）
+  const includeCTA = shouldIncludeCTA();
+  const ctaInstruction = includeCTA
+    ? `★CTAを入れる回: 最後に「${getRandomAllowedCTA()}」を自然に入れる`
+    : '★今回はCTAなし: 最後にDMや問い合わせを促す文言は入れない（自然な締めくくりで終わる）';
 
   // ナレッジコンテキストを取得（毎回新鮮な情報を使う - バリエーション向上のため）
   // Google検索で収集したナレッジも自動的に活用
@@ -241,6 +295,11 @@ async function draftNode(
     ? `\n\n【参考にする成功パターン】\n${successPatterns.map((p, i) => `${i + 1}. ${p}`).join('\n')}`
     : '';
 
+  // 競合バズ投稿から学んだ型・教訓（オリジナリティ向上用）
+  const competitorText = competitorPatterns && competitorPatterns.length > 0
+    ? `\n\n【🔥 競合のバズ投稿から学んだ型】\n${competitorPatterns.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n※上記の「型」を参考にしつつ、自分のオリジナルな表現で書く！丸パクリはNG、エッセンスだけ取り入れる。`
+    : '';
+
   const avoidText = avoidPatterns && avoidPatterns.length > 0
     ? `\n\n【⚠️ 回避すべきパターン（過去の失敗学習）】\n${avoidPatterns.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n※上記は過去に低スコアだった投稿の特徴。必ず違うアプローチを取ること！`
     : '';
@@ -248,6 +307,9 @@ async function draftNode(
   const feedbackText = feedback
     ? `\n\n【前回のフィードバック（必ず改善すること）】\n${feedback}`
     : '';
+
+  // 禁止ワードリストをプロンプト用に整形
+  const prohibitedText = `\n\n【🚫 使用禁止ワード・フレーズ】\n${PROHIBITED_PHRASES.map(p => `・「${p}」`).join('\n')}\n※これらは存在しないサービスや過大な約束のため、絶対に使わない！`;
 
   const prompt = `あなたは${accountType}事務所のSNS担当者です。DMでの問い合わせ獲得を目的とした投稿文を作成してください。
 
@@ -257,9 +319,9 @@ async function draftNode(
 ★★★【今回の文章スタイル: ${selectedStyle.name}】★★★
 ${selectedStyle.instruction}
 ※このスタイルに沿って書くこと！他の投稿と差別化するため、このスタイル特有の表現を使う。
-
+${trendingPostContext}
 ${knowledgeContext}${insightContext}
-${patternsText}${avoidText}
+${patternsText}${competitorText}${avoidText}${prohibitedText}
 ${feedbackText}
 
 【絶対に守るルール】
@@ -267,17 +329,22 @@ ${feedbackText}
 - ※「私」「僕」など個人の一人称は絶対に使わない（事務所が発信している文章）
 - 所属ライバーの実績を紹介する形で書く（「うちのライバーさんが〜」「所属メンバーの○○さんは〜」など）
 
+【CTA（行動喚起）ルール】
+${ctaInstruction}
+※「無料診断」「カウンセリング」「説明会」など存在しないサービスは絶対に書かない！
+
 【重要な条件】
 - ★★冒頭は必ず【今回使う冒頭フレーズ】をそのまま使う（「ぶっちゃけ」で始めない）
 - ★★【${selectedStyle.name}】のスタイルに従って書く
+- ★★お手本投稿がある場合はその「構造・言い回し・テンション」を参考にアレンジする
 - 280〜320文字（中長文で深く刺す）
 - ★上記の【今回使う具体的な情報】を必ず1つ以上盛り込む（実例、年齢戦略、収入シミュレーション、統計など）
 - 具体的な数字を入れる（バリエーションを持たせて毎回違う数字を使う）
   例: 月20万〜50万、週2〜4日、初月10万、3ヶ月で月収○万円達成 など
 - ※「時給16,500円」は使用禁止（他の表現で収入を伝える）
+- ※「初月25万、4ヶ月で95万」は使用頻度が高すぎるので別の数字を使う
 - 実績や事例を自然に盛り込む（「うちの30代のライバーさんが3ヶ月で〜」「40代で始めた方が今では〜」など具体的に）
 - プラットフォーム名（Pococha、17LIVE、IRIAM等）を自然に入れる
-- 最後に「DMで」「気軽に」などCTAを入れる
 - 絵文字は1-2個程度
 - ハッシュタグは不要
 - 2-3行ごとに空行を入れて読みやすく
@@ -510,19 +577,28 @@ ${draftText}
     polishedText = humanizeText(polishedText, { emojiLevel: 'low' });
   }
 
-  // === CTA自動挿入 ===
-  // CTAの強さを評価
+  // === 禁止ワードチェック ===
+  const prohibitedCheck = containsProhibitedPhrase(polishedText);
+  if (prohibitedCheck.contains) {
+    console.log(`[PostGenerator] ⚠️ 禁止ワード検出: ${prohibitedCheck.phrases.join(', ')}`);
+    // 禁止ワードを含む文を削除または置換
+    for (const phrase of prohibitedCheck.phrases) {
+      // 禁止フレーズを含む行全体を削除
+      const lines = polishedText.split('\n');
+      polishedText = lines.filter(line => !line.includes(phrase)).join('\n');
+    }
+    console.log(`[PostGenerator] 禁止ワードを含む行を削除しました`);
+  }
+
+  // === CTA自動挿入（10%の確率でのみ） ===
+  // 注意: draftNodeでshouldIncludeCTA()がtrueの場合のみCTAが入っているはず
+  // ここでは既にCTAがない場合も無理に追加しない（10回に1回方針を維持）
   const ctaStrength = evaluateCTAStrength(polishedText);
   console.log(`[PostGenerator] CTA強度: ${ctaStrength.score}/10, ${ctaStrength.feedback}`);
 
-  // CTAが弱い（スコア3以下）場合は自動挿入
-  if (ctaStrength.score <= 3) {
-    const { text: textWithCTA, ctaAdded, cta } = ensureCTA(polishedText);
-    if (ctaAdded) {
-      console.log(`[PostGenerator] CTA自動挿入: "${cta}"`);
-      polishedText = textWithCTA;
-    }
-  }
+  // CTAが弱い場合でも、10%の確率でのみ追加（常に追加しない）
+  // 既にCTAがある場合は何もしない
+  // CTAがなくてもOK（10回に1回方針）
 
   return {
     finalText: polishedText,

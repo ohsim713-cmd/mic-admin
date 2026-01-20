@@ -204,3 +204,77 @@ export function getHistorySummary(): {
     recentPosts: history.posts.slice(-10).reverse(),
   };
 }
+
+/**
+ * 外部からの投稿データを一括インポート
+ * （X APIから取得した過去ツイートなど）
+ */
+export async function bulkImportPosts(
+  posts: Array<{
+    tweetId: string;
+    text: string;
+    account: string;
+    postedAt: string;
+    impressions?: number;
+    likes?: number;
+    retweets?: number;
+    replies?: number;
+  }>
+): Promise<{ imported: number; skipped: number; duplicates: string[] }> {
+  const history = loadPostsHistory();
+  const existingTweetIds = new Set(
+    history.posts.filter(p => p.tweetId).map(p => p.tweetId)
+  );
+
+  let imported = 0;
+  const duplicates: string[] = [];
+
+  for (const post of posts) {
+    // 重複チェック（tweetIdベース）
+    if (existingTweetIds.has(post.tweetId)) {
+      duplicates.push(post.tweetId);
+      continue;
+    }
+
+    const totalEngagements = (post.likes || 0) + (post.retweets || 0) + (post.replies || 0);
+    const engagementRate = post.impressions && post.impressions > 0
+      ? (totalEngagements / post.impressions) * 100
+      : undefined;
+
+    history.posts.push({
+      id: `imported_${post.tweetId}`,
+      text: post.text,
+      account: post.account,
+      target: 'インポート', // 過去データなので不明
+      benefit: 'インポート',
+      score: 0, // 過去データなのでスコアなし
+      tweetId: post.tweetId,
+      timestamp: post.postedAt,
+      impressions: post.impressions,
+      likes: post.likes,
+      retweets: post.retweets,
+      replies: post.replies,
+      engagementRate,
+      metricsUpdatedAt: post.impressions ? new Date().toISOString() : undefined,
+    });
+
+    existingTweetIds.add(post.tweetId);
+    imported++;
+  }
+
+  if (imported > 0) {
+    // 日付順にソート
+    history.posts.sort((a, b) =>
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    history.lastUpdated = new Date().toISOString();
+    savePostsHistory(history);
+    console.log(`[PostsHistory] Bulk imported ${imported} posts`);
+  }
+
+  return {
+    imported,
+    skipped: duplicates.length,
+    duplicates,
+  };
+}

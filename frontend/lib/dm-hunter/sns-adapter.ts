@@ -455,3 +455,101 @@ export function calculateEngagementRate(metrics: TweetMetrics): number {
 
   return (engagements / metrics.metrics.impressions) * 100;
 }
+
+/**
+ * 過去のツイートを一括取得（ページネーション対応）
+ * X API v2 の userTimeline を使用
+ * @param account アカウント種別
+ * @param maxTweets 取得する最大ツイート数（デフォルト100）
+ */
+export async function fetchHistoricalTweets(
+  account: AccountType,
+  maxTweets: number = 100
+): Promise<{
+  tweets: TweetMetrics[];
+  totalFetched: number;
+  hasMore: boolean;
+}> {
+  if (account === 'wordpress') {
+    return { tweets: [], totalFetched: 0, hasMore: false };
+  }
+
+  const client = getTwitterClient(account);
+  if (!client) {
+    console.error(`[HistoricalTweets] ${account}: 認証情報なし`);
+    return { tweets: [], totalFetched: 0, hasMore: false };
+  }
+
+  const allTweets: TweetMetrics[] = [];
+  let paginationToken: string | undefined;
+  let hasMore = true;
+
+  try {
+    // 自分のユーザーIDを取得
+    const me = await client.v2.me();
+    const userId = me.data.id;
+    console.log(`[HistoricalTweets] ${account}: ユーザーID ${userId} の過去ツイートを取得中...`);
+
+    while (allTweets.length < maxTweets && hasMore) {
+      const batchSize = Math.min(100, maxTweets - allTweets.length);
+
+      const tweets = await client.v2.userTimeline(userId, {
+        max_results: batchSize,
+        pagination_token: paginationToken,
+        'tweet.fields': ['created_at', 'public_metrics', 'non_public_metrics', 'organic_metrics'],
+        exclude: ['retweets', 'replies'], // リツイートとリプライを除外
+      });
+
+      if (!tweets.data?.data || tweets.data.data.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      for (const tweet of tweets.data.data) {
+        const publicMetrics: Record<string, number> = (tweet.public_metrics || {}) as Record<string, number>;
+        const nonPublicMetrics: Record<string, number> = ((tweet as any).non_public_metrics || {}) as Record<string, number>;
+
+        allTweets.push({
+          tweetId: tweet.id,
+          text: tweet.text,
+          createdAt: tweet.created_at || '',
+          metrics: {
+            impressions: nonPublicMetrics['impression_count'] || 0,
+            likes: publicMetrics['like_count'] || 0,
+            retweets: publicMetrics['retweet_count'] || 0,
+            replies: publicMetrics['reply_count'] || 0,
+            quotes: publicMetrics['quote_count'] || 0,
+            bookmarks: publicMetrics['bookmark_count'] || 0,
+          },
+        });
+      }
+
+      // 次のページがあるか確認
+      paginationToken = tweets.data.meta?.next_token;
+      if (!paginationToken) {
+        hasMore = false;
+      }
+
+      // レート制限対策（1秒待機）
+      if (hasMore && allTweets.length < maxTweets) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      console.log(`[HistoricalTweets] ${account}: ${allTweets.length}件取得済み`);
+    }
+
+    console.log(`[HistoricalTweets] ${account}: 合計${allTweets.length}件取得完了`);
+    return {
+      tweets: allTweets,
+      totalFetched: allTweets.length,
+      hasMore,
+    };
+  } catch (error: any) {
+    console.error(`[HistoricalTweets] ${account}: エラー -`, error.message);
+    return {
+      tweets: allTweets,
+      totalFetched: allTweets.length,
+      hasMore: false,
+    };
+  }
+}

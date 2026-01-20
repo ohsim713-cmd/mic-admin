@@ -40,7 +40,16 @@
       "Read(//c/tmp/**)",
       "Bash(where:*)",
       "Bash(__NEW_LINE_c0092498dad8484b__ gcloud projects add-iam-policy-binding $PROJECT_ID --member=\"serviceAccount:$SA_EMAIL\" --role=\"roles/cloudbuild.builds.editor\" --quiet)",
-      "Bash(__NEW_LINE_c0092498dad8484b__ echo \"Done\")"
+      "Bash(__NEW_LINE_c0092498dad8484b__ echo \"Done\")",
+      "Bash(__NEW_LINE_033f5dea7a3144c0__ gcloud projects add-iam-policy-binding $PROJECT_ID --member=\"serviceAccount:$SA_EMAIL\" --role=\"roles/serviceusage.serviceUsageConsumer\" --quiet)",
+      "Bash(__NEW_LINE_033f5dea7a3144c0__ echo \"Done\")",
+      "Bash(for i in 1 2 3)",
+      "Bash(do echo \"=== Test $i ===\")",
+      "Bash(done)",
+      "Bash(vercel --prod:*)",
+      "Bash(printf:*)",
+      "Bash(grep:*)",
+      "Bash(echo:*)"
     ]
   }
 }

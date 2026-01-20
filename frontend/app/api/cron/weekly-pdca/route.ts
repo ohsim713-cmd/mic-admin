@@ -23,12 +23,19 @@ const model = new ChatGoogleGenerativeAI({
 });
 
 export async function GET(request: NextRequest) {
-  // Vercel Cronからの呼び出しを確認
+  // 認証チェック（CRON_SECRET または AUTO_POST_SECRET）
   const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    if (process.env.CRON_SECRET) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const bearerToken = authHeader?.replace('Bearer ', '');
+  const cronSecret = process.env.CRON_SECRET;
+  const autoPostSecret = process.env.AUTO_POST_SECRET;
+
+  const isAuthorized =
+    !cronSecret && !autoPostSecret ||  // どちらも未設定なら許可
+    bearerToken === cronSecret ||
+    bearerToken === autoPostSecret;
+
+  if (!isAuthorized) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {

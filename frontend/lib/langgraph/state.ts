@@ -176,6 +176,12 @@ export const PostGeneratorState = Annotation.Root({
     default: () => [],
   }),
 
+  // 競合バズ投稿から学んだパターン
+  competitorPatterns: Annotation<string[]>({
+    reducer: (_, y) => y,
+    default: () => [],
+  }),
+
   // エラー
   error: Annotation<string | null>({
     reducer: (_, y) => y,

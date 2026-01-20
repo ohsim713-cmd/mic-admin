@@ -1,127 +1,275 @@
 /**
  * 自動投稿 Cron ジョブ
  *
- * Vercel Cron: 毎時実行（JST 07:00-23:00）
- * UTC: 22,23,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14時
- *
- * 機能:
- * 1. 通常の自動投稿実行
- * 2. 失敗キューからのリトライ処理
+ * Vercel Cron: 1日15回（1.5時間間隔）
+ * 新しい Vercel AI SDK 版の自動投稿を実行
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { generateText } from 'ai';
+import { getModel } from '@/lib/ai/model';
 import {
-  withTwitterRetry,
-  getRetryablePosts,
-  removeFromFailedQueue,
-  addToFailedQueue,
-} from '@/lib/utils/retry';
+  postToAllAccounts,
+  AccountType,
+  ACCOUNTS,
+} from '@/lib/dm-hunter/sns-adapter';
+import { addToPostsHistory } from '@/lib/analytics/posts-history';
+import { notifyPostSuccess, notifyError } from '@/lib/discord';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 export const runtime = 'nodejs';
-export const maxDuration = 120; // 最大120秒（リトライ含む）
+export const maxDuration = 120;
+
+// アカウント情報を取得
+function getAccountInfo(accountId: AccountType) {
+  const account = ACCOUNTS.find(a => a.id === accountId);
+  if (!account) return null;
+
+  const descriptions: Record<AccountType, string> = {
+    liver: `ライバー事務所（@tt_liver）
+- TikTokライブ配信者を募集する事務所
+- 立場: 事務所のスタッフとして、ライバーになりたい女性を募集する
+- ターゲット: ライブ配信で稼ぎたい女性
+- トーン: 親しみやすく、稼げる可能性を伝える。「うちで一緒にやりませんか？」「サポートします」
+- キーワード: ライバー、配信、稼ぐ、副業、TikTok、事務所、サポート
+- 【重要】個人ライバーの体験談ではなく、事務所としてライバーを勧誘する投稿にすること`,
+    chatre1: `チャトレ事務所①（@mic_chat_）
+- チャットレディを募集する事務所
+- 立場: 事務所のスタッフとして、チャトレになりたい女性を募集する
+- ターゲット: 在宅で稼ぎたい女性
+- トーン: プロフェッショナル、稼ぐコツを伝える。「うちで始めませんか？」「サポートします」
+- キーワード: チャトレ、配信、稼ぐ、在宅、ストチャ、事務所、サポート
+- 【重要】個人チャトレの体験談ではなく、事務所としてチャトレを勧誘する投稿にすること`,
+    chatre2: `チャトレ事務所②（@ms_stripchat）
+- 海外向けチャットレディを募集する事務所（Stripchat）
+- 立場: 事務所のスタッフとして、海外チャトレになりたい女性を募集する
+- ターゲット: 高単価で稼ぎたい女性
+- トーン: 海外サイトの魅力、高単価をアピール。「うちで始めませんか？」「サポートします」
+- キーワード: 海外チャトレ、ストチャ、高単価、稼ぐ、事務所、サポート
+- 【重要】個人チャトレの体験談ではなく、事務所としてチャトレを勧誘する投稿にすること`,
+    wordpress: `WordPressブログ
+- チャットレディ関連の記事
+- ターゲット: チャトレに興味がある女性`,
+  };
+
+  return {
+    ...account,
+    description: descriptions[accountId] || '',
+  };
+}
+
+// 保存済みの過去投稿を取得
+async function getSavedPosts(accountId: AccountType) {
+  try {
+    const filePath = path.join(process.cwd(), 'knowledge', `${accountId}_tweets.json`);
+    const data = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+    return data.tweets || [];
+  } catch {
+    return [];
+  }
+}
+
+// 過去の伸びた投稿を取得
+async function getOldPosts(accountId: AccountType, limit: number = 10) {
+  const posts = await getSavedPosts(accountId);
+  return posts
+    .sort((a: any, b: any) => {
+      const aScore = a.engagement || (a.metrics?.likes || 0) + (a.metrics?.retweets || 0);
+      const bScore = b.engagement || (b.metrics?.likes || 0) + (b.metrics?.retweets || 0);
+      return bScore - aScore;
+    })
+    .slice(0, limit)
+    .map((p: any) => ({
+      text: p.text,
+      likes: p.metrics?.likes || 0,
+      retweets: p.metrics?.retweets || 0,
+    }));
+}
+
+// 最近の投稿を取得
+async function getRecentPosts(accountId: AccountType, limit: number = 5) {
+  const posts = await getSavedPosts(accountId);
+  return posts.slice(0, limit).map((p: any) => p.text);
+}
+
+// バズ投稿を取得
+async function getBuzzPosts(limit: number = 10) {
+  const buzzPath = path.join(process.cwd(), 'knowledge', 'buzz_stock.json');
+  const trendingPath = path.join(process.cwd(), 'knowledge', 'trending_posts.json');
+
+  let all: any[] = [];
+  try {
+    const buzzStock = JSON.parse(await fs.readFile(buzzPath, 'utf-8'));
+    all.push(...Object.values(buzzStock.genres).flatMap((g: any) => g.posts));
+  } catch {}
+  try {
+    const trending = JSON.parse(await fs.readFile(trendingPath, 'utf-8'));
+    all.push(...trending.posts);
+  } catch {}
+
+  return all
+    .sort((a, b) => (b.engagement || 0) - (a.engagement || 0))
+    .slice(0, limit)
+    .map((p) => ({ text: p.text, engagement: p.engagement }));
+}
 
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+
   // Vercel Cronからの呼び出しを確認
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    // ローカル開発用: CRON_SECRETがない場合はスキップ
-    if (process.env.CRON_SECRET) {
+    if (process.env.CRON_SECRET && process.env.NODE_ENV === 'production') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
   }
 
-  const results: any[] = [];
+  const accountId: AccountType = 'liver'; // 現在はliverのみ
+  const minChars = 200;
+  const maxChars = 300;
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000';
+    console.log('[CRON] Starting auto-post...');
 
-    // === 1. 失敗キューからのリトライ処理 ===
-    const retryablePosts = getRetryablePosts();
-    if (retryablePosts.length > 0) {
-      console.log(`[CRON] Found ${retryablePosts.length} posts in retry queue`);
-
-      for (const failedPost of retryablePosts) {
-        console.log(`[CRON] Retrying post ${failedPost.id} (attempt ${failedPost.retryCount + 1})`);
-
-        const retryResult = await withTwitterRetry(async () => {
-          const res = await fetch(`${baseUrl}/api/automation/post`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              secret: process.env.AUTO_POST_SECRET,
-              dryRun: false,
-              retryPost: failedPost,
-            }),
-          });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.json();
-        });
-
-        if (retryResult.success) {
-          console.log(`[CRON] Retry successful for ${failedPost.id}`);
-          removeFromFailedQueue(failedPost.id);
-          results.push({ type: 'retry', id: failedPost.id, success: true });
-        } else {
-          console.log(`[CRON] Retry failed for ${failedPost.id}: ${retryResult.error}`);
-          // 再度キューに追加（retryCountが増加）
-          addToFailedQueue({
-            id: failedPost.id,
-            account: failedPost.account,
-            content: failedPost.content,
-            failedAt: new Date().toISOString(),
-            error: retryResult.error || 'Unknown error',
-          });
-          results.push({ type: 'retry', id: failedPost.id, success: false, error: retryResult.error });
-        }
-      }
+    const accountInfo = getAccountInfo(accountId);
+    if (!accountInfo) {
+      return NextResponse.json({ error: 'Invalid account' }, { status: 400 });
     }
 
-    // === 2. 通常の自動投稿実行（リトライ付き） ===
-    const postResult = await withTwitterRetry(async () => {
-      const res = await fetch(`${baseUrl}/api/automation/post`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          secret: process.env.AUTO_POST_SECRET,
-          dryRun: false,
-        }),
+    // モード選択（50:50）
+    const mode = Math.random() < 0.5 ? 'self' : 'transform';
+
+    // データ取得
+    const recentPosts = await getRecentPosts(accountId, 5);
+    const sourcePosts = mode === 'self'
+      ? await getOldPosts(accountId, 10)
+      : await getBuzzPosts(10);
+
+    console.log(`[CRON] Mode: ${mode}, Sources: ${sourcePosts.length}`);
+
+    // プロンプト構築
+    const systemPrompt = mode === 'self'
+      ? `あなたはSNS運用のエキスパートです。
+以下のアカウントの過去の伸びた投稿を1つ選び、同じトーンで別表現に書き直してください。
+
+## アカウント情報
+${accountInfo.description}
+
+## 過去の伸びた投稿
+${sourcePosts.map((p, i) => `${i + 1}. ${p.text}`).join('\n\n')}
+
+## 最近の投稿（トーン参考）
+${recentPosts.map((t, i) => `${i + 1}. ${t}`).join('\n\n')}
+
+## 条件
+- このアカウントのターゲット層に響く内容
+- 元ネタの「メッセージ」は維持しつつ、「表現」を変える
+- 【必須】${minChars}〜${maxChars}文字で書くこと
+- 絵文字は控えめに（0〜2個）
+- 最初の10文字は元ネタと違う書き出しにする
+- パクリに見えないように巧妙にアレンジ
+- 【重要】適度に改行を入れて読みやすくする（3〜5文ごとに空行）
+
+【重要】投稿文のみを出力。説明や前置きは一切不要。`
+      : `あなたはSNS運用のエキスパートです。
+以下のバズ投稿から1つ選び、そのテーマを借りて指定アカウントのトーンで完全に書き直してください。
+
+## アカウント情報
+${accountInfo.description}
+
+## バズ投稿（参考）
+${sourcePosts.map((p, i) => `${i + 1}. ${JSON.stringify(p)}`).join('\n')}
+
+## 最近の投稿（トーン参考）
+${recentPosts.map((t, i) => `${i + 1}. ${t}`).join('\n\n')}
+
+## 条件
+- このアカウントのターゲット層に響く内容
+- テーマだけ借りて完全オリジナル化
+- 構造を変える（リスト形式なら文章形式に、など）
+- 数字があれば変える
+- 最初の10文字は元ネタと違う書き出しにする
+- 【必須】${minChars}〜${maxChars}文字で書くこと
+- 絵文字は控えめに（0〜2個）
+- 【重要】適度に改行を入れて読みやすくする（3〜5文ごとに空行）
+
+【重要】投稿文のみを出力。説明や前置きは一切不要。`;
+
+    // AI生成
+    const result = await generateText({
+      model: getModel(),
+      system: systemPrompt,
+      prompt: `アカウント「${accountId}」向けの投稿を1つ生成してください。`,
+      maxTokens: 4000,
+    });
+
+    const generatedText = result.text.trim();
+    const processingTime = Date.now() - startTime;
+
+    console.log(`[CRON] Generated in ${processingTime}ms`);
+    console.log(`[CRON] Text: ${generatedText.substring(0, 80)}...`);
+
+    // 実際に投稿
+    const [postResult] = await postToAllAccounts([
+      { account: accountId, text: generatedText },
+    ]);
+
+    if (postResult.success) {
+      await addToPostsHistory({
+        id: postResult.id || `cron_${Date.now()}`,
+        text: generatedText,
+        account: accountId,
+        target: mode === 'self' ? '過去投稿リライト' : 'バズ投稿変換',
+        benefit: 'Cron自動生成',
+        score: 10,
+        tweetId: postResult.id,
+        timestamp: new Date().toISOString(),
       });
-      const data = await res.json();
-      if (!res.ok && res.status !== 400) {
-        // 400はスケジュール外等の正常系なのでリトライしない
-        throw new Error(data.error || `HTTP ${res.status}`);
-      }
-      return { ok: res.ok, status: res.status, data };
-    });
 
-    // 結果をログ
-    console.log('[CRON] Auto-post result:', {
-      timestamp: new Date().toISOString(),
-      success: postResult.success,
-      attempts: postResult.attempts,
-      result: postResult.data,
-    });
+      notifyPostSuccess({
+        account: accountId,
+        tweetId: postResult.id || '',
+        postText: generatedText,
+        qualityScore: 10,
+        slot: 0,
+      }).catch(console.error);
 
-    results.push({
-      type: 'scheduled',
-      success: postResult.success,
-      attempts: postResult.attempts,
-      data: postResult.data,
-    });
+      return NextResponse.json({
+        success: true,
+        accountId,
+        mode,
+        tweetId: postResult.id,
+        text: generatedText,
+        processingTime,
+      });
+    } else {
+      notifyError({
+        title: 'Cron投稿失敗',
+        error: postResult.error || 'Unknown error',
+        context: accountId,
+      }).catch(console.error);
+
+      return NextResponse.json({
+        success: false,
+        error: postResult.error,
+        processingTime,
+      }, { status: 500 });
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[CRON] Error:', error);
+
+    notifyError({
+      title: 'Cron実行エラー',
+      error: errorMessage,
+      context: 'auto-post',
+    }).catch(console.error);
 
     return NextResponse.json({
-      success: postResult.success,
-      timestamp: new Date().toISOString(),
-      results,
-      retryQueueProcessed: retryablePosts.length,
-    });
-  } catch (error) {
-    console.error('[CRON] Auto-post error:', error);
-    return NextResponse.json(
-      { error: 'Failed to execute auto-post', details: String(error), results },
-      { status: 500 }
-    );
+      success: false,
+      error: errorMessage,
+      processingTime: Date.now() - startTime,
+    }, { status: 500 });
   }
 }

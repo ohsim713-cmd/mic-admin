@@ -745,8 +745,35 @@
       "status": "pending",
       "createdAt": "2026-01-17T13:27:26.456Z",
       "updatedAt": "2026-01-17T13:27:26.456Z"
+    },
+    {
+      "text": "学生のみんな、今のバイトの時給ってぶっちゃけ満足してる？\n移動とか準備の時間も考えると、意外とコスパ悪かったりするよね\nガチで稼。\n\n枠が埋まる前にDMしてね💨",
+      "target": "学生",
+      "benefit": "時給換算高い",
+      "score": {
+        "empathy": 2,
+        "benefit": 1,
+        "cta": 1,
+        "credibility": 1,
+        "urgency": 0,
+        "originality": 0,
+        "engagement": 0,
+        "scrollStop": 0,
+        "total": 5,
+        "strengths": [],
+        "weaknesses": [
+          "評価の解析に失敗"
+        ]
+      },
+      "account": "liver",
+      "accountType": "ライバー",
+      "revisionCount": 3,
+      "id": "post_1768828554400_g3wtce",
+      "status": "pending",
+      "createdAt": "2026-01-19T13:15:54.400Z",
+      "updatedAt": "2026-01-19T13:15:54.400Z"
     }
   ],
-  "lastUpdated": "2026-01-17T13:27:26.457Z",
+  "lastUpdated": "2026-01-19T13:15:54.401Z",
   "version": 1
 }

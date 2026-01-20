@@ -12,11 +12,57 @@ import path from 'path';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+// 禁止ワード/フレーズリスト（存在しないサービス、不適切な表現）
+const PROHIBITED_PHRASES = [
+  '無料診断', '無料カウンセリング', '適性診断', '収入シミュレーター',
+  '無料相談会', '説明会', '体験会', '確実に稼げる', '絶対に', '100%', '必ず成功',
+  '税金対策', '節税',
+];
+
+// CTA許可リスト
+const ALLOWED_CTAS = ['DMください', 'DM待ってます', 'DMで気軽に', '気軽にDMで', '気軽に問い合わせください'];
+
+// 投稿タイプ（5回に1回だけ実績系、残りはノウハウ・信頼構築系）
+type PostType = 'closing' | 'knowhow' | 'trust';
+const POST_TYPES: { type: PostType; name: string; ratio: number; description: string }[] = [
+  {
+    type: 'closing',
+    name: '実績・クロージング系',
+    ratio: 0.2, // 20% = 5回に1回
+    description: '具体的な収入実績、成功事例を紹介。数字を使ってOK。CTA入れてOK。'
+  },
+  {
+    type: 'knowhow',
+    name: 'ノウハウ・教育系',
+    ratio: 0.4, // 40%
+    description: '配信のコツ、業界の裏話、稼ぐためのマインドセット。お金の話は控えめに。役立つ情報を提供。'
+  },
+  {
+    type: 'trust',
+    name: '信頼構築・共感系',
+    ratio: 0.4, // 40%
+    description: '事務所の姿勢、ライバーさんへの想い、業界の闇への警鐘。お金の話はしない。共感と信頼を得る。'
+  },
+];
+
+function selectPostType(): typeof POST_TYPES[number] {
+  const rand = Math.random();
+  let cumulative = 0;
+  for (const pt of POST_TYPES) {
+    cumulative += pt.ratio;
+    if (rand < cumulative) {
+      return pt;
+    }
+  }
+  return POST_TYPES[1]; // デフォルトはノウハウ系
+}
+
 // ナレッジベースのキャッシュ
 let knowledgeCache: {
   successStories: any[];
   viralStructures: any[];
   templates: any;
+  trendingPosts: any[];
   loadedAt: number;
 } | null = null;
 
@@ -53,10 +99,24 @@ async function loadKnowledgeBase() {
     );
     const xTemplatesData = JSON.parse(xTemplatesRaw);
 
+    // お手本投稿を読み込み
+    let trendingPostsData: any[] = [];
+    try {
+      const trendingPostsRaw = await fs.readFile(
+        path.join(knowledgePath, 'trending_posts.json'),
+        'utf-8'
+      );
+      const parsed = JSON.parse(trendingPostsRaw);
+      trendingPostsData = parsed.posts || [];
+    } catch {
+      // ファイルがない場合は空配列
+    }
+
     knowledgeCache = {
       successStories: successStoriesData.successStories || [],
       viralStructures: viralTemplatesData.viral_structures || [],
       templates: xTemplatesData,
+      trendingPosts: trendingPostsData,
       loadedAt: Date.now(),
     };
 
@@ -64,6 +124,7 @@ async function loadKnowledgeBase() {
       successStories: knowledgeCache.successStories.length,
       viralStructures: knowledgeCache.viralStructures.length,
       templates: Object.keys(xTemplatesData).length,
+      trendingPosts: trendingPostsData.length,
     });
 
     return knowledgeCache;
@@ -73,6 +134,7 @@ async function loadKnowledgeBase() {
       successStories: [],
       viralStructures: [],
       templates: {},
+      trendingPosts: [],
       loadedAt: Date.now(),
     };
   }
@@ -103,6 +165,12 @@ export interface CoTStep {
     files: string[];
     stories: Array<{ persona: string; result: string }>;
     viralStructure: string | null;
+    postType: string;
+    trendingPost: {
+      category: string;
+      preview: string;
+      whyWorks: string;
+    } | null;
     patterns: { hooks: number; ctas: number; benefits: number };
   };
 }
@@ -148,6 +216,20 @@ export async function POST(request: NextRequest) {
     const viralFormulas = knowledge.templates?.viralFormulas || {};
     const openingHooks = knowledge.templates?.postingPatterns?.openingHooks || [];
 
+    // お手本投稿からランダムに1つ選択
+    const trendingPosts = knowledge.trendingPosts || [];
+    const selectedTrendingPost = trendingPosts.length > 0
+      ? trendingPosts[Math.floor(Math.random() * trendingPosts.length)]
+      : null;
+
+    // 投稿タイプを決定（5回に1回だけ実績系）
+    const postType = selectPostType();
+    console.log(`[CoT] 投稿タイプ: ${postType.name}`);
+
+    // CTAを入れるかどうか（実績系のみ10%、他はなし）
+    const includeCTA = postType.type === 'closing' ? Math.random() < 0.5 : false;
+    const selectedCTA = ALLOWED_CTAS[Math.floor(Math.random() * ALLOWED_CTAS.length)];
+
     const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview' });
 
     // ストリーミングレスポンス
@@ -168,6 +250,7 @@ export async function POST(request: NextRequest) {
                 'knowledge/success_stories.json',
                 'knowledge/liver_viral_templates.json',
                 'knowledge/x_templates.json',
+                'knowledge/trending_posts.json',
                 'DB: success_patterns',
               ],
               stories: selectedStories.map(s => ({
@@ -175,6 +258,12 @@ export async function POST(request: NextRequest) {
                 result: `${s.results.initialMonth}→${s.results.peakMonth}(${s.period})`,
               })),
               viralStructure: viralStructure?.name || null,
+              postType: postType.name,
+              trendingPost: selectedTrendingPost ? {
+                category: selectedTrendingPost.category,
+                preview: selectedTrendingPost.text.substring(0, 50) + '...',
+                whyWorks: selectedTrendingPost.whyWorks,
+              } : null,
               patterns: {
                 hooks: patterns.hooks.length,
                 ctas: patterns.ctas.length,
@@ -215,6 +304,33 @@ export async function POST(request: NextRequest) {
             ? `【今回使うバイラル構造: ${viralStructure.name}】\n流れ: ${viralStructure.flow}\n参考フック: ${viralStructure.example_hook}`
             : '';
 
+          // お手本投稿情報
+          const trendingPostInfo = selectedTrendingPost
+            ? `\n━━━━━━━━━━━━━━━━━━━━\n🔥 今回参考にするお手本投稿（他業界）\n━━━━━━━━━━━━━━━━━━━━\nカテゴリ: ${selectedTrendingPost.category}\n---\n${selectedTrendingPost.text}\n---\nなぜ伸びた: ${selectedTrendingPost.whyWorks}\n※構造・言い回し・テンションを参考に、ライバー業界向けにアレンジする`
+            : '';
+
+          // 禁止ワードリスト
+          const prohibitedList = PROHIBITED_PHRASES.map(p => `「${p}」`).join('、');
+
+          // CTAルール
+          const ctaRule = includeCTA
+            ? `CTAを入れる: 最後に「${selectedCTA}」を自然に入れる`
+            : 'CTAなし: 今回はDMや問い合わせを促す文言は入れない（自然な締めくくりで終わる）';
+
+          // 投稿タイプに応じた指示
+          const postTypeInstruction = postType.type === 'closing'
+            ? `【今回は実績・クロージング系】
+具体的な収入数字（月○万円など）を使ってOK。成功事例を紹介する。`
+            : postType.type === 'knowhow'
+            ? `【今回はノウハウ・教育系】
+⚠️ お金の話（月○万円、時給、収入など）は絶対にしない！
+配信のコツ、心構え、業界の仕組みなど役立つ情報を提供する。
+「稼げる」「収入」という言葉も使わない。`
+            : `【今回は信頼構築・共感系】
+⚠️ お金の話（月○万円、時給、収入など）は絶対にしない！
+事務所の姿勢、ライバーさんへの想い、業界の問題点への警鐘など。
+共感と信頼を得ることが目的。売り込み感ゼロで。`;
+
           const thinkingPrompt = `あなたは10年以上の経験を持つSNSマーケターです。
 以下の豊富なデータを分析し、高品質な投稿戦略を立ててください。
 
@@ -224,6 +340,11 @@ export async function POST(request: NextRequest) {
 - トピック: ${topic || 'ライバーの魅力'}
 - ターゲット: ${target || '20-30代女性'}
 - 訴求ポイント: ${benefit || '高収入・自由な働き方'}
+
+━━━━━━━━━━━━━━━━━━━━
+🎯 今回の投稿タイプ（必ず守る）
+━━━━━━━━━━━━━━━━━━━━
+${postTypeInstruction}
 
 ━━━━━━━━━━━━━━━━━━━━
 📊 成功事例データ（実績ベース）
@@ -241,6 +362,25 @@ ${storyExamples || '成功事例なし'}
 🔥 バイラル構造
 ━━━━━━━━━━━━━━━━━━━━
 ${viralInfo || 'PAS公式: 問題提起 → 煽り → 解決策'}
+${trendingPostInfo}
+
+━━━━━━━━━━━━━━━━━━━━
+🚫 禁止ワード（絶対に使わない）
+━━━━━━━━━━━━━━━━━━━━
+${prohibitedList}
+※これらは存在しないサービスや過大な約束のため使用禁止
+
+━━━━━━━━━━━━━━━━━━━━
+📝 一人称ルール（必須）
+━━━━━━━━━━━━━━━━━━━━
+- 「私」「僕」など個人の一人称は禁止
+- 事務所視点で書く：「うちの事務所では」「当事務所の」「うちのライバーさんが」
+- 所属ライバーの実績を紹介する形式
+
+━━━━━━━━━━━━━━━━━━━━
+📢 CTAルール
+━━━━━━━━━━━━━━━━━━━━
+${ctaRule}
 
 ━━━━━━━━━━━━━━━━━━━━
 💡 分析してほしいこと
@@ -291,17 +431,29 @@ ${viralInfo || 'PAS公式: 問題提起 → 煽り → 解決策'}
 【戦略分析】
 ${thinkingText}
 
+【🎯 今回の投稿タイプ（絶対に守る）】
+${postTypeInstruction}
+
 【成功パターンから学んだルール】
 - フック例: ${hookPatterns || 'ぶっちゃけ〜'}
-- CTA例: ${ctaPatterns || 'DMで💬'}
-- ベネフィット例: ${benefitPatterns || '月30万以上'}
+${postType.type === 'closing' ? `- ベネフィット例: ${benefitPatterns || '月30万以上'}` : '- ※お金の話は禁止！ベネフィットは使わない'}
 
 【必須条件】
 - 140文字以内
 - 絵文字は最後に1個だけ
 - 自然な口語体（「〜だよね」「〜じゃん」OK）
 - 成功パターンのフックを1つ取り入れる
-- 具体的な数字を1つ入れる
+${postType.type === 'closing' ? '- 具体的な数字を1つ入れる（「初月25万、4ヶ月で95万」は使用禁止、別の数字を使う）' : '- ⚠️ 収入・お金に関する数字は入れない'}
+
+【一人称ルール（必須）】
+- 「私」「僕」は使わない
+- 事務所視点：「うちのライバーさんが〜」「当事務所では〜」
+
+【CTAルール】
+${ctaRule}
+
+【禁止ワード】
+${prohibitedList}
 
 投稿文のみを出力してください（解説不要）：`;
 
@@ -381,6 +533,15 @@ ${draftText}
             ? selectedStories.map(s => `${s.results.initialMonth}→${s.results.peakMonth}(${s.period})`).join('、')
             : '月8万→月32万(3ヶ月)';
 
+          // 投稿タイプに応じた改善ルール
+          const moneyRule = postType.type === 'closing'
+            ? `【実際の成功数字（使っていい）】
+${concreteNumbers}
+※「初月25万、4ヶ月で95万」は使用頻度が高すぎるので別の数字を使う`
+            : `【⚠️ お金の話は絶対禁止】
+月○万円、時給、収入、稼げる、などの表現は一切使わない！
+数字を使う場合は「○年」「○人」「○時間」など収入以外で。`;
+
           const improvementPrompt = `あなたはバズ投稿を量産するプロです。
 以下の原案と分析をもとに、劇的に改善してください。
 
@@ -390,27 +551,35 @@ ${draftText}
 【分析結果】
 ${analysisText}
 
-【実際の成功数字（使っていい）】
-${concreteNumbers}
+【🎯 今回の投稿タイプ（絶対に守る）】
+${postTypeInstruction}
+
+${moneyRule}
 
 【改善ルール（厳守）】
 1. 冒頭3文字で「え？」と思わせる
    - 使えるフック: ${openingHooks.slice(0, 5).join('、') || '【衝撃】、ぶっちゃけ、正直、実は'}
-   - 数字で始めるのも効果的
+   ${postType.type === 'closing' ? '- 数字で始めるのも効果的' : '- ※収入の数字で始めるのは禁止'}
 
 2. 「あるある」を1つ入れる
    - ターゲットが「それ私！」と思う具体的シーン
-   - 例: 「給料日前はカツカツ」「通勤電車がしんどい」
+   ${postType.type === 'closing' ? '- 例: 「給料日前はカツカツ」「通勤電車がしんどい」' : '- 例: 「人間関係に疲れた」「自分らしく働きたい」「将来が不安」'}
 
 3. 怪しさを消す
-   - 上記の実際の成功数字を使う
    - 「簡単」「誰でも」「楽して」は絶対禁止
    - 体験談風の表現を使う
 
-4. CTAは1つだけ
-   - 使えるCTA: ${ctaPatterns || '気になったらDMで💬'}
+4. 一人称ルール（必須）
+   - 「私」「僕」は使わない
+   - 事務所視点：「うちのライバーさんが〜」「当事務所では〜」
 
-5. 絵文字は最後に1個だけ
+5. CTAルール
+   ${ctaRule}
+
+6. 絵文字は最後に1個だけ
+
+7. 禁止ワード（絶対使わない）
+   ${prohibitedList}
 
 改善した投稿文のみを出力（140文字以内、解説不要）：`;
 

@@ -146,7 +146,7 @@ jobs:
             exit 1
           fi
 
-      # インプレッション取得
+      # インプレッション取得 + 日次PDCA
       - name: Fetch Impressions
         if: steps.action.outputs.action == 'fetch-impressions'
         env:
@@ -157,6 +157,45 @@ jobs:
           echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
 
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/automation/impressions" \
+            -H "Content-Type: application/json" \
+            -d '{"secret": "'"$AUTO_POST_SECRET"'"}')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response Code: $HTTP_CODE"
+          echo "Response: $BODY" | head -c 1000
+
+      # 日次PDCA分析（インプレッション取得直後に実行）
+      - name: Daily PDCA Analysis
+        if: steps.action.outputs.action == 'fetch-impressions'
+        env:
+          DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_URL }}
+          AUTO_POST_SECRET: ${{ secrets.AUTO_POST_SECRET }}
+        run: |
+          echo "=== Daily PDCA Analysis ==="
+          echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X GET "$DEPLOY_URL/api/cron/weekly-pdca" \
+            -H "Authorization: Bearer $AUTO_POST_SECRET")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response Code: $HTTP_CODE"
+          echo "Response: $BODY" | head -c 1000
+
+      # 競合バズ投稿分析（PDCA分析の後に実行）
+      - name: Competitor Analysis
+        if: steps.action.outputs.action == 'fetch-impressions'
+        env:
+          DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_URL }}
+          AUTO_POST_SECRET: ${{ secrets.AUTO_POST_SECRET }}
+        run: |
+          echo "=== Competitor Buzz Analysis ==="
+          echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/automation/competitor-analysis" \
             -H "Content-Type: application/json" \
             -d '{"secret": "'"$AUTO_POST_SECRET"'"}')
 

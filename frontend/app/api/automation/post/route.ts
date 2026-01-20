@@ -1,33 +1,136 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { generateText } from 'ai';
+import { getModel } from '@/lib/ai/model';
 import {
   postToAllAccounts,
+  AccountType,
   ACCOUNTS,
 } from '@/lib/dm-hunter/sns-adapter';
 import { POSTING_SCHEDULE } from '@/lib/automation/scheduler';
 import { addToPostsHistory } from '@/lib/analytics/posts-history';
 import { notifyPostSuccess, notifyError } from '@/lib/discord';
+import { promises as fs } from 'fs';
+import path from 'path';
 
-// POST: 自動投稿実行
+// アカウント情報を取得
+function getAccountInfo(accountId: AccountType) {
+  const account = ACCOUNTS.find(a => a.id === accountId);
+  if (!account) return null;
+
+  // アカウント別の詳細説明
+  const descriptions: Record<AccountType, string> = {
+    liver: `ライバー事務所（@tt_liver）
+- TikTokライブ配信者を募集する事務所
+- 立場: 事務所のスタッフとして、ライバーになりたい女性を募集する
+- ターゲット: ライブ配信で稼ぎたい女性
+- トーン: 親しみやすく、稼げる可能性を伝える。「うちで一緒にやりませんか？」「サポートします」
+- キーワード: ライバー、配信、稼ぐ、副業、TikTok、事務所、サポート
+- 【重要】個人ライバーの体験談ではなく、事務所としてライバーを勧誘する投稿にすること`,
+    chatre1: `チャトレ事務所①（@mic_chat_）
+- チャットレディを募集する事務所
+- 立場: 事務所のスタッフとして、チャトレになりたい女性を募集する
+- ターゲット: 在宅で稼ぎたい女性
+- トーン: プロフェッショナル、稼ぐコツを伝える。「うちで始めませんか？」「サポートします」
+- キーワード: チャトレ、配信、稼ぐ、在宅、ストチャ、事務所、サポート
+- 【重要】個人チャトレの体験談ではなく、事務所としてチャトレを勧誘する投稿にすること`,
+    chatre2: `チャトレ事務所②（@ms_stripchat）
+- 海外向けチャットレディを募集する事務所（Stripchat）
+- 立場: 事務所のスタッフとして、海外チャトレになりたい女性を募集する
+- ターゲット: 高単価で稼ぎたい女性
+- トーン: 海外サイトの魅力、高単価をアピール。「うちで始めませんか？」「サポートします」
+- キーワード: 海外チャトレ、ストチャ、高単価、稼ぐ、事務所、サポート
+- 【重要】個人チャトレの体験談ではなく、事務所としてチャトレを勧誘する投稿にすること`,
+    wordpress: `WordPressブログ
+- チャットレディ関連の記事
+- ターゲット: チャトレに興味がある女性`,
+  };
+
+  return {
+    ...account,
+    description: descriptions[accountId] || '',
+  };
+}
+
+// バズ投稿を取得
+async function getBuzzPosts(limit: number = 10) {
+  const buzzPath = path.join(process.cwd(), 'knowledge', 'buzz_stock.json');
+  const trendingPath = path.join(process.cwd(), 'knowledge', 'trending_posts.json');
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let all: any[] = [];
+  try {
+    const buzzStock = JSON.parse(await fs.readFile(buzzPath, 'utf-8'));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    all.push(...Object.values(buzzStock.genres).flatMap((g: any) => g.posts));
+  } catch {
+    // ignore
+  }
+  try {
+    const trending = JSON.parse(await fs.readFile(trendingPath, 'utf-8'));
+    all.push(...trending.posts);
+  } catch {
+    // ignore
+  }
+
+  return all
+    .sort((a, b) => (b.engagement || 0) - (a.engagement || 0))
+    .slice(0, limit)
+    .map((p) => ({ text: p.text, engagement: p.engagement }));
+}
+
+// 保存済みの過去投稿を取得（JSONファイルから）
+async function getSavedPosts(accountId: AccountType) {
+  try {
+    const filePath = path.join(process.cwd(), 'knowledge', `${accountId}_tweets.json`);
+    const data = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+    return data.tweets || [];
+  } catch (error) {
+    console.error(`[Automation] Failed to load saved posts for ${accountId}:`, error);
+    return [];
+  }
+}
+
+// 過去の伸びた投稿を取得（JSONファイルから）
+async function getOldPosts(accountId: AccountType, limit: number = 10) {
+  const posts = await getSavedPosts(accountId);
+
+  // エンゲージメント順にソートして上位を返す
+  return posts
+    .sort((a: { engagement?: number; metrics?: { likes: number; retweets: number } }, b: { engagement?: number; metrics?: { likes: number; retweets: number } }) => {
+      const aScore = a.engagement || (a.metrics?.likes || 0) + (a.metrics?.retweets || 0);
+      const bScore = b.engagement || (b.metrics?.likes || 0) + (b.metrics?.retweets || 0);
+      return bScore - aScore;
+    })
+    .slice(0, limit)
+    .map((p: { text: string; metrics?: { likes: number; retweets: number }; engagement?: number }) => ({
+      text: p.text,
+      likes: p.metrics?.likes || 0,
+      retweets: p.metrics?.retweets || 0,
+    }));
+}
+
+// 最近の投稿を取得（トーンサンプル用）
+async function getRecentPosts(accountId: AccountType, limit: number = 5) {
+  const posts = await getSavedPosts(accountId);
+  // 最新のものをlimit件返す（JSONは既にソート済み想定）
+  return posts.slice(0, limit).map((p: { text: string }) => p.text);
+}
+
+// POST: 自動投稿実行（Vercel AI SDK版）
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
     const body = await request.json().catch(() => ({}));
-    const { dryRun = false, secret } = body;
+    const {
+      dryRun = false,
+      accountId = 'liver' as AccountType,
+      mode: requestedMode,
+      minChars = 140,
+      maxChars = 280,
+    } = body;
 
-    // 認証チェック - 一時的に無効化（テスト用）
-    // TODO: 本番では有効化する
-    const expectedSecret = process.env.AUTO_POST_SECRET;
-    console.log('[Automation] Auth check - expected:', expectedSecret, ', received:', secret);
-    // if (expectedSecret && expectedSecret.length > 0 && secret !== expectedSecret) {
-    //   return NextResponse.json({
-    //     success: false,
-    //     error: 'Unauthorized',
-    //     debug: { expectedSet: !!expectedSecret, receivedSet: !!secret }
-    //   }, { status: 401 });
-    // }
-
-    console.log('[Automation] Starting auto-post...');
+    console.log('[Automation] Starting auto-post with Vercel AI SDK...');
 
     // 現在時刻（JST）を確認
     const now = new Date();
@@ -35,137 +138,162 @@ export async function POST(request: NextRequest) {
     const jstMinute = now.getMinutes();
     const currentTime = `${jstHour.toString().padStart(2, '0')}:${jstMinute.toString().padStart(2, '0')}`;
 
-    // シンプルに: API が呼ばれたら投稿する（スロット判定は GitHub Actions の cron に任せる）
-    const currentSlot = {
-      time: currentTime,
-      label: `${jstHour}時台`,
-      accounts: ['liver'] as const,
-    };
+    console.log(`[Automation] Generating post at ${currentTime} JST for ${accountId}`);
 
-    console.log(`[Automation] Posting at ${currentTime} JST`);
-
-    // スロットに設定された全アカウントに投稿
-    const results: any[] = [];
-    const { generateSinglePost } = await import('@/lib/langgraph/post-generator');
-
-    // アカウントタイプ→ジャンル名マッピング
-    const genreMap: Record<string, 'ライバー' | 'チャトレ'> = {
-      'liver': 'ライバー',
-      'chatre1': 'チャトレ',
-      'chatre2': 'チャトレ',
-    };
-
-    for (const account of currentSlot.accounts) {
-      try {
-        const genre = genreMap[account] || 'ライバー';
-        console.log(`[Automation] Generating post for ${account} (${genre})...`);
-        const generated = await generateSinglePost(account, genre as 'ライバー' | 'チャトレ');
-
-        const postText = generated.text;
-        const target = generated.target;
-        const benefit = generated.benefit;
-        const score = generated.score.total;
-
-        console.log(`[Automation] ${account}: generated, score=${score}`);
-
-        // ドライラン
-        if (dryRun) {
-          results.push({
-            account,
-            success: true,
-            dryRun: true,
-            text: postText.substring(0, 100) + '...',
-            target,
-            benefit,
-            score,
-          });
-        } else {
-          // 実際に投稿
-          const [postResult] = await postToAllAccounts([{ account, text: postText }]);
-
-          results.push({
-            account,
-            accountName: ACCOUNTS.find(a => a.id === account)?.name,
-            success: postResult.success,
-            tweetId: postResult.id,
-            text: postText.substring(0, 100) + '...',
-            target,
-            benefit,
-            score,
-            error: postResult.error,
-          });
-
-          // 投稿履歴に記録（SDK分析用）
-          if (postResult.success) {
-            await addToPostsHistory({
-              id: postResult.id || `post_${Date.now()}`,
-              text: postText,
-              account,
-              target,
-              benefit,
-              score,
-              tweetId: postResult.id,
-              timestamp: new Date().toISOString(),
-            });
-
-            // Discord通知（投稿成功）
-            notifyPostSuccess({
-              account,
-              tweetId: postResult.id || '',
-              postText,
-              qualityScore: score,
-              slot: POSTING_SCHEDULE.slots.findIndex(s => s.time === currentSlot.time) + 1,
-            }).catch(console.error);
-          } else {
-            // Discord通知（投稿失敗）
-            notifyError({
-              title: '自動投稿失敗',
-              error: postResult.error || 'Unknown error',
-              context: `${account} - ${currentSlot.time}`,
-            }).catch(console.error);
-          }
-        }
-      } catch (error: any) {
-        console.error(`[Automation] Error for ${account}:`, error);
-
-        // Discord通知（エラー）
-        notifyError({
-          title: '投稿生成エラー',
-          error: error.message,
-          context: `${account}`,
-        }).catch(console.error);
-
-        results.push({
-          account,
-          success: false,
-          error: error.message,
-        });
-      }
+    // アカウント情報を取得
+    const accountInfo = getAccountInfo(accountId);
+    if (!accountInfo) {
+      return NextResponse.json({ success: false, error: 'Invalid account' }, { status: 400 });
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const processingTime = Date.now() - startTime;
+    // モード選択（A:B = 50:50）- リクエストで指定があればそれを使用
+    const mode = requestedMode || (Math.random() < 0.5 ? 'self' : 'transform');
 
-    console.log(`[Automation] Completed: ${successCount}/${results.length} in ${processingTime}ms`);
+    // データを先に取得
+    const recentPosts = await getRecentPosts(accountId, 5);
+    const sourcePosts = mode === 'self'
+      ? await getOldPosts(accountId, 10)
+      : await getBuzzPosts(10);
 
-    return NextResponse.json({
-      success: successCount > 0,
-      slot: {
-        time: currentSlot.time,
-        label: currentSlot.label,
-      },
-      message: `Posted ${successCount}/${results.length} to accounts`,
-      results,
-      processingTime,
+    console.log(`[Automation] Mode: ${mode}, Source posts: ${sourcePosts.length}, Recent: ${recentPosts.length}`);
+
+    // プロンプトを構築
+    const systemPrompt = mode === 'self'
+      ? `あなたはSNS運用のエキスパートです。
+以下のアカウントの過去の伸びた投稿を1つ選び、同じトーンで別表現に書き直してください。
+
+## アカウント情報
+${accountInfo.description}
+
+## 過去の伸びた投稿
+${sourcePosts.map((p, i) => `${i + 1}. ${p.text}`).join('\n\n')}
+
+## 最近の投稿（トーン参考）
+${recentPosts.map((t, i) => `${i + 1}. ${t}`).join('\n\n')}
+
+## 条件
+- このアカウントのターゲット層（${accountInfo.type}に興味がある女性）に響く内容
+- 元ネタの「メッセージ」は維持しつつ、「表現」を変える
+- 【必須】${minChars}〜${maxChars}文字で書くこと（短すぎNG、必ずこの範囲に収める）
+- 絵文字は控えめに（0〜2個）
+- 最初の10文字は元ネタと違う書き出しにする
+- パクリに見えないように巧妙にアレンジ
+- 【重要】適度に改行を入れて読みやすくする（3〜5文ごとに空行）
+
+【重要】投稿文のみを出力。説明や前置きは一切不要。「投稿を作成しました」等の文言も禁止。`
+      : `あなたはSNS運用のエキスパートです。
+以下のバズ投稿から1つ選び、そのテーマを借りて指定アカウントのトーンで完全に書き直してください。
+
+## アカウント情報
+${accountInfo.description}
+
+## バズ投稿（参考）
+${sourcePosts.map((p, i) => `${i + 1}. ${JSON.stringify(p)}`).join('\n')}
+
+## 最近の投稿（トーン参考）
+${recentPosts.map((t, i) => `${i + 1}. ${t}`).join('\n\n')}
+
+## 条件
+- このアカウントのターゲット層（${accountInfo.type}に興味がある女性）に響く内容
+- テーマだけ借りて完全オリジナル化
+- 構造を変える（リスト形式なら文章形式に、など）
+- 数字があれば変える
+- 最初の10文字は元ネタと違う書き出しにする
+- 【必須】${minChars}〜${maxChars}文字で書くこと（短すぎNG、必ずこの範囲に収める）
+- 絵文字は控えめに（0〜2個）
+- 【重要】適度に改行を入れて読みやすくする（3〜5文ごとに空行）
+
+【重要】投稿文のみを出力。説明や前置きは一切不要。「投稿を作成しました」等の文言も禁止。`;
+
+    const result = await generateText({
+      model: getModel(),
+      system: systemPrompt,
+      prompt: `アカウント「${accountId}」向けの投稿を1つ生成してください。`,
+      maxTokens: 4000, // 限界まで思考させる
     });
 
-  } catch (error: any) {
-    console.error('[Automation] Error:', error);
+    const generatedText = result.text.trim();
+    const processingTime = Date.now() - startTime;
+
+    console.log(`[Automation] Generated in ${processingTime}ms, mode=${mode}`);
+    console.log(`[Automation] Text: ${generatedText.substring(0, 100)}...`);
+
+    // ドライラン
+    if (dryRun) {
+      return NextResponse.json({
+        success: true,
+        dryRun: true,
+        mode,
+        accountId,
+        generatedText,
+        sourcePostsCount: sourcePosts.length,
+        processingTime,
+      });
+    }
+
+    // 実際に投稿
+    const [postResult] = await postToAllAccounts([
+      { account: accountId, text: generatedText },
+    ]);
+
+    if (postResult.success) {
+      // 投稿履歴に記録
+      await addToPostsHistory({
+        id: postResult.id || `post_${Date.now()}`,
+        text: generatedText,
+        account: accountId,
+        target: mode === 'self' ? '過去投稿リライト' : 'バズ投稿変換',
+        benefit: 'AI自動生成',
+        score: 10,
+        tweetId: postResult.id,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Discord通知
+      notifyPostSuccess({
+        account: accountId,
+        tweetId: postResult.id || '',
+        postText: generatedText,
+        qualityScore: 10,
+        slot: 0,
+      }).catch(console.error);
+    } else {
+      notifyError({
+        title: '自動投稿失敗',
+        error: postResult.error || 'Unknown error',
+        context: accountId,
+      }).catch(console.error);
+    }
+
     return NextResponse.json({
-      success: false,
-      error: error.message,
-      processingTime: Date.now() - startTime,
-    }, { status: 500 });
+      success: postResult.success,
+      posted: true,
+      mode,
+      accountId,
+      tweetId: postResult.id,
+      text: generatedText,
+      error: postResult.error,
+      processingTime,
+    });
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Automation] Error:', error);
+
+    notifyError({
+      title: '投稿生成エラー',
+      error: errorMessage,
+      context: 'Vercel AI SDK',
+    }).catch(console.error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: errorMessage,
+        processingTime: Date.now() - startTime,
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -176,8 +304,12 @@ export async function GET() {
     const jstHour = (now.getUTCHours() + 9) % 24;
     const currentTime = `${jstHour.toString().padStart(2, '0')}:00`;
 
-    const passedSlots = POSTING_SCHEDULE.slots.filter(slot => slot.time <= currentTime);
-    const upcomingSlots = POSTING_SCHEDULE.slots.filter(slot => slot.time > currentTime);
+    const passedSlots = POSTING_SCHEDULE.slots.filter(
+      (slot) => slot.time <= currentTime
+    );
+    const upcomingSlots = POSTING_SCHEDULE.slots.filter(
+      (slot) => slot.time > currentTime
+    );
 
     return NextResponse.json({
       date: new Date().toISOString().split('T')[0],
@@ -189,11 +321,16 @@ export async function GET() {
         total: POSTING_SCHEDULE.slots.length,
       },
       schedule: POSTING_SCHEDULE,
+      model: process.env.AI_MODEL || 'claude-3.5-haiku',
     });
-
-  } catch (error: any) {
-    return NextResponse.json({
-      error: error.message,
-    }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      {
+        error: errorMessage,
+      },
+      { status: 500 }
+    );
   }
 }
