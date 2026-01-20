@@ -157,10 +157,10 @@ export async function GET(request: NextRequest) {
 ${accountInfo.description}
 
 ## 過去の伸びた投稿
-${sourcePosts.map((p, i) => `${i + 1}. ${p.text}`).join('\n\n')}
+${sourcePosts.map((p: { text: string }, i: number) => `${i + 1}. ${p.text}`).join('\n\n')}
 
 ## 最近の投稿（トーン参考）
-${recentPosts.map((t, i) => `${i + 1}. ${t}`).join('\n\n')}
+${recentPosts.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n\n')}
 
 ## 条件
 - このアカウントのターゲット層に響く内容
@@ -179,10 +179,10 @@ ${recentPosts.map((t, i) => `${i + 1}. ${t}`).join('\n\n')}
 ${accountInfo.description}
 
 ## バズ投稿（参考）
-${sourcePosts.map((p, i) => `${i + 1}. ${JSON.stringify(p)}`).join('\n')}
+${sourcePosts.map((p: { text: string; engagement?: number }, i: number) => `${i + 1}. ${JSON.stringify(p)}`).join('\n')}
 
 ## 最近の投稿（トーン参考）
-${recentPosts.map((t, i) => `${i + 1}. ${t}`).join('\n\n')}
+${recentPosts.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n\n')}
 
 ## 条件
 - このアカウントのターゲット層に響く内容
@@ -201,7 +201,6 @@ ${recentPosts.map((t, i) => `${i + 1}. ${t}`).join('\n\n')}
       model: getModel(),
       system: systemPrompt,
       prompt: `アカウント「${accountId}」向けの投稿を1つ生成してください。`,
-      maxTokens: 4000,
     });
 
     const generatedText = result.text.trim();
