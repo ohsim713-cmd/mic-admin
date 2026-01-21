@@ -1,6 +1,7 @@
 /**
  * Vercel AI SDK で投稿生成テスト
  */
+import dotenv from 'dotenv';
 import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
 import fs from 'fs';
@@ -8,6 +9,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// .env.local を読み込み
+dotenv.config({ path: path.join(__dirname, '..', '.env.local') });
 
 // バズ投稿を取得
 function getBuzzPosts() {
