@@ -13,7 +13,7 @@ import {
   AccountType,
   ACCOUNTS,
 } from '@/lib/dm-hunter/sns-adapter';
-import { addToPostsHistory } from '@/lib/analytics/posts-history';
+// import { addToPostsHistory } from '@/lib/analytics/posts-history'; // Vercelはread-only
 import { notifyPostSuccess, notifyError } from '@/lib/discord';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -215,16 +215,9 @@ ${recentPosts.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n\n')}
     ]);
 
     if (postResult.success) {
-      await addToPostsHistory({
-        id: postResult.id || `cron_${Date.now()}`,
-        text: generatedText,
-        account: accountId,
-        target: mode === 'self' ? '過去投稿リライト' : 'バズ投稿変換',
-        benefit: 'Cron自動生成',
-        score: 10,
-        tweetId: postResult.id,
-        timestamp: new Date().toISOString(),
-      });
+      // Note: Vercelはread-onlyなのでファイル書き込みスキップ
+      // 将来的にはSupabaseに保存する
+      console.log(`[CRON] Posted successfully: ${postResult.id}`);
 
       notifyPostSuccess({
         account: accountId,
