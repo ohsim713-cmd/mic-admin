@@ -12,6 +12,25 @@ import { notifyPostSuccess, notifyError } from '@/lib/discord';
 import { promises as fs } from 'fs';
 import path from 'path';
 
+// アカウント別の禁止ワード
+const FORBIDDEN_WORDS: Record<AccountType, string[]> = {
+  liver: ['チャトレ', 'チャットレディ', 'ストチャ', 'Stripchat', 'アダルト', '脱ぐ', 'エロ', 'セクシー', '下着', '裸'],
+  chatre1: ['ライバー', 'TikTok', 'TikTokライブ', 'Pococha', '17LIVE', 'BIGO'],
+  chatre2: ['ライバー', 'TikTok', 'TikTokライブ', 'Pococha', '17LIVE', 'BIGO'],
+  wordpress: [],
+};
+
+// 禁止ワードチェック
+function validatePost(text: string, accountId: AccountType): { valid: boolean; reason?: string } {
+  const forbidden = FORBIDDEN_WORDS[accountId] || [];
+  for (const word of forbidden) {
+    if (text.toLowerCase().includes(word.toLowerCase())) {
+      return { valid: false, reason: `NGワード「${word}」が含まれています` };
+    }
+  }
+  return { valid: true };
+}
+
 // アカウント情報を取得
 function getAccountInfo(accountId: AccountType) {
   const account = ACCOUNTS.find(a => a.id === accountId);
@@ -20,19 +39,22 @@ function getAccountInfo(accountId: AccountType) {
   // アカウント別の詳細説明
   const descriptions: Record<AccountType, string> = {
     liver: `ライバー事務所（@tt_liver）
-- TikTokライブ配信者を募集する事務所
+- ライブ配信者を募集する事務所
+- 対応プラットフォーム: Pococha、TikTok LIVE、17LIVE、BIGO LIVE、IRIAM、ふわっち、REALITY、SHOWROOM
 - 立場: 事務所のスタッフとして、ライバーになりたい女性を募集する
 - ターゲット: ライブ配信で稼ぎたい女性
 - トーン: 敬語ベースだけど親しみやすい口調。「〜ですよね」「〜なんです」など柔らかい敬語
 - 【禁止表現】「高収入を目指しませんか」「サポートします」「無料相談」「お気軽にお問い合わせください」など求人サイトっぽい硬い表現は絶対NG
+- 【絶対禁止ワード】チャトレ、チャットレディ、ストチャ、Stripchat、アダルト、脱ぐ、エロ、セクシー、下着、裸 ← これらのワードは絶対に使用禁止！ライバーは健全な配信なのでアダルト要素は一切NG
 - 【OK表現】「実はこれ、〜なんです」「気になる方はDMください」「〜って知ってました？」など自然で親しみやすい敬語
-- キーワード: ライバー、配信、稼ぐ、副業、TikTok
+- キーワード: ライバー、配信、稼ぐ、副業、Pococha、17LIVE、TikTokライブ
 - 【重要】個人ライバーの体験談ではなく、事務所としてライバーを勧誘する投稿にすること`,
     chatre1: `チャトレ事務所（@mic_chat_）
 - チャットレディ事務所の代表アカウント
 - ターゲット: 在宅で稼ぎたい女性
 - トーン: 敬語ベースで親しみやすい口調。「〜なんですよね」「〜だったりします」「〜ですよね」など柔らかい敬語
 - 【禁止表現】「高収入を目指しませんか」「サポートします」「無料相談」「お気軽にお問い合わせください」など求人サイトっぽい硬い表現は絶対NG。「ズバリ」「やばい」「〜わよ」などおねえ言葉もNG
+- 【絶対禁止ワード】ライバー、TikTok、TikTokライブ ← これらはライバー事務所のワードなので使用禁止
 - 【OK表現】「うちでは〜なんですよね」「実際〜だったりします」「気になる方はDMください」など自然な敬語
 - キーワード: チャトレ、配信、稼ぐ、在宅、ストチャ
 - 【重要】現場の経験を踏まえた実感のこもった投稿にすること`,
@@ -41,6 +63,7 @@ function getAccountInfo(accountId: AccountType) {
 - ターゲット: 高単価で稼ぎたい女性
 - トーン: 敬語ベースで親しみやすい口調。「〜なんですよね」「〜だったりします」など柔らかい敬語
 - 【禁止表現】「高収入を目指しませんか」「サポートします」「無料相談」「お気軽にお問い合わせください」など求人サイトっぽい硬い表現は絶対NG。「ズバリ」「やばい」「〜わよ」などおねえ言葉もNG
+- 【絶対禁止ワード】ライバー、TikTok、TikTokライブ ← これらはライバー事務所のワードなので使用禁止
 - 【OK表現】「海外チャトレって実は〜なんです」「ストチャだと〜ですよね」「詳しくはDMで」など自然な敬語
 - キーワード: 海外チャトレ、ストチャ、Stripchat、高単価、ドル建て
 - 【重要】海外チャトレの魅力や情報をリアルに発信すること`,
@@ -55,7 +78,7 @@ function getAccountInfo(accountId: AccountType) {
   };
 }
 
-// バズ投稿を取得
+// バズ投稿を取得（日本語のみ、英語除外）
 async function getBuzzPosts(limit: number = 10) {
   const buzzPath = path.join(process.cwd(), 'knowledge', 'buzz_stock.json');
   const trendingPath = path.join(process.cwd(), 'knowledge', 'trending_posts.json');
@@ -76,7 +99,11 @@ async function getBuzzPosts(limit: number = 10) {
     // ignore
   }
 
+  // 日本語を含む投稿のみ（英語広告を除外）
+  const isJapanese = (text: string) => /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text);
+
   return all
+    .filter((p) => isJapanese(p.text || ''))
     .sort((a, b) => (b.engagement || 0) - (a.engagement || 0))
     .slice(0, limit)
     .map((p) => ({ text: p.text, engagement: p.engagement }));
@@ -95,11 +122,13 @@ async function getSavedPosts(accountId: AccountType) {
 }
 
 // 過去の伸びた投稿を取得（JSONファイルから）
+// 最新5件は除外（「またかよ」を防ぐ）、engagement上位を返す
 async function getOldPosts(accountId: AccountType, limit: number = 10) {
   const posts = await getSavedPosts(accountId);
 
-  // エンゲージメント順にソートして上位を返す
+  // エンゲージメント順にソートして、最新5件を除外、上位を返す
   return posts
+    .slice(5) // 最新5件を除外
     .sort((a: { engagement?: number; metrics?: { likes: number; retweets: number } }, b: { engagement?: number; metrics?: { likes: number; retweets: number } }) => {
       const aScore = a.engagement || (a.metrics?.likes || 0) + (a.metrics?.retweets || 0);
       const bScore = b.engagement || (b.metrics?.likes || 0) + (b.metrics?.retweets || 0);
@@ -113,11 +142,19 @@ async function getOldPosts(accountId: AccountType, limit: number = 10) {
     }));
 }
 
-// 最近の投稿を取得（トーンサンプル用）
+// トーンサンプル用（伸びてる投稿から取得、最新は除外）
 async function getRecentPosts(accountId: AccountType, limit: number = 5) {
   const posts = await getSavedPosts(accountId);
-  // 最新のものをlimit件返す（JSONは既にソート済み想定）
-  return posts.slice(0, limit).map((p: { text: string }) => p.text);
+  // 伸びてる投稿からトーンを学ぶ（最新5件は除外）
+  return posts
+    .slice(5)
+    .sort((a: { engagement?: number; metrics?: { likes: number; retweets: number } }, b: { engagement?: number; metrics?: { likes: number; retweets: number } }) => {
+      const aScore = a.engagement || (a.metrics?.likes || 0) + (a.metrics?.retweets || 0);
+      const bScore = b.engagement || (b.metrics?.likes || 0) + (b.metrics?.retweets || 0);
+      return bScore - aScore;
+    })
+    .slice(0, limit)
+    .map((p: { text: string }) => p.text);
 }
 
 // POST: 自動投稿実行（Vercel AI SDK版）
@@ -150,14 +187,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid account' }, { status: 400 });
     }
 
-    // モード選択（A:B = 50:50）- リクエストで指定があればそれを使用
-    const mode = requestedMode || (Math.random() < 0.5 ? 'self' : 'transform');
-
     // データを先に取得
     const recentPosts = await getRecentPosts(accountId, 5);
-    const sourcePosts = mode === 'self'
-      ? await getOldPosts(accountId, 10)
-      : await getBuzzPosts(10);
+    const oldPosts = await getOldPosts(accountId, 10);
+    const buzzPosts = await getBuzzPosts(10);
+
+    // モード選択 - 50:50
+    const mode = requestedMode || (Math.random() < 0.5 ? 'self' : 'transform');
+
+    const sourcePosts = mode === 'self' ? oldPosts : buzzPosts;
 
     console.log(`[Automation] Mode: ${mode}, Source posts: ${sourcePosts.length}, Recent: ${recentPosts.length}`);
 
@@ -211,16 +249,42 @@ ${recentPosts.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n\n')}
 
 【重要】投稿文のみを出力。説明や前置きは一切不要。「投稿を作成しました」等の文言も禁止。`;
 
-    const result = await generateText({
-      model: getModel(),
-      system: systemPrompt,
-      prompt: `アカウント「${accountId}」向けの投稿を1つ生成してください。`,
-    });
+    // 最大3回まで再生成（NGワードチェック）
+    let generatedText = '';
+    let retryCount = 0;
+    const maxRetries = 3;
 
-    const generatedText = result.text.trim();
+    while (retryCount < maxRetries) {
+      const result = await generateText({
+        model: getModel(),
+        system: systemPrompt,
+        prompt: `アカウント「${accountId}」向けの投稿を1つ生成してください。`,
+      });
+
+      generatedText = result.text.trim();
+      const validation = validatePost(generatedText, accountId);
+
+      if (validation.valid) {
+        break;
+      }
+
+      console.log(`[Automation] NGワード検出（試行${retryCount + 1}）: ${validation.reason}`);
+      retryCount++;
+
+      if (retryCount >= maxRetries) {
+        console.error(`[Automation] ${maxRetries}回再生成してもNGワードが除去できませんでした`);
+        return NextResponse.json({
+          success: false,
+          error: `NGワードが除去できません: ${validation.reason}`,
+          accountId,
+          retries: retryCount,
+        }, { status: 400 });
+      }
+    }
+
     const processingTime = Date.now() - startTime;
 
-    console.log(`[Automation] Generated in ${processingTime}ms, mode=${mode}`);
+    console.log(`[Automation] Generated in ${processingTime}ms, mode=${mode}, retries=${retryCount}`);
     console.log(`[Automation] Text: ${generatedText.substring(0, 100)}...`);
 
     // ドライラン
