@@ -6,7 +6,7 @@
 import { TwitterApi } from 'twitter-api-v2';
 
 // アカウント種別
-export type AccountType = 'liver' | 'chatre1' | 'chatre2' | 'wordpress';
+export type AccountType = 'tt_liver' | 'litz_grp' | 'chatre1' | 'chatre2' | 'wordpress';
 
 // アカウント設定
 export const ACCOUNTS: {
@@ -16,7 +16,8 @@ export const ACCOUNTS: {
   type: 'ライバー' | 'チャトレ';
   platform: 'twitter' | 'wordpress';
 }[] = [
-  { id: 'liver', name: 'ライバー事務所', handle: '@tt_liver', type: 'ライバー', platform: 'twitter' },
+  { id: 'tt_liver', name: 'ライバー事務所', handle: '@tt_liver', type: 'ライバー', platform: 'twitter' },
+  { id: 'litz_grp', name: 'ライバー事務所公式', handle: '@Litz_grp', type: 'ライバー', platform: 'twitter' },
   { id: 'chatre1', name: 'チャトレ事務所①', handle: '@mic_chat_', type: 'チャトレ', platform: 'twitter' },
   { id: 'chatre2', name: 'チャトレ事務所②', handle: '@ms_stripchat', type: 'チャトレ', platform: 'twitter' },
   { id: 'wordpress', name: 'WordPress記事', handle: 'チャトレブログ', type: 'チャトレ', platform: 'wordpress' },
@@ -63,12 +64,18 @@ function getTwitterClient(account: AccountType): TwitterApi | null {
   let accessTokenSecret: string | undefined;
 
   switch (account) {
-    case 'liver':
+    case 'tt_liver':
       apiKey = process.env.TWITTER_API_KEY_TT_LIVER;
       apiSecret = process.env.TWITTER_API_SECRET_TT_LIVER;
       accessToken = process.env.TWITTER_ACCESS_TOKEN_TT_LIVER;
       accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET_TT_LIVER;
-      console.log(`[Twitter] liver auth check - apiKey: ${apiKey ? apiKey.substring(0, 5) + '...' : 'NONE'}, accessToken: ${accessToken ? accessToken.substring(0, 10) + '...' : 'NONE'}`);
+      console.log(`[Twitter] tt_liver auth check - apiKey: ${apiKey ? apiKey.substring(0, 5) + '...' : 'NONE'}, accessToken: ${accessToken ? accessToken.substring(0, 10) + '...' : 'NONE'}`);
+      break;
+    case 'litz_grp':
+      apiKey = process.env.TWITTER_API_KEY_LITZ_GRP;
+      apiSecret = process.env.TWITTER_API_SECRET_LITZ_GRP;
+      accessToken = process.env.TWITTER_ACCESS_TOKEN_LITZ_GRP;
+      accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET_LITZ_GRP;
       break;
     case 'chatre1':
       apiKey = process.env.TWITTER_API_KEY_MIC_CHAT;
@@ -121,11 +128,59 @@ export function formatForTwitter(text: string): string {
 }
 
 /**
- * 指定アカウントにTwitter投稿
+ * 画像をTwitterにアップロードしてmedia_idを取得
+ */
+export async function uploadMediaToTwitter(
+  account: AccountType,
+  imageBuffer: Buffer,
+  mimeType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp' = 'image/jpeg'
+): Promise<string | null> {
+  try {
+    const client = getTwitterClient(account);
+    if (!client) {
+      console.error(`[Twitter] ${account}: 認証情報なし`);
+      return null;
+    }
+
+    // v1.1 APIでメディアアップロード
+    const mediaId = await client.v1.uploadMedia(imageBuffer, { mimeType });
+    console.log(`[Twitter] Media uploaded: ${mediaId}`);
+    return mediaId;
+  } catch (error: any) {
+    console.error(`[Twitter] Media upload error:`, error.message);
+    return null;
+  }
+}
+
+/**
+ * URLから画像をダウンロードしてBufferを取得
+ */
+export async function downloadImage(url: string): Promise<Buffer | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error(`[Image] Failed to download: ${response.status}`);
+      return null;
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch (error: any) {
+    console.error(`[Image] Download error:`, error.message);
+    return null;
+  }
+}
+
+/**
+ * 指定アカウントにTwitter投稿（画像オプション付き）
  */
 export async function postToTwitterAccount(
   text: string,
-  account: AccountType
+  account: AccountType,
+  options?: {
+    mediaIds?: string[];
+    imageUrls?: string[];
+    imageBuffers?: Buffer[];
+  }
 ): Promise<PostResult> {
   const accountInfo = ACCOUNTS.find(a => a.id === account);
   const accountName = accountInfo?.handle || account;
@@ -144,7 +199,37 @@ export async function postToTwitterAccount(
 
     const formatted = formatForTwitter(text);
     console.log(`[Twitter] Posting to ${accountName}, text length: ${formatted.length}`);
-    const tweet = await client.v2.tweet(formatted);
+
+    // 画像アップロード処理
+    let mediaIds: string[] = options?.mediaIds || [];
+
+    // URLから画像をダウンロードしてアップロード
+    if (options?.imageUrls && options.imageUrls.length > 0) {
+      for (const url of options.imageUrls.slice(0, 4)) { // 最大4枚
+        const buffer = await downloadImage(url);
+        if (buffer) {
+          const mediaId = await uploadMediaToTwitter(account, buffer);
+          if (mediaId) mediaIds.push(mediaId);
+        }
+      }
+    }
+
+    // Bufferから直接アップロード
+    if (options?.imageBuffers && options.imageBuffers.length > 0) {
+      for (const buffer of options.imageBuffers.slice(0, 4 - mediaIds.length)) {
+        const mediaId = await uploadMediaToTwitter(account, buffer);
+        if (mediaId) mediaIds.push(mediaId);
+      }
+    }
+
+    // 投稿（画像付きまたはテキストのみ）
+    const tweetOptions: any = { text: formatted };
+    if (mediaIds.length > 0) {
+      tweetOptions.media = { media_ids: mediaIds };
+      console.log(`[Twitter] Posting with ${mediaIds.length} images`);
+    }
+
+    const tweet = await client.v2.tweet(tweetOptions);
 
     return {
       platform: 'twitter',
@@ -170,12 +255,20 @@ export async function postToTwitterAccount(
 }
 
 /**
- * 全アカウントに投稿（それぞれ別の内容）
+ * 全アカウントに投稿（それぞれ別の内容、画像オプション付き）
  */
 export async function postToAllAccounts(
-  posts: { account: AccountType; text: string }[]
+  posts: {
+    account: AccountType;
+    text: string;
+    imageUrls?: string[];
+    imageBuffers?: Buffer[];
+  }[]
 ): Promise<PostResult[]> {
-  const promises = posts.map(p => postToTwitterAccount(p.text, p.account));
+  const promises = posts.map(p => postToTwitterAccount(p.text, p.account, {
+    imageUrls: p.imageUrls,
+    imageBuffers: p.imageBuffers,
+  }));
   const results = await Promise.allSettled(promises);
 
   return results.map((result, i) => {

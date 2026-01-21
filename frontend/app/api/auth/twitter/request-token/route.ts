@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 
-type AccountType = 'tt_liver' | 'mic_chat' | 'ms_stripchat';
+type AccountType = 'tt_liver' | 'litz_grp' | 'mic_chat' | 'ms_stripchat';
 
 function getCredentials(account: AccountType) {
   const suffix = account.toUpperCase().replace('_', '_');

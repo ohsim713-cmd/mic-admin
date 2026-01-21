@@ -3,7 +3,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
 
 export function getModel() {
-  const modelId = process.env.AI_MODEL || 'gemini-2.0-flash';
+  const modelId = process.env.AI_MODEL || 'gemini-3-pro';
 
   switch (modelId) {
     case 'claude-3.5-haiku':

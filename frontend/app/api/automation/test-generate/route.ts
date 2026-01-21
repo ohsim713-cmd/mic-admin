@@ -14,7 +14,8 @@ import path from 'path';
 
 // アカウント別の禁止ワード
 const FORBIDDEN_WORDS: Record<AccountType, string[]> = {
-  liver: ['チャトレ', 'チャットレディ', 'ストチャ', 'Stripchat', 'アダルト', '脱ぐ', 'エロ', 'セクシー', '下着', '裸'],
+  tt_liver: ['チャトレ', 'チャットレディ', 'ストチャ', 'Stripchat', 'アダルト', '脱ぐ', 'エロ', 'セクシー', '下着', '裸'],
+  litz_grp: ['チャトレ', 'チャットレディ', 'ストチャ', 'Stripchat', 'アダルト', '脱ぐ', 'エロ', 'セクシー', '下着', '裸'],
   chatre1: ['ライバー', 'TikTok', 'TikTokライブ', 'Pococha', '17LIVE', 'BIGO'],
   chatre2: ['ライバー', 'TikTok', 'TikTokライブ', 'Pococha', '17LIVE', 'BIGO'],
   wordpress: [],
@@ -34,7 +35,7 @@ function validatePost(text: string, accountId: AccountType): { valid: boolean; r
 // アカウント別の詳細説明
 function getAccountDescription(accountId: AccountType): string {
   const descriptions: Record<AccountType, string> = {
-    liver: `ライバー事務所（@tt_liver）
+    tt_liver: `ライバー事務所（@tt_liver）
 - ライブ配信者を募集する事務所
 - 対応プラットフォーム: Pococha、TikTok LIVE、17LIVE、BIGO LIVE、IRIAM、ふわっち、REALITY、SHOWROOM
 - 立場: 事務所のスタッフとして、ライバーになりたい女性を募集する
@@ -43,6 +44,15 @@ function getAccountDescription(accountId: AccountType): string {
 - 【禁止表現】「高収入を目指しませんか」「サポートします」「無料相談」「お気軽にお問い合わせください」など求人サイトっぽい硬い表現は絶対NG
 - 【絶対禁止ワード】チャトレ、チャットレディ、ストチャ、Stripchat、アダルト、脱ぐ、エロ、セクシー、下着、裸
 - 【OK表現】「実はこれ、〜なんです」「気になる方はDMください」「〜って知ってました？」など自然で親しみやすい敬語
+- キーワード: ライバー、配信、稼ぐ、副業、Pococha、17LIVE、TikTokライブ`,
+    litz_grp: `ライバー事務所公式（@Litz_grp）
+- ライブ配信者を募集する事務所の公式アカウント
+- 対応プラットフォーム: Pococha、TikTok LIVE、17LIVE、BIGO LIVE、IRIAM、ふわっち、REALITY、SHOWROOM
+- 立場: 事務所の公式として、ライバーになりたい女性を募集する
+- ターゲット: ライブ配信で稼ぎたい女性
+- トーン: 敬語ベースだけど親しみやすい口調。「〜ですよね」「〜なんです」など柔らかい敬語
+- 【禁止表現】「高収入を目指しませんか」「サポートします」「無料相談」「お気軽にお問い合わせください」など求人サイトっぽい硬い表現は絶対NG
+- 【絶対禁止ワード】チャトレ、チャットレディ、ストチャ、Stripchat、アダルト、脱ぐ、エロ、セクシー、下着、裸
 - キーワード: ライバー、配信、稼ぐ、副業、Pococha、17LIVE、TikTokライブ`,
     chatre1: `チャトレ事務所（@mic_chat_）
 - チャットレディ事務所の代表アカウント
@@ -142,7 +152,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
     const {
-      accountId = 'liver' as AccountType,
+      accountId = 'tt_liver' as AccountType,
       count = 3,
       mode: requestedMode,
       minChars = 140,

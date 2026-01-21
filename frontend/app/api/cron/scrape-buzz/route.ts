@@ -8,9 +8,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { saveToBlob, loadFromBlob, BLOB_FILES } from '@/lib/storage/blob';
 
 export const runtime = 'nodejs';
-export const maxDuration = 60;
+export const maxDuration = 300; // Vercel Pro: 5分まで
 
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || '';
 const RAPIDAPI_HOST = 'twitter241.p.rapidapi.com';
@@ -227,12 +228,21 @@ export async function GET(request: NextRequest) {
 
     console.log(`[CRON/ScrapeBuzz] Using query group ${groupIndex}:`, queries);
 
-    // buzz_stock.json読み込み
+    // buzz_stock.json読み込み（Blob優先、ローカルファイルにフォールバック）
     const buzzPath = path.join(process.cwd(), 'knowledge', 'buzz_stock.json');
     let buzzStock;
     try {
-      const content = await fs.readFile(buzzPath, 'utf-8');
-      buzzStock = JSON.parse(content);
+      // まずBlobから取得を試みる
+      const blobData = await loadFromBlob(BLOB_FILES.BUZZ_STOCK);
+      if (blobData) {
+        buzzStock = blobData;
+        console.log('[CRON/ScrapeBuzz] Loaded from Blob');
+      } else {
+        // Blobにない場合はローカルファイルから
+        const content = await fs.readFile(buzzPath, 'utf-8');
+        buzzStock = JSON.parse(content);
+        console.log('[CRON/ScrapeBuzz] Loaded from local file');
+      }
     } catch {
       return NextResponse.json({ error: 'buzz_stock.json not found' }, { status: 500 });
     }
@@ -331,8 +341,17 @@ export async function GET(request: NextRequest) {
 
     buzzStock.lastUpdated = new Date().toISOString();
 
-    // 保存
-    await fs.writeFile(buzzPath, JSON.stringify(buzzStock, null, 2), 'utf-8');
+    // Vercel Blobに保存（read-only対策）
+    try {
+      await saveToBlob(BLOB_FILES.BUZZ_STOCK, buzzStock);
+      console.log('[CRON/ScrapeBuzz] Saved to Blob');
+    } catch (blobError) {
+      console.error('[CRON/ScrapeBuzz] Blob save failed:', blobError);
+      // ローカル環境用のフォールバック（開発時のみ）
+      if (process.env.NODE_ENV === 'development') {
+        await fs.writeFile(buzzPath, JSON.stringify(buzzStock, null, 2), 'utf-8');
+      }
+    }
 
     console.log(`[CRON/ScrapeBuzz] Added ${addedCount} posts, total: ${totalPosts}`);
 

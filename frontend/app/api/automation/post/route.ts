@@ -7,14 +7,18 @@ import {
   ACCOUNTS,
 } from '@/lib/dm-hunter/sns-adapter';
 import { POSTING_SCHEDULE } from '@/lib/automation/scheduler';
-import { addToPostsHistory } from '@/lib/analytics/posts-history';
+// import { addToPostsHistory } from '@/lib/analytics/posts-history'; // Vercelはread-only
 import { notifyPostSuccess, notifyError } from '@/lib/discord';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { loadFromBlob, BLOB_FILES } from '@/lib/storage/blob';
+// Note: fs/path は使わない（Vercel read-only対策）
+
+export const runtime = 'nodejs';
+export const maxDuration = 300; // Vercel Pro: 5分まで
 
 // アカウント別の禁止ワード
 const FORBIDDEN_WORDS: Record<AccountType, string[]> = {
-  liver: ['チャトレ', 'チャットレディ', 'ストチャ', 'Stripchat', 'アダルト', '脱ぐ', 'エロ', 'セクシー', '下着', '裸'],
+  tt_liver: ['チャトレ', 'チャットレディ', 'ストチャ', 'Stripchat', 'アダルト', '脱ぐ', 'エロ', 'セクシー', '下着', '裸'],
+  litz_grp: ['チャトレ', 'チャットレディ', 'ストチャ', 'Stripchat', 'アダルト', '脱ぐ', 'エロ', 'セクシー', '下着', '裸'],
   chatre1: ['ライバー', 'TikTok', 'TikTokライブ', 'Pococha', '17LIVE', 'BIGO'],
   chatre2: ['ライバー', 'TikTok', 'TikTokライブ', 'Pococha', '17LIVE', 'BIGO'],
   wordpress: [],
@@ -38,7 +42,7 @@ function getAccountInfo(accountId: AccountType) {
 
   // アカウント別の詳細説明
   const descriptions: Record<AccountType, string> = {
-    liver: `ライバー事務所（@tt_liver）
+    tt_liver: `ライバー事務所（@tt_liver）
 - ライブ配信者を募集する事務所
 - 対応プラットフォーム: Pococha、TikTok LIVE、17LIVE、BIGO LIVE、IRIAM、ふわっち、REALITY、SHOWROOM
 - 立場: 事務所のスタッフとして、ライバーになりたい女性を募集する
@@ -46,7 +50,18 @@ function getAccountInfo(accountId: AccountType) {
 - トーン: 敬語ベースだけど親しみやすい口調。「〜ですよね」「〜なんです」など柔らかい敬語
 - 【禁止表現】「高収入を目指しませんか」「サポートします」「無料相談」「お気軽にお問い合わせください」など求人サイトっぽい硬い表現は絶対NG
 - 【絶対禁止ワード】チャトレ、チャットレディ、ストチャ、Stripchat、アダルト、脱ぐ、エロ、セクシー、下着、裸 ← これらのワードは絶対に使用禁止！ライバーは健全な配信なのでアダルト要素は一切NG
-- 【OK表現】「実はこれ、〜なんです」「気になる方はDMください」「〜って知ってました？」など自然で親しみやすい敬語
+- 【禁止】毎回DMや相談に誘導しない。くどくなるので自然な投稿で終わらせる
+- キーワード: ライバー、配信、稼ぐ、副業、Pococha、17LIVE、TikTokライブ
+- 【重要】個人ライバーの体験談ではなく、事務所としてライバーを勧誘する投稿にすること`,
+    litz_grp: `ライバー事務所公式（@Litz_grp）
+- ライブ配信者を募集する事務所の公式アカウント
+- 対応プラットフォーム: Pococha、TikTok LIVE、17LIVE、BIGO LIVE、IRIAM、ふわっち、REALITY、SHOWROOM
+- 立場: 事務所の公式として、ライバーになりたい女性を募集する
+- ターゲット: ライブ配信で稼ぎたい女性
+- トーン: 敬語ベースだけど親しみやすい口調。「〜ですよね」「〜なんです」など柔らかい敬語
+- 【禁止表現】「高収入を目指しませんか」「サポートします」「無料相談」「お気軽にお問い合わせください」など求人サイトっぽい硬い表現は絶対NG
+- 【絶対禁止ワード】チャトレ、チャットレディ、ストチャ、Stripchat、アダルト、脱ぐ、エロ、セクシー、下着、裸 ← これらのワードは絶対に使用禁止！ライバーは健全な配信なのでアダルト要素は一切NG
+- 【禁止】毎回DMや相談に誘導しない。くどくなるので自然な投稿で終わらせる
 - キーワード: ライバー、配信、稼ぐ、副業、Pococha、17LIVE、TikTokライブ
 - 【重要】個人ライバーの体験談ではなく、事務所としてライバーを勧誘する投稿にすること`,
     chatre1: `チャトレ事務所（@mic_chat_）
@@ -78,25 +93,23 @@ function getAccountInfo(accountId: AccountType) {
   };
 }
 
-// バズ投稿を取得（日本語のみ、英語除外）
+// バズ投稿を取得（日本語のみ、英語除外）- Blobのみ（Vercel read-only対策）
 async function getBuzzPosts(limit: number = 10) {
-  const buzzPath = path.join(process.cwd(), 'knowledge', 'buzz_stock.json');
-  const trendingPath = path.join(process.cwd(), 'knowledge', 'trending_posts.json');
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let all: any[] = [];
+
+  // Blobから取得（ローカルファイルは使わない）
   try {
-    const buzzStock = JSON.parse(await fs.readFile(buzzPath, 'utf-8'));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    all.push(...Object.values(buzzStock.genres).flatMap((g: any) => g.posts));
-  } catch {
-    // ignore
-  }
-  try {
-    const trending = JSON.parse(await fs.readFile(trendingPath, 'utf-8'));
-    all.push(...trending.posts);
-  } catch {
-    // ignore
+    const blobData = await loadFromBlob<{ genres: Record<string, { posts: any[] }> }>(BLOB_FILES.BUZZ_STOCK);
+    if (blobData) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      all.push(...Object.values(blobData.genres).flatMap((g: any) => g.posts));
+      console.log('[Automation] Loaded buzz_stock from Blob');
+    } else {
+      console.log('[Automation] No buzz_stock in Blob');
+    }
+  } catch (e) {
+    console.error('[Automation] Failed to load buzz_stock from Blob:', e);
   }
 
   // 日本語を含む投稿のみ（英語広告を除外）
@@ -109,16 +122,39 @@ async function getBuzzPosts(limit: number = 10) {
     .map((p) => ({ text: p.text, engagement: p.engagement }));
 }
 
-// 保存済みの過去投稿を取得（JSONファイルから）
+// 保存済みの過去投稿を取得（Blobのみ - Vercel read-only対策）
 async function getSavedPosts(accountId: AccountType) {
+  // アカウント別のBlobファイル名
+  const blobFile = accountId === 'tt_liver' ? BLOB_FILES.TT_LIVER_TWEETS
+    : accountId === 'litz_grp' ? BLOB_FILES.LITZ_GRP_TWEETS
+    : accountId === 'ms_stripchat' ? BLOB_FILES.MS_STRIPCHAT_TWEETS
+    : BLOB_FILES.LIVER_TWEETS;
+
   try {
-    const filePath = path.join(process.cwd(), 'knowledge', `${accountId}_tweets.json`);
-    const data = JSON.parse(await fs.readFile(filePath, 'utf-8'));
-    return data.tweets || [];
-  } catch (error) {
-    console.error(`[Automation] Failed to load saved posts for ${accountId}:`, error);
-    return [];
+    const blobData = await loadFromBlob<{ tweets: any[] }>(blobFile);
+    if (blobData?.tweets) {
+      console.log(`[Automation] Loaded ${accountId} tweets from Blob (${blobData.tweets.length} tweets)`);
+      return blobData.tweets;
+    }
+    console.log(`[Automation] No tweets in Blob for ${accountId}`);
+  } catch (e) {
+    console.error(`[Automation] Failed to load tweets from Blob for ${accountId}:`, e);
   }
+
+  // litz_grp の場合は tt_liver のデータを参照
+  if (accountId === 'litz_grp') {
+    try {
+      const fallbackData = await loadFromBlob<{ tweets: any[] }>(BLOB_FILES.TT_LIVER_TWEETS);
+      if (fallbackData?.tweets) {
+        console.log(`[Automation] Using tt_liver tweets as fallback for litz_grp`);
+        return fallbackData.tweets;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return [];
 }
 
 // 過去の伸びた投稿を取得（JSONファイルから）
@@ -306,17 +342,18 @@ ${recentPosts.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n\n')}
     ]);
 
     if (postResult.success) {
-      // 投稿履歴に記録
-      await addToPostsHistory({
-        id: postResult.id || `post_${Date.now()}`,
-        text: generatedText,
-        account: accountId,
-        target: mode === 'self' ? '過去投稿リライト' : 'バズ投稿変換',
-        benefit: 'AI自動生成',
-        score: 10,
-        tweetId: postResult.id,
-        timestamp: new Date().toISOString(),
-      });
+      // Note: Vercelはread-onlyなのでファイル書き込みスキップ
+      // 将来的にはSupabaseに保存する
+      // await addToPostsHistory({
+      //   id: postResult.id || `post_${Date.now()}`,
+      //   text: generatedText,
+      //   account: accountId,
+      //   target: mode === 'self' ? '過去投稿リライト' : 'バズ投稿変換',
+      //   benefit: 'AI自動生成',
+      //   score: 10,
+      //   tweetId: postResult.id,
+      //   timestamp: new Date().toISOString(),
+      // });
 
       // Discord通知
       notifyPostSuccess({
