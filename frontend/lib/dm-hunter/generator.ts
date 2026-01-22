@@ -224,26 +224,31 @@ function getKnowledgeSnippets(
   return snippets;
 }
 
+// ライバーアカウント共通設定
+const LIVER_CONFIG = {
+  jobType: 'ライバー',
+  jobDescription: 'ライブ配信アプリでのライバー活動',
+  stance: 'ライバー事務所のスタッフ',
+  targets: [
+    { id: 'beginner', label: '完全未経験', concerns: '配信って難しくない？', desires: '楽しく稼ぎたい' },
+    { id: 'young', label: '10〜20代', concerns: 'フォロワー少なくても大丈夫？', desires: 'インフルエンサーになりたい' },
+    { id: 'side-job', label: '副業希望者', concerns: '顔バレしない？', desires: '空き時間で月5-10万' },
+    { id: 'talent', label: '歌・ダンス特技', concerns: '特技を活かせる？', desires: 'パフォーマンスで稼ぎたい' },
+  ],
+  benefits: [
+    { id: 'fun', label: '楽しく稼げる', hook: 'ファンと話すだけで報酬', proof: '雑談配信だけで月10万稼いでる子もいる' },
+    { id: 'no-quota', label: 'ノルマなし', hook: '好きな時に好きなだけ', proof: '週1配信でも全然OK' },
+    { id: 'support', label: '事務所サポート', hook: '配信のコツ教えます', proof: '未経験から3ヶ月で月30万達成' },
+    { id: 'gift', label: '投げ銭収入', hook: 'ファンからギフトもらえる', proof: '1配信で5万円分のギフトもらった子も' },
+    { id: 'fame', label: '知名度UP', hook: 'SNSのフォロワー増える', proof: 'ライバーきっかけでインフルエンサーになった子も' },
+  ],
+};
+
 // アカウント種別ごとの設定
-export const ACCOUNT_CONFIG = {
-  liver: {
-    jobType: 'ライバー',
-    jobDescription: 'ライブ配信アプリでのライバー活動',
-    stance: 'ライバー事務所のスタッフ',
-    targets: [
-      { id: 'beginner', label: '完全未経験', concerns: '配信って難しくない？', desires: '楽しく稼ぎたい' },
-      { id: 'young', label: '10〜20代', concerns: 'フォロワー少なくても大丈夫？', desires: 'インフルエンサーになりたい' },
-      { id: 'side-job', label: '副業希望者', concerns: '顔バレしない？', desires: '空き時間で月5-10万' },
-      { id: 'talent', label: '歌・ダンス特技', concerns: '特技を活かせる？', desires: 'パフォーマンスで稼ぎたい' },
-    ],
-    benefits: [
-      { id: 'fun', label: '楽しく稼げる', hook: 'ファンと話すだけで報酬', proof: '雑談配信だけで月10万稼いでる子もいる' },
-      { id: 'no-quota', label: 'ノルマなし', hook: '好きな時に好きなだけ', proof: '週1配信でも全然OK' },
-      { id: 'support', label: '事務所サポート', hook: '配信のコツ教えます', proof: '未経験から3ヶ月で月30万達成' },
-      { id: 'gift', label: '投げ銭収入', hook: 'ファンからギフトもらえる', proof: '1配信で5万円分のギフトもらった子も' },
-      { id: 'fame', label: '知名度UP', hook: 'SNSのフォロワー増える', proof: 'ライバーきっかけでインフルエンサーになった子も' },
-    ],
-  },
+export const ACCOUNT_CONFIG: Record<string, typeof LIVER_CONFIG> = {
+  // ライバーアカウント
+  tt_liver: LIVER_CONFIG,
+  litz_grp: LIVER_CONFIG,
   chatre1: {
     jobType: 'チャットレディ',
     jobDescription: 'メールやビデオ通話でのお仕事',
@@ -591,7 +596,7 @@ export async function generatePostsForAllAccounts(): Promise<{
   account: AccountType;
   post: GeneratedPost;
 }[]> {
-  const accounts: AccountType[] = ['liver', 'chatre1', 'chatre2'];
+  const accounts: AccountType[] = ['tt_liver', 'chatre1', 'chatre2'];
 
   const results = await Promise.all(
     accounts.map(async (account) => {
