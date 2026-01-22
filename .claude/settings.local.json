@@ -49,7 +49,25 @@
       "Bash(vercel --prod:*)",
       "Bash(printf:*)",
       "Bash(grep:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(git config:*)",
+      "Bash(npx next build)",
+      "Bash(dir \"C:\\\\Users\\\\user\\\\.gemini\\\\antigravity\\\\playground\\\\mic-admin-temp\\\\.github\\\\workflows\")",
+      "Bash(dir \"C:\\\\Users\\\\user\\\\.gemini\\\\antigravity\\\\playground\\\\mic-admin-temp\\\\frontend\\\\app\\\\api\\\\auth\")",
+      "Bash(dir \"C:\\\\Users\\\\user\\\\.gemini\\\\antigravity\\\\playground\\\\mic-admin-temp\\\\frontend\\\\app\\\\api\\\\auth\\\\twitter\")",
+      "Bash(npx ts-node:*)",
+      "Bash(npx tsx:*)",
+      "Bash(start \"\" \"C:\\\\Users\\\\user\\\\.gemini\\\\antigravity\\\\playground\\\\mic-admin-temp\\\\frontend\\\\test-image-chatre-1769004416684.png\")",
+      "Bash(explorer \"C:\\\\Users\\\\user\\\\.gemini\\\\antigravity\\\\playground\\\\mic-admin-temp\\\\frontend\")",
+      "Bash(dir \"c:\\\\Users\\\\user\\\\.gemini\\\\antigravity\\\\playground\\\\charged-tyson\\\\frontend\\\\fonts\")",
+      "Bash(npm uninstall:*)",
+      "Bash(npm ls:*)",
+      "Bash(ping:*)",
+      "Bash(pushd \"C:\\\\Users\\\\user\\\\.gemini\\\\antigravity\\\\playground\\\\mic-admin-temp\\\\frontend\")",
+      "Bash(del \"C:\\\\Users\\\\user\\\\.gemini\\\\antigravity\\\\playground\\\\mic-admin-temp\\\\frontend\\\\.next\\\\dev\\\\lock\")",
+      "Bash(echo.)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)"
     ]
   }
 }

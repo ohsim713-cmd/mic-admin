@@ -34,6 +34,6 @@ export function getModel() {
     case 'o3-mini':
       return openai('o3-mini');
     default:
-      return google('gemini-2.0-flash');
+      return google('gemini-3-pro-preview');
   }
 }

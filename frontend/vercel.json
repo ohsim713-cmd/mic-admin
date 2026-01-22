@@ -26,6 +26,8 @@
     { "path": "/api/cron/auto-post?account=ms_stripchat", "schedule": "0 18 * * *" },
     { "path": "/api/cron/auto-post?account=ms_stripchat", "schedule": "30 21 * * *" },
     { "path": "/api/cron/scrape-buzz", "schedule": "0 21 * * *" },
-    { "path": "/api/cron/sync-tweets", "schedule": "0 20 * * *" }
+    { "path": "/api/cron/sync-tweets", "schedule": "0 20 * * *" },
+    { "path": "/api/cron/wordpress-post", "schedule": "0 1 * * *" },
+    { "path": "/api/cron/seo-collect", "schedule": "0 6 * * *" }
   ]
 }

@@ -1,3 +1,20 @@
 {
-  "schedules": []
+  "schedules": [
+    {
+      "id": "daily-chatlady-seo",
+      "enabled": true,
+      "intervalHours": 24,
+      "keywords": "",
+      "targetLength": "2000-2500",
+      "tone": "親しみやすい",
+      "publishStatus": "publish",
+      "generateThumbnail": false,
+      "businessType": "chat-lady",
+      "nextRun": "2026-01-22T13:42:32.439Z",
+      "lastRun": "2026-01-21T13:42:32.439Z",
+      "lastPostId": 379,
+      "lastPostTitle": "チャットレディは人間関係なし？月58万稼いだ未経験者の実例",
+      "lastMode": "self"
+    }
+  ]
 }
