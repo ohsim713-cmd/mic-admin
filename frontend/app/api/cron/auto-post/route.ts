@@ -54,25 +54,18 @@ function getAccountInfo(accountId: AccountType) {
 - トーン: プロフェッショナル、稼ぐコツを伝える。「うちで始めませんか？」「サポートします」
 - キーワード: チャトレ、配信、稼ぐ、在宅、ストチャ、事務所、サポート
 - 【重要】個人チャトレの体験談ではなく、事務所としてチャトレを勧誘する投稿にすること`,
-    chatre2: `チャトレ事務所②（@ms_stripchat）
-- 海外向けチャットレディを募集する事務所（Stripchat）
-- 立場: 事務所のスタッフとして、海外チャトレになりたい女性を募集する
-- ターゲット: 高単価で稼ぎたい女性
-- トーン: 海外サイトの魅力、高単価をアピール。「うちで始めませんか？」「サポートします」
-- キーワード: 海外チャトレ、ストチャ、高単価、稼ぐ、事務所、サポート
-- 【重要】個人チャトレの体験談ではなく、事務所としてチャトレを勧誘する投稿にすること
+    chatre2: `チャトレ事務所（@ms_stripchat）
+- 国内・海外両方のチャトレサイトに対応する事務所
+- 国内サイト: FANZA、エンジェルライブ、ジュエルライブなど
+- 海外サイト: Stripchat、FC2、FC2ラブチップ、デラックスライブなど
+- ターゲット: チャトレで稼ぎたい女性（国内・海外問わず）
+- トーン: 敬語ベースで親しみやすい口調。「〜なんですよね」「〜だったりします」など柔らかい敬語
+- 【禁止表現】「高収入を目指しませんか」「サポートします」「無料相談」など求人サイトっぽい硬い表現は絶対NG
+- 【絶対禁止ワード】ライバー、TikTok、TikTokライブ ← これらはライバー事務所のワードなので使用禁止
+- 【OK表現】「うちでは国内も海外も〜」「FANZAだと〜ですよね」「ストチャなら〜」「詳しくはDMで」など自然な敬語
+- キーワード: チャトレ、FANZA、エンジェルライブ、ストチャ、Stripchat、FC2、高単価
+- 【重要】国内・海外サイトの違いや特徴をリアルに発信すること
 - 【禁止】毎回DMや相談に誘導しない。くどくなるので自然な投稿で終わらせる`,
-    ms_stripchat: `チャトレ事務所（@ms_stripchat）
-- 海外向けチャットレディを募集する事務所（Stripchat専門）
-- 立場: 事務所のスタッフとして、海外チャトレになりたい女性を募集する
-- ターゲット: 高単価で稼ぎたい女性、在宅で自由に働きたい女性
-- トーン: 親しみやすく、海外サイトの魅力や高単価をアピール
-- 【禁止表現】「高収入を目指しませんか」「無料相談」など求人サイトっぽい硬い表現はNG
-- 【OK表現】「実はこれ、〜なんです」「気になる方はDMください」「〜って知ってました？」など自然な表現
-- キーワード: チャトレ、ストチャ、Stripchat、高単価、稼ぐ、在宅、海外サイト
-- 【重要】個人チャトレの体験談ではなく、事務所としてチャトレを勧誘する投稿にすること
-- 【禁止】毎回DMや相談に誘導しない。くどくなるので自然な投稿で終わらせる
-- 【絶対禁止ワード】ライバー、TikTok、Pococha、17LIVE、BIGO ← ライバー関連ワードは使用禁止`,
     wordpress: `WordPressブログ
 - チャットレディ関連の記事
 - ターゲット: チャトレに興味がある女性`,
@@ -89,7 +82,7 @@ async function getSavedPosts(accountId: AccountType) {
   // アカウント別のBlobファイル名
   const blobFile = accountId === 'tt_liver' ? BLOB_FILES.TT_LIVER_TWEETS
     : accountId === 'litz_grp' ? BLOB_FILES.LITZ_GRP_TWEETS
-    : accountId === 'ms_stripchat' ? BLOB_FILES.MS_STRIPCHAT_TWEETS
+    : accountId === 'chatre2' ? BLOB_FILES.MS_STRIPCHAT_TWEETS
     : BLOB_FILES.LIVER_TWEETS;
 
   try {
@@ -179,7 +172,7 @@ export async function GET(request: NextRequest) {
   // クエリパラメータでアカウント指定（デフォルトはtt_liver）
   const { searchParams } = new URL(request.url);
   const accountParam = searchParams.get('account');
-  const validAccounts: AccountType[] = ['tt_liver', 'litz_grp', 'ms_stripchat'];
+  const validAccounts: AccountType[] = ['tt_liver', 'litz_grp', 'chatre2'];
   const accountId: AccountType = validAccounts.includes(accountParam as AccountType)
     ? (accountParam as AccountType)
     : 'tt_liver';
@@ -287,7 +280,7 @@ ${shouldIncludeCTA ? '- 最後にさりげなくDM誘導を入れてもOK（「�
     const imageBuffer: Buffer | null = null;
     /*
     if (shouldGenerateImage) {
-      const accountType = accountId === 'ms_stripchat' ? 'chatre' : 'liver';
+      const accountType = accountId === 'chatre2' ? 'chatre' : 'liver';
       console.log(`[CRON] Generating image for ${accountType}...`);
       imageBuffer = await generateImageForPost(generatedText, accountType);
       if (imageBuffer) {
