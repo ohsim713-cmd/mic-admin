@@ -64,9 +64,9 @@ export class ImagenClient {
       throw new Error('GEMINI_API_KEY is required');
     }
     this.genAI = new GoogleGenerativeAI(apiKey);
-    // Imagen 3 モデルを使用
+    // Gemini 2.0 Flash（画像生成対応）を使用
     this.model = this.genAI.getGenerativeModel({
-      model: 'imagen-3.0-generate-002',
+      model: 'gemini-2.0-flash-exp',
     });
   }
 
