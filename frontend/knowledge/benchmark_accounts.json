@@ -1,0 +1,105 @@
+{
+  "lastUpdated": "2026-01-22T00:00:00.000Z",
+  "categories": {
+    "chatre": {
+      "name": "チャトレ系",
+      "description": "チャットレディ・海外チャトレ事務所",
+      "accounts": [
+        {
+          "username": "zeno_chatlady",
+          "addedAt": "2026-01-22",
+          "note": "チャトレ事務所"
+        },
+        {
+          "username": "terakado_chat55",
+          "addedAt": "2026-01-22",
+          "note": "チャトレ"
+        },
+        {
+          "username": "STRIPCHAT_Queen",
+          "addedAt": "2026-01-22",
+          "note": "Stripchat系"
+        },
+        {
+          "username": "DXLIVE_Queenca",
+          "addedAt": "2026-01-22",
+          "note": "DXLIVE系"
+        },
+        {
+          "username": "UfIkERsxf941392",
+          "addedAt": "2026-01-22",
+          "note": ""
+        },
+        {
+          "username": "Noah_ChatLady",
+          "addedAt": "2026-01-22",
+          "note": "チャトレ"
+        },
+        {
+          "username": "chatlady_yuniko",
+          "addedAt": "2026-01-22",
+          "note": "チャトレ"
+        },
+        {
+          "username": "DX_JOB",
+          "addedAt": "2026-01-22",
+          "note": "DX系求人"
+        },
+        {
+          "username": "amica_chatlady",
+          "addedAt": "2026-01-22",
+          "note": "チャトレ事務所、note執筆"
+        }
+      ]
+    },
+    "liver": {
+      "name": "ライバー系",
+      "description": "ライバー事務所・配信者",
+      "accounts": [
+        {
+          "username": "seed_Liver",
+          "addedAt": "2026-01-22",
+          "note": "ライバー事務所"
+        },
+        {
+          "username": "muse_studio0700",
+          "addedAt": "2026-01-22",
+          "note": "ライバー事務所"
+        },
+        {
+          "username": "azu_live_xxx",
+          "addedAt": "2026-01-22",
+          "note": "ライバー"
+        }
+      ]
+    },
+    "sidejob": {
+      "name": "副業・在宅系",
+      "description": "副業・在宅ワーク・女性向け求人",
+      "accounts": []
+    },
+    "influencer": {
+      "name": "インフルエンサー系",
+      "description": "女性向けインフルエンサー・自己啓発",
+      "accounts": []
+    }
+  },
+  "externalSources": {
+    "blogs": [
+      {
+        "url": "https://livex.dev/?cat=11",
+        "name": "チャトレ記事",
+        "category": "chatre",
+        "addedAt": "2026-01-22"
+      }
+    ],
+    "note": [
+      {
+        "url": "https://note.com/amica_chatlady",
+        "name": "amica_chatlady note",
+        "category": "chatre",
+        "addedAt": "2026-01-22"
+      }
+    ]
+  }
+}
