@@ -80,9 +80,9 @@ jobs:
             echo "action=post" >> $GITHUB_OUTPUT
           fi
 
-      # 競合アカウントスクレイピング（データ収集用）
+      # 競合アカウントスクレイピング（手動実行のみ）
       - name: Scrape Competitor Accounts
-        if: steps.action.outputs.action == 'refill-stock' || steps.action.outputs.action == 'scrape-competitors'
+        if: steps.action.outputs.action == 'scrape-competitors'
         env:
           DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_URL }}
           AUTO_POST_SECRET: ${{ secrets.AUTO_POST_SECRET }}
