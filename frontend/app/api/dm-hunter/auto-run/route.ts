@@ -128,16 +128,25 @@ async function runSingleAccount(account: AccountType, dryRun: boolean, startTime
   });
 }
 
+// 内部アカウント名 → AccountType のマッピング
+const INTERNAL_TO_ACCOUNT_TYPE: Record<string, AccountType> = {
+  liver: 'tt_liver',
+  chatre1: 'chatre1',
+  chatre2: 'chatre2',
+};
+
 // 全アカウント実行（ストック優先）
 async function runAllAccounts(dryRun: boolean, startTime: number) {
   console.log('[DM Hunter] Getting posts from stock or generating...');
 
-  const accounts = ['tt_liver', 'chatre1', 'chatre2'] as const;
+  // post-stock用の内部アカウント名（'liver', 'chatre1', 'chatre2'）
+  const internalAccounts = ['liver', 'chatre1', 'chatre2'] as const;
 
   // ストックから取得、なければ生成
   const postsWithScore = await Promise.all(
-    accounts.map(async (account) => {
-      const { post, fromStock, stockRemaining } = await getPostForAccount(account);
+    internalAccounts.map(async (internalAccount) => {
+      const { post, fromStock, stockRemaining } = await getPostForAccount(internalAccount);
+      const account = INTERNAL_TO_ACCOUNT_TYPE[internalAccount] || internalAccount;
 
       // StockedPostの場合はtarget/benefitが文字列
       const target = typeof post.target === 'string' ? post.target : post.target.label;
@@ -145,7 +154,7 @@ async function runAllAccounts(dryRun: boolean, startTime: number) {
 
       const score = checkQuality(post.text);
 
-      console.log(`[DM Hunter] ${account}: ${fromStock ? 'from stock' : 'generated'}, remaining=${stockRemaining}`);
+      console.log(`[DM Hunter] ${internalAccount} (→ ${account}): ${fromStock ? 'from stock' : 'generated'}, remaining=${stockRemaining}`);
 
       return {
         account,
@@ -299,7 +308,7 @@ export async function GET() {
       todayPosts: 0,
       todaySuccess: 0,
       scheduledTimes: ['07:00', '12:00', '18:00', '20:00', '22:00', '24:00'],
-      stock: { counts: { tt_liver: 0, chatre1: 0, chatre2: 0 }, needsRefill: ['tt_liver', 'chatre1', 'chatre2'], isLow: true },
+      stock: { counts: { liver: 0, chatre1: 0, chatre2: 0 }, needsRefill: ['liver', 'chatre1', 'chatre2'], isLow: true },
     });
   }
 }
