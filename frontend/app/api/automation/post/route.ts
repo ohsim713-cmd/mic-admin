@@ -235,6 +235,9 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Automation] Mode: ${mode}, Source posts: ${sourcePosts.length}, Recent: ${recentPosts.length}`);
 
+    // DM誘導するかどうか（3回に1回程度）
+    const shouldIncludeCTA = Math.random() < 0.33;
+
     // プロンプトを構築
     const systemPrompt = mode === 'self'
       ? `あなたはSNS運用のエキスパートです。
@@ -258,6 +261,7 @@ ${recentPosts.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n\n')}
 - パクリに見えないように巧妙にアレンジ
 - 【重要】適度に改行を入れて読みやすくする（3〜5文ごとに空行）
 - 【重要】ハッシュタグは絶対に使用禁止
+${shouldIncludeCTA ? '- 最後にさりげなくDM誘導を入れてもOK（「気になる方はDMください」程度）' : '- 【重要】DM誘導や問い合わせ誘導は入れないこと。情報提供で終わる投稿にする'}
 
 【重要】投稿文のみを出力。説明や前置きは一切不要。「投稿を作成しました」等の文言も禁止。`
       : `あなたはSNS運用のエキスパートです。
@@ -266,11 +270,18 @@ ${recentPosts.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n\n')}
 ## アカウント情報
 ${accountInfo.description}
 
-## バズ投稿（参考）
+## バズ投稿（参考）- これらがバズった理由を分析して活かすこと
 ${sourcePosts.map((p: { text: string; engagement?: number }, i: number) => `${i + 1}. ${JSON.stringify(p)}`).join('\n')}
 
 ## 最近の投稿（トーン参考）
 ${recentPosts.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n\n')}
+
+## バズる投稿の特徴（必ず1つ以上取り入れる）
+- 冒頭で「え？」「実は」「意外と」など興味を引く
+- 具体的な数字を入れる（「月○万円」「○時間で」など）
+- 読み手の「あるある」や「知らなかった」を刺激
+- 最後にオチや気づきがある
+- 短文でリズムよく
 
 ## 条件
 - このアカウントのターゲット層（${accountInfo.type}に興味がある女性）に響く内容
@@ -282,6 +293,7 @@ ${recentPosts.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n\n')}
 - 絵文字は控えめに（0〜2個）
 - 【重要】適度に改行を入れて読みやすくする（3〜5文ごとに空行）
 - 【重要】ハッシュタグは絶対に使用禁止
+${shouldIncludeCTA ? '- 最後にさりげなくDM誘導を入れてもOK（「気になる方はDMください」程度）' : '- 【重要】DM誘導や問い合わせ誘導は入れないこと。情報提供や気づきで終わる投稿にする'}
 
 【重要】投稿文のみを出力。説明や前置きは一切不要。「投稿を作成しました」等の文言も禁止。`;
 
