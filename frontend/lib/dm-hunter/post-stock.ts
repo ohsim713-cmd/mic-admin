@@ -67,8 +67,15 @@ async function saveDB(db: PostStockDB): Promise<void> {
   await fs.writeFile(STOCK_PATH, JSON.stringify(db, null, 2));
 }
 
-// Twitterアカウントのみの型
-type TwitterAccountType = 'liver' | 'chatre1' | 'chatre2';
+// Twitterアカウントのみの型（内部名）
+export type TwitterAccountType = 'liver' | 'chatre1' | 'chatre2';
+
+// 内部名 → AccountType のマッピング
+const TWITTER_TO_ACCOUNT: Record<TwitterAccountType, AccountType> = {
+  liver: 'tt_liver',
+  chatre1: 'chatre1',
+  chatre2: 'chatre2',
+};
 
 /**
  * アカウント別のストック数を取得
@@ -208,11 +215,13 @@ export async function refillStock(account: TwitterAccountType): Promise<{
 
   for (let i = 0; i < needed + 1; i++) { // 1つ余分に生成（品質チェックで落ちる可能性があるため）
     try {
-      const post = await generateDMPostForAccount(account);
+      // 内部アカウント名をAccountTypeに変換
+      const accountType = TWITTER_TO_ACCOUNT[account];
+      const post = await generateDMPostForAccount(accountType);
       const score = checkQuality(post.text);
 
       if (score.total >= STOCK_CONFIG.minQualityScore) {
-        await addToStock(account, post, score.total);
+        await addToStock(accountType, post, score.total);
         added++;
 
         // 目標数に達したら終了
@@ -263,8 +272,11 @@ export async function getPostForAccount(account: TwitterAccountType): Promise<{
   fromStock: boolean;
   stockRemaining: number;
 }> {
+  // 内部アカウント名をAccountTypeに変換
+  const accountType = TWITTER_TO_ACCOUNT[account];
+
   // まずストックから取得を試みる
-  const stockedPost = await useFromStock(account);
+  const stockedPost = await useFromStock(accountType);
 
   if (stockedPost) {
     const counts = await getStockCounts();
@@ -277,7 +289,7 @@ export async function getPostForAccount(account: TwitterAccountType): Promise<{
 
   // ストックがなければ新規生成
   console.log(`[PostStock] No stock for ${account}, generating new...`);
-  const newPost = await generateDMPostForAccount(account);
+  const newPost = await generateDMPostForAccount(accountType);
   const counts = await getStockCounts();
 
   return {

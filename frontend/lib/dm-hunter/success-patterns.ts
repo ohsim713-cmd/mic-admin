@@ -95,7 +95,7 @@ export async function saveSuccessPattern(
   db.patterns.push(newPattern);
 
   // 各アカウントごとに最新20件を保持（古いものは削除）
-  const accounts: AccountType[] = ['liver', 'chatre1', 'chatre2'];
+  const accounts: AccountType[] = ['tt_liver', 'chatre1', 'chatre2'];
   for (const acc of accounts) {
     const accPatterns = db.patterns
       .filter(p => p.account === acc)
@@ -158,12 +158,12 @@ export async function getSuccessExamplesForPrompt(
 export async function getStats(): Promise<{
   total: number;
   avgScore: number;
-  byAccount: Record<'liver' | 'chatre1' | 'chatre2', number>;
+  byAccount: Record<'tt_liver' | 'chatre1' | 'chatre2', number>;
 }> {
   const db = await loadDB();
 
-  const byAccount: Record<'liver' | 'chatre1' | 'chatre2', number> = {
-    liver: db.patterns.filter(p => p.account === 'liver').length,
+  const byAccount: Record<'tt_liver' | 'chatre1' | 'chatre2', number> = {
+    tt_liver: db.patterns.filter(p => p.account === 'tt_liver').length,
     chatre1: db.patterns.filter(p => p.account === 'chatre1').length,
     chatre2: db.patterns.filter(p => p.account === 'chatre2').length,
   };

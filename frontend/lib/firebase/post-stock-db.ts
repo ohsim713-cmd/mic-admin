@@ -15,8 +15,15 @@ export const STOCK_CONFIG = {
   minQualityScore: 7,
 };
 
-// Twitterアカウントのみの型
+// Twitterアカウントのみの型（内部名）
 type TwitterAccountType = 'liver' | 'chatre1' | 'chatre2';
+
+// 内部名 → AccountType のマッピング
+const TWITTER_TO_ACCOUNT: Record<TwitterAccountType, AccountType> = {
+  liver: 'tt_liver',
+  chatre1: 'chatre1',
+  chatre2: 'chatre2',
+};
 
 // 外部向けの型（ISO文字列）
 export interface StockedPost {
@@ -225,11 +232,13 @@ export async function refillStock(account: TwitterAccountType): Promise<{
 
   for (let i = 0; i < needed + 1; i++) {
     try {
-      const post = await generateDMPostForAccount(account);
+      // 内部アカウント名をAccountTypeに変換
+      const accountType = TWITTER_TO_ACCOUNT[account];
+      const post = await generateDMPostForAccount(accountType);
       const score = checkQuality(post.text);
 
       if (score.total >= STOCK_CONFIG.minQualityScore) {
-        await addToStock(account, post, score.total);
+        await addToStock(accountType, post, score.total);
         added++;
 
         if (added >= needed) break;
@@ -278,7 +287,9 @@ export async function getPostForAccount(account: TwitterAccountType): Promise<{
   fromStock: boolean;
   stockRemaining: number;
 }> {
-  const stockedPost = await useFromStock(account);
+  // 内部アカウント名をAccountTypeに変換
+  const accountType = TWITTER_TO_ACCOUNT[account];
+  const stockedPost = await useFromStock(accountType);
 
   if (stockedPost) {
     const counts = await getStockCounts();
@@ -290,7 +301,7 @@ export async function getPostForAccount(account: TwitterAccountType): Promise<{
   }
 
   console.log(`[PostStock] No stock for ${account}, generating new...`);
-  const newPost = await generateDMPostForAccount(account);
+  const newPost = await generateDMPostForAccount(accountType);
   const counts = await getStockCounts();
 
   return {

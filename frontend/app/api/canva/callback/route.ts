@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
 
     const tokenData = await tokenResponse.json();
 
-    // トークンを保存
+    // トークン情報を整理
     const saveData: TokenData = {
       access_token: tokenData.access_token,
       refresh_token: tokenData.refresh_token,
@@ -119,12 +119,29 @@ export async function GET(request: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    saveToken(saveData);
+    console.log('[Canva Callback] Token received successfully');
 
-    console.log('[Canva Callback] Token saved successfully');
+    // Vercelは読み取り専用なので、トークンを画面に表示
+    // ユーザーが環境変数として設定する
+    const response = NextResponse.json({
+      success: true,
+      message: 'OAuth認証成功！以下のトークンをVercelの環境変数に設定してください。',
+      instructions: [
+        '1. Vercel Dashboard → Settings → Environment Variables に移動',
+        '2. 以下の環境変数を追加:',
+        '   - CANVA_ACCESS_TOKEN',
+        '   - CANVA_REFRESH_TOKEN',
+        '3. 保存後、Redeployしてください',
+      ],
+      tokens: {
+        CANVA_ACCESS_TOKEN: saveData.access_token,
+        CANVA_REFRESH_TOKEN: saveData.refresh_token,
+        expires_at: new Date(saveData.expires_at).toISOString(),
+        scope: saveData.scope,
+      },
+    });
 
     // Cookieをクリア
-    const response = NextResponse.redirect(new URL('/dashboard/content', request.url));
     response.cookies.delete('canva_code_verifier');
     response.cookies.delete('canva_state');
 

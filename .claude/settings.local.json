@@ -67,7 +67,9 @@
       "Bash(del \"C:\\\\Users\\\\user\\\\.gemini\\\\antigravity\\\\playground\\\\mic-admin-temp\\\\frontend\\\\.next\\\\dev\\\\lock\")",
       "Bash(echo.)",
       "Bash(git pull:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git checkout:*)",
+      "Bash(vercel logs:*)"
     ]
   }
 }

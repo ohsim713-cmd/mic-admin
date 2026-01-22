@@ -37,13 +37,15 @@ export async function GET() {
   // stateはCSRF対策用
   const state = crypto.randomBytes(16).toString('hex');
 
-  // スコープ
+  // スコープ（Developer Portalで設定したものと一致させる）
   const scopes = [
+    'asset:read',
+    'asset:write',
+    'brandtemplate:content:read',
+    'brandtemplate:meta:read',
     'design:content:read',
     'design:content:write',
     'design:meta:read',
-    'asset:read',
-    'asset:write',
     'profile:read',
   ];
 
