@@ -4,31 +4,30 @@ import { AccountType, ACCOUNTS } from '@/lib/dm-hunter/sns-adapter';
 import { updateImpressions, getRecentSchedules } from '@/lib/database/schedule-db';
 
 // Twitter クライアントを取得
-function getTwitterClient(account: AccountType): TwitterApi | null {
+function getTwitterClient(account: string): TwitterApi | null {
   let apiKey: string | undefined;
   let apiSecret: string | undefined;
   let accessToken: string | undefined;
   let accessTokenSecret: string | undefined;
 
-  switch (account) {
-    case 'liver':
-      apiKey = process.env.TWITTER_API_KEY_TT_LIVER;
-      apiSecret = process.env.TWITTER_API_SECRET_TT_LIVER;
-      accessToken = process.env.TWITTER_ACCESS_TOKEN_TT_LIVER;
-      accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET_TT_LIVER;
-      break;
-    case 'chatre1':
-      apiKey = process.env.TWITTER_API_KEY_MIC_CHAT;
-      apiSecret = process.env.TWITTER_API_SECRET_MIC_CHAT;
-      accessToken = process.env.TWITTER_ACCESS_TOKEN_MIC_CHAT;
-      accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET_MIC_CHAT;
-      break;
-    case 'chatre2':
-      apiKey = process.env.TWITTER_API_KEY_MS_STRIPCHAT;
-      apiSecret = process.env.TWITTER_API_SECRET_MS_STRIPCHAT;
-      accessToken = process.env.TWITTER_ACCESS_TOKEN_MS_STRIPCHAT;
-      accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET_MS_STRIPCHAT;
-      break;
+  if (account === 'liver') {
+    apiKey = process.env.TWITTER_API_KEY_TT_LIVER;
+    apiSecret = process.env.TWITTER_API_SECRET_TT_LIVER;
+    accessToken = process.env.TWITTER_ACCESS_TOKEN_TT_LIVER;
+    accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET_TT_LIVER;
+  } else if (account === 'chatre1') {
+    apiKey = process.env.TWITTER_API_KEY_MIC_CHAT;
+    apiSecret = process.env.TWITTER_API_SECRET_MIC_CHAT;
+    accessToken = process.env.TWITTER_ACCESS_TOKEN_MIC_CHAT;
+    accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET_MIC_CHAT;
+  } else if (account === 'chatre2') {
+    apiKey = process.env.TWITTER_API_KEY_MS_STRIPCHAT;
+    apiSecret = process.env.TWITTER_API_SECRET_MS_STRIPCHAT;
+    accessToken = process.env.TWITTER_ACCESS_TOKEN_MS_STRIPCHAT;
+    accessTokenSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET_MS_STRIPCHAT;
+  } else {
+    // wordpress等のTwitter以外のアカウント
+    return null;
   }
 
   if (!apiKey || !apiSecret || !accessToken || !accessTokenSecret) {
