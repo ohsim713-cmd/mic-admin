@@ -13,7 +13,7 @@ import { AccountType, ACCOUNTS } from '../dm-hunter/sns-adapter';
 import { getRandomizedPostTime, shouldTakeBreak, getRandomizedDailyPostCount } from '../langgraph/humanizer';
 
 // アクティブアカウント（3アカウント稼働中）
-const ACTIVE_ACCOUNTS: AccountType[] = ['liver', 'chatre1', 'chatre2'];
+const ACTIVE_ACCOUNTS: AccountType[] = ['tt_liver', 'chatre1', 'chatre2'];
 
 // 投稿スケジュール（JST）- 1.5時間間隔、24時間対応
 export const POSTING_SCHEDULE = {
