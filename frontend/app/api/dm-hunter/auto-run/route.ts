@@ -132,7 +132,7 @@ async function runSingleAccount(account: AccountType, dryRun: boolean, startTime
 async function runAllAccounts(dryRun: boolean, startTime: number) {
   console.log('[DM Hunter] Getting posts from stock or generating...');
 
-  const accounts = ['liver', 'chatre1', 'chatre2'] as const;
+  const accounts = ['tt_liver', 'chatre1', 'chatre2'] as const;
 
   // ストックから取得、なければ生成
   const postsWithScore = await Promise.all(
@@ -203,7 +203,7 @@ async function runAllAccounts(dryRun: boolean, startTime: number) {
   // 投稿実行
   console.log('[DM Hunter] Posting to all accounts...');
   const postData = validPosts.map(p => ({
-    account: p.account,
+    account: p.account as AccountType,
     text: p.post.text,
   }));
 
@@ -299,7 +299,7 @@ export async function GET() {
       todayPosts: 0,
       todaySuccess: 0,
       scheduledTimes: ['07:00', '12:00', '18:00', '20:00', '22:00', '24:00'],
-      stock: { counts: { liver: 0, chatre1: 0, chatre2: 0 }, needsRefill: ['liver', 'chatre1', 'chatre2'], isLow: true },
+      stock: { counts: { tt_liver: 0, chatre1: 0, chatre2: 0 }, needsRefill: ['tt_liver', 'chatre1', 'chatre2'], isLow: true },
     });
   }
 }

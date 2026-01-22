@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const {
       dryRun = false,
-      accountId = 'liver' as AccountType,
+      accountId = 'tt_liver' as AccountType,
       mode: requestedMode,
       templateId,
       genre,
