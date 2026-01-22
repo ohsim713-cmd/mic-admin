@@ -48,6 +48,7 @@ on:
           - refill-stock
           - fetch-impressions
           - daily-summary
+          - scrape-competitors
       dry_run:
         description: 'テスト実行（投稿しない）'
         required: false
@@ -77,6 +78,40 @@ jobs:
             echo "action=post-and-summary" >> $GITHUB_OUTPUT
           else
             echo "action=post" >> $GITHUB_OUTPUT
+          fi
+
+      # 競合アカウントスクレイピング（データ収集用）
+      - name: Scrape Competitor Accounts
+        if: steps.action.outputs.action == 'refill-stock' || steps.action.outputs.action == 'scrape-competitors'
+        env:
+          DEPLOY_URL: ${{ secrets.VERCEL_DEPLOY_URL }}
+          AUTO_POST_SECRET: ${{ secrets.AUTO_POST_SECRET }}
+        run: |
+          echo "=== Scrape Competitor Accounts ==="
+          echo "Time: $(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M JST')"
+
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "Skipping: VERCEL_DEPLOY_URL not set"
+            exit 0
+          fi
+
+          echo "Calling: $DEPLOY_URL/api/automation/scrape-accounts"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$DEPLOY_URL/api/automation/scrape-accounts" \
+            -H "Content-Type: application/json" \
+            -d '{"category": "all", "secret": "'"$AUTO_POST_SECRET"'"}')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "Response Code: $HTTP_CODE"
+          echo "Response: $BODY" | head -c 2000
+
+          # エラーでも続行（データ収集なので）
+          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+            echo "=== Scraping Success ==="
+          else
+            echo "=== Scraping Failed (continuing anyway) ==="
           fi
 
       # ストック補充
