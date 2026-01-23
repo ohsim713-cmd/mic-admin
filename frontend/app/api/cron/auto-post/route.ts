@@ -3,6 +3,8 @@
  *
  * Vercel Cron: 1日15回（1.5時間間隔）
  * 新しい Vercel AI SDK 版の自動投稿を実行
+ *
+ * 環境変数 PAUSE_AUTOMATION=true で一時停止可能
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -21,6 +23,11 @@ import { generateImageForPost } from '@/lib/ai/image-generator';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300; // Vercel Pro: 5分まで
+
+// 一時停止チェック
+function isPaused(): boolean {
+  return process.env.PAUSE_AUTOMATION === 'true';
+}
 
 // アカウント情報を取得
 function getAccountInfo(accountId: AccountType) {
@@ -167,6 +174,16 @@ export async function GET(request: NextRequest) {
     if (process.env.CRON_SECRET && process.env.NODE_ENV === 'production') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+  }
+
+  // 一時停止チェック（環境変数 PAUSE_AUTOMATION=true で停止）
+  if (isPaused()) {
+    console.log('[CRON] Auto-post is PAUSED');
+    return NextResponse.json({
+      success: true,
+      paused: true,
+      message: 'Auto-post is paused via PAUSE_AUTOMATION env var',
+    });
   }
 
   // クエリパラメータでアカウント指定（デフォルトはtt_liver）
