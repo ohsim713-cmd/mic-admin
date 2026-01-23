@@ -29,8 +29,8 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          # ナレッジ収集スクリプトを実行
-          npx ts-node --esm scripts/collect-knowledge.ts
+          # ナレッジ収集スクリプトを実行（tsxはESM対応）
+          npx tsx scripts/collect-knowledge.ts
 
       - name: Commit knowledge updates
         run: |
