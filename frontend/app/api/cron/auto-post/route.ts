@@ -195,7 +195,7 @@ export async function GET(request: NextRequest) {
     : 'tt_liver';
 
   const minChars = 200;
-  const maxChars = 300;
+  const maxChars = 270; // Twitter上限280文字なので余裕を持たせる
 
   try {
     console.log('[CRON] Starting auto-post...');
