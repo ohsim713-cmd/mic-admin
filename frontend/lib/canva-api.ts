@@ -461,6 +461,35 @@ async function waitForExportJob(
 // ========== テンプレート操作 ==========
 
 /**
+ * ブランドテンプレートのデータセット（autofill可能なフィールド）を取得
+ */
+export async function getBrandTemplateDataset(
+  accessToken: string,
+  templateId: string
+): Promise<{
+  dataset: Record<string, { type: 'text' | 'image' | 'chart' }>;
+} | null> {
+  try {
+    const response = await fetch(`${BASE_URL}/brand-templates/${templateId}/dataset`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('[Canva API] Get template dataset failed:', error);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('[Canva API] Get template dataset error:', error);
+    return null;
+  }
+}
+
+/**
  * ブランドテンプレート一覧を取得
  */
 export async function listBrandTemplates(

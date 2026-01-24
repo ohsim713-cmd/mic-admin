@@ -55,28 +55,46 @@ export function loadPostsHistory(): PostsHistoryData {
  * 投稿履歴を保存
  */
 function savePostsHistory(data: PostsHistoryData): void {
-  const dir = path.dirname(HISTORY_FILE);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  try {
+    const dir = path.dirname(HISTORY_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(data, null, 2));
+  } catch (error) {
+    // Production環境では読み取り専用なのでエラーを無視
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[PostsHistory] Cannot save in production (read-only filesystem):', error);
+    } else {
+      throw error;
+    }
   }
-  fs.writeFileSync(HISTORY_FILE, JSON.stringify(data, null, 2));
 }
 
 /**
  * 新規投稿を履歴に追加
  */
 export async function addToPostsHistory(entry: Omit<PostHistoryEntry, 'engagementRate'>): Promise<void> {
-  const history = loadPostsHistory();
+  try {
+    const history = loadPostsHistory();
 
-  // 重複チェック
-  if (!history.posts.find(p => p.id === entry.id)) {
-    history.posts.push({
-      ...entry,
-      engagementRate: undefined,
-    });
-    history.lastUpdated = new Date().toISOString();
-    savePostsHistory(history);
-    console.log(`[PostsHistory] Added: ${entry.id}`);
+    // 重複チェック
+    if (!history.posts.find(p => p.id === entry.id)) {
+      history.posts.push({
+        ...entry,
+        engagementRate: undefined,
+      });
+      history.lastUpdated = new Date().toISOString();
+      savePostsHistory(history);
+      console.log(`[PostsHistory] Added: ${entry.id}`);
+    }
+  } catch (error) {
+    // Production環境では読み取り専用なのでエラーを無視
+    if (process.env.NODE_ENV === 'production') {
+      console.warn('[PostsHistory] Cannot add in production (read-only filesystem):', error);
+    } else {
+      throw error;
+    }
   }
 }
 

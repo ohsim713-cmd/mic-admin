@@ -10,6 +10,7 @@ frontend/out/
 .env
 .env.local
 .env.*.local
+.env.discord
 frontend/.env
 frontend/.env.local
 
@@ -40,3 +41,7 @@ dist/
 # Windows reserved names
 nul
 frontend/nul
+
+# Submodules
+claude-code-discord/
+disclaude/

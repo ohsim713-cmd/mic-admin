@@ -14,6 +14,7 @@ import fs from 'fs';
 import path from 'path';
 import { getModel } from '@/lib/ai/model';
 import { getImagenClient, toDataUrl } from '@/lib/imagen';
+import { getObsidianClient, createTikTokContentNote, checkVaultAccess } from '@/lib/obsidian';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60; // 画像生成を含むため延長
@@ -344,6 +345,35 @@ export async function POST(request: NextRequest) {
     queue.tiktok.push(newItem);
     queue.updatedAt = new Date().toISOString();
     saveContentQueue(queue);
+
+    // Obsidian 自動保存
+    if (process.env.OBSIDIAN_AUTO_SAVE === 'true') {
+      try {
+        const isVaultAccessible = await checkVaultAccess();
+        if (isVaultAccessible) {
+          const obsidian = getObsidianClient();
+          const contentNote = createTikTokContentNote(
+            { queueId: newItem.id, content },
+            account
+          );
+          const saveResult = await obsidian.saveContentWithImage(
+            contentNote,
+            content.generatedImage?.base64,
+            content.generatedImage?.mimeType
+          );
+          await obsidian.appendToLog({
+            timestamp: new Date().toISOString(),
+            action: 'TikTok Content Saved',
+            success: saveResult.contentResult.success,
+            details: { contentId: newItem.id, account, mode },
+            error: saveResult.contentResult.error,
+          });
+          console.log(`[TikTok Content] Saved to Obsidian: ${saveResult.contentResult.filePath}`);
+        }
+      } catch (obsidianError) {
+        console.error('[TikTok Content] Obsidian save error (non-blocking):', obsidianError);
+      }
+    }
 
     console.log(`[TikTok Content] Generated in ${Date.now() - startTime}ms`);
 

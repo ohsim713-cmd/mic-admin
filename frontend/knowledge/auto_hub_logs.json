@@ -1,0 +1,31 @@
+{
+  "text": [],
+  "image": [
+    {
+      "id": "1769176288187",
+      "timestamp": "2026-01-23T13:51:28.187Z",
+      "success": true,
+      "theme": "nail_glam"
+    },
+    {
+      "id": "1769176265208",
+      "timestamp": "2026-01-23T13:51:05.208Z",
+      "success": true,
+      "theme": "nail_trendy"
+    },
+    {
+      "id": "1769174660487",
+      "timestamp": "2026-01-23T13:24:20.487Z",
+      "success": true,
+      "theme": "nail_seasonal"
+    },
+    {
+      "id": "1769174585662",
+      "timestamp": "2026-01-23T13:23:05.662Z",
+      "success": false,
+      "theme": "nail_trendy",
+      "error": "Image generation failed"
+    }
+  ],
+  "video": []
+}
