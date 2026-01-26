@@ -439,7 +439,7 @@ ${postTypeInstruction}
 ${postType.type === 'closing' ? `- ベネフィット例: ${benefitPatterns || '月30万以上'}` : '- ※お金の話は禁止！ベネフィットは使わない'}
 
 【必須条件】
-- 140文字以内
+- 100-120文字（Xタイムラインで全文表示される長さ）
 - 絵文字は最後に1個だけ
 - 自然な口語体（「〜だよね」「〜じゃん」OK）
 - 成功パターンのフックを1つ取り入れる
@@ -581,7 +581,7 @@ ${moneyRule}
 7. 禁止ワード（絶対使わない）
    ${prohibitedList}
 
-改善した投稿文のみを出力（140文字以内、解説不要）：`;
+改善した投稿文のみを出力（100-120文字、解説不要）：`;
 
           const improvementResult = await model.generateContent(improvementPrompt);
           const improvedText = improvementResult.response.text();
@@ -662,9 +662,9 @@ ${improvedText}
 
 以下の形式で出力：
 【思考】（50文字）
-【原案】（140文字以内）
+【原案】（100-120文字）
 【分析】（50文字）
-【改善版】（140文字以内）
+【改善版】（100-120文字）
 【スコア】（数字/10）`;
 
     const result = await model.generateContent(fullPrompt);

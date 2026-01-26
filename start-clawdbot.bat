@@ -1,0 +1,3 @@
+@echo off
+echo Starting Clawdbot Gateway...
+clawdbot gateway --port 18789

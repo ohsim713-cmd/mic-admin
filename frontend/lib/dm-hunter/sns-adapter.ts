@@ -15,12 +15,13 @@ export const ACCOUNTS: {
   handle: string;
   type: 'ライバー' | 'チャトレ';
   platform: 'twitter' | 'wordpress';
+  enabled?: boolean;
 }[] = [
-  { id: 'tt_liver', name: 'ライバー事務所', handle: '@tt_liver', type: 'ライバー', platform: 'twitter' },
-  { id: 'litz_grp', name: 'ライバー事務所公式', handle: '@Litz_grp', type: 'ライバー', platform: 'twitter' },
-  { id: 'chatre1', name: 'チャトレ事務所①', handle: '@mic_chat_', type: 'チャトレ', platform: 'twitter' },
-  { id: 'chatre2', name: 'チャトレ事務所②', handle: '@ms_stripchat', type: 'チャトレ', platform: 'twitter' },
-  { id: 'wordpress', name: 'WordPress記事', handle: 'チャトレブログ', type: 'チャトレ', platform: 'wordpress' },
+  { id: 'tt_liver', name: 'ライバー事務所', handle: '@tt_liver', type: 'ライバー', platform: 'twitter', enabled: true },
+  { id: 'litz_grp', name: 'ライバー事務所公式', handle: '@Litz_grp', type: 'ライバー', platform: 'twitter', enabled: true },
+  { id: 'chatre1', name: 'チャトレ事務所①', handle: '@mic_chat_', type: 'チャトレ', platform: 'twitter', enabled: true },
+  { id: 'chatre2', name: 'チャトレ事務所②', handle: '@ms_stripchat', type: 'チャトレ', platform: 'twitter', enabled: false },
+  { id: 'wordpress', name: 'WordPress記事', handle: 'チャトレブログ', type: 'チャトレ', platform: 'wordpress', enabled: true },
 ];
 
 // SNS別の制限
@@ -112,10 +113,8 @@ export function formatForTwitter(text: string): string {
   // ハッシュタグを除去
   formatted = formatted.replace(/#[^\s#]+/g, '').trim();
 
-  // 280文字に収める
-  if (formatted.length > 260) {
-    formatted = formatted.substring(0, 257) + '...';
-  }
+  // X Premium対応 - 長文投稿OK（最大25,000文字）
+  // 文字数制限は削除（AIプロンプト側で制御）
 
   // CTAを確認して追加
   if (!formatted.includes('DM') && !formatted.includes('メッセージ')) {
@@ -184,6 +183,17 @@ export async function postToTwitterAccount(
 ): Promise<PostResult> {
   const accountInfo = ACCOUNTS.find(a => a.id === account);
   const accountName = accountInfo?.handle || account;
+
+  // アカウントが無効化されている場合はスキップ
+  if (accountInfo && accountInfo.enabled === false) {
+    console.log(`[Twitter] Skipping disabled account: ${accountName}`);
+    return {
+      platform: 'twitter',
+      account: accountName,
+      success: false,
+      error: `${accountName}は無効化されています`,
+    };
+  }
 
   try {
     const client = getTwitterClient(account);

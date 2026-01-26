@@ -7,6 +7,7 @@
 import React from 'react';
 import { Composition } from 'remotion';
 import { ReelTemplate } from './ReelTemplate';
+import { TwitterTemplate } from './TwitterTemplate';
 
 // デフォルトProps（プレビュー用）
 const defaultReelProps = {
@@ -16,6 +17,16 @@ const defaultReelProps = {
   backgroundColor: '#FFE4EC',
   accentColor: '#FF6B9D',
   textColor: '#333333',
+};
+
+const defaultTwitterProps = {
+  topic: '事務所がやること',
+  description: '配信者様と一緒にアカウントを育てていく',
+  subDescription: '',
+  backgroundColor: '#FFE4EC',
+  accentColor: '#FF6B9D',
+  textColor: '#333333',
+  headerText: 'HOW TO MAKE MONEY?',
 };
 
 export const RemotionRoot: React.FC = () => {
@@ -43,15 +54,15 @@ export const RemotionRoot: React.FC = () => {
         defaultProps={defaultReelProps}
       />
 
-      {/* Twitter/X Post (1200x675) */}
+      {/* Twitter/X Post (1200x675) - 専用テンプレート */}
       <Composition
         id="TwitterTemplate"
-        component={ReelTemplate as unknown as React.ComponentType<Record<string, unknown>>}
+        component={TwitterTemplate as unknown as React.ComponentType<Record<string, unknown>>}
         durationInFrames={1}
         fps={30}
         width={1200}
         height={675}
-        defaultProps={defaultReelProps}
+        defaultProps={defaultTwitterProps}
       />
     </>
   );

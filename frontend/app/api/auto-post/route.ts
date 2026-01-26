@@ -301,7 +301,7 @@ export async function POST(request: NextRequest) {
     const prompt = `あなたは在宅ワーク求人のプロコピーライターです。
 【投稿タイプ】${currentSlot.type}
 【強調メリット】${benefit.label} - ${benefit.desc}
-ルール: 200-280文字、体験談風、数字入れる、ハッシュタグ禁止、2-3行ごと空行
+ルール: 200-270文字（API制限280文字以内）、体験談風、数字入れる、ハッシュタグ禁止、2-3段落に分ける
 投稿文のみ出力。`;
 
     const result = await model.generateContent(prompt);

@@ -114,7 +114,26 @@
       "Bash(powercfg /query:*)",
       "Bash(powercfg:*)",
       "Bash(cmd /c \"chcp 437 && powercfg -list\")",
-      "Bash(powershell -ExecutionPolicy Bypass -File \"c:\\\\Users\\\\user\\\\.gemini\\\\antigravity\\\\playground\\\\charged-tyson\\\\create-startup-shortcut.ps1\")"
+      "Bash(powershell -ExecutionPolicy Bypass -File \"c:\\\\Users\\\\user\\\\.gemini\\\\antigravity\\\\playground\\\\charged-tyson\\\\create-startup-shortcut.ps1\")",
+      "Bash(wsl --list:*)",
+      "Bash(clawdbot status:*)",
+      "Bash(clawdbot channel discord status:*)",
+      "Bash(tasklist:*)",
+      "Bash(clawdbot logs:*)",
+      "Bash(clawdbot message:*)",
+      "Bash(wmic process where \"name=''node.exe''\" get processid,commandline)",
+      "Bash(explorer shell:startup)",
+      "Bash(clawdbot agents list:*)",
+      "Bash(clawdbot agents add:*)",
+      "Bash(clawdbot configure:*)",
+      "Bash(clawdbot cron:*)",
+      "Bash(schtasks /create /tn \"ClawdBot Daily Restart\" /tr \"taskkill /F /IM node.exe && timeout /t 5 && clawdbot gateway --port 18789\" /sc daily /st 05:00 /f)",
+      "Bash(schtasks /create /tn \"ClawdBot Gateway\" /tr \"cmd /c clawdbot gateway --port 18789\" /sc onlogon /rl highest /f)",
+      "Bash(cmd //c \"schtasks /create /tn \"\"ClawdBot Gateway\"\" /tr \"\"cmd /c clawdbot gateway --port 18789\"\" /sc onlogon /rl highest /f\")",
+      "Bash(cmd //c \"schtasks /create /tn ClawdBotGateway /tr C:\\\\Users\\\\user\\\\start-clawdbot.bat /sc onlogon /rl highest /f\")",
+      "Bash(cmd //c \"copy C:\\\\Users\\\\user\\\\start-clawdbot.bat \"\"C:\\\\Users\\\\user\\\\AppData\\\\Roaming\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup\\\\start-clawdbot.bat\"\"\")",
+      "Bash(clawdbot pairing approve:*)",
+      "WebFetch(domain:clawd.bot)"
     ]
   }
 }

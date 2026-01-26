@@ -192,13 +192,15 @@ export async function GET(request: NextRequest) {
   // クエリパラメータでアカウント指定（デフォルトはtt_liver）
   const { searchParams } = new URL(request.url);
   const accountParam = searchParams.get('account');
-  const validAccounts: AccountType[] = ['tt_liver', 'litz_grp', 'chatre2'];
+  const imageParam = searchParams.get('image');
+  const shouldGenerateImage = imageParam === 'true';
+  const validAccounts: AccountType[] = ['tt_liver', 'litz_grp'];
   const accountId: AccountType = validAccounts.includes(accountParam as AccountType)
     ? (accountParam as AccountType)
     : 'tt_liver';
 
-  const minChars = 200;
-  const maxChars = 400; // X Premiumなら長文OK、文章が途切れないよう余裕を持たせる
+  const minChars = 180;
+  const maxChars = 270; // X API制限対応 - 280文字以内で完結させる
 
   try {
     console.log('[CRON] Starting auto-post...');
@@ -222,37 +224,70 @@ export async function GET(request: NextRequest) {
     // DM誘導するかどうか（3回に1回程度）
     const shouldIncludeCTA = Math.random() < 0.33;
 
+    // 業界データ（情報量を増やすため）
+    const industryData = `
+## ライバー業界の最新データ（投稿に活用すること）
+- 2025年ライブ配信市場規模: 約8,000億円（前年比15%増）
+- 国内ライバー人口: 約50万人（2025年推計）
+- 平均視聴時間: 1日あたり45分
+- 配信者の73%が副業として活動
+- 未経験から3ヶ月以内に収益化: 68%
+- 顔出しなしで活動するライバー: 約40%
+- 主要プラットフォーム: Pococha（国内1位）、17LIVE、TikTok LIVE、BIGO LIVE
+- Pococha月間ダイヤ還元額: トップ層で月100万円以上
+- 平均的なライバー（中堅）の月収: 5-15万円
+- 週4日・1日2時間配信で月10万円達成率: 約45%
+- リスナーの60%が20-30代女性
+- ギフト単価: 100円〜50,000円
+- 新人期間（Pococha）: 最初の2週間はボーナスあり
+
+## 具体的な成功事例（投稿ネタに使用可）
+- 32歳2児のママ: 子供が寝た後2時間×週5日で月12万円（3ヶ月目）
+- 28歳会社員: 平日夜2時間の副業で月8万円（半年継続中）
+- 35歳専業主婦: 昼間3時間で月15万円（1年経過）
+- 21歳大学生: 週末のみで月5万円（始めて2ヶ月）
+- 30歳シングルマザー: 在宅4時間で月20万円（8ヶ月経過）
+`;
+
     // プロンプト構築
     const systemPrompt = mode === 'self'
       ? `あなたはSNS運用のエキスパートです。
-以下のアカウントの過去の伸びた投稿を1つ選び、同じトーンで別表現に書き直してください。
+以下のアカウントの過去の伸びた投稿を参考に、【具体的なデータや事例を含む情報量の多い投稿】を作成してください。
 
 ## アカウント情報
 ${accountInfo.description}
 
-## 過去の伸びた投稿
+${industryData}
+
+## 過去の伸びた投稿（参考）
 ${sourcePosts.map((p: { text: string }, i: number) => `${i + 1}. ${p.text}`).join('\n\n')}
 
 ## 最近の投稿（トーン参考）
 ${recentPosts.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n\n')}
 
+## 【最重要】短く刺さる投稿ルール
+- 1つのメッセージに絞る（詰め込まない）
+- 具体的な数字を1つ入れる（月○万円、○時間など）
+- 短文でリズムよく、インパクト重視
+- 読んだ人が「へぇ」「なるほど」と思える内容
+
 ## 条件
 - このアカウントのターゲット層に響く内容
-- 元ネタの「メッセージ」は維持しつつ、「表現」を変える
-- 【必須】${minChars}〜${maxChars}文字で書くこと
+- 【絶対厳守】${minChars}〜${maxChars}文字で書くこと（280文字超えると切れる）
+- 【絶対厳守】文章は必ず完結させること。途中で切れたり「...」で終わることは絶対禁止
 - 【絵文字禁止】絵文字は一切使わない
-- 最初の10文字は元ネタと違う書き出しにする
-- パクリに見えないように巧妙にアレンジ
-- 自然な日本語で、押し売り感のない文章
-- 【重要】適度に改行を入れて読みやすくする（3〜5文ごとに空行）
+- 改行は1-2回まで（短いので入れすぎない）
+- 最後は必ず締めの文で終わること
 ${shouldIncludeCTA ? '- 最後にさりげなくDM誘導を入れてもOK（「気になる方はDMください」程度）' : '- 【重要】DM誘導や問い合わせ誘導は入れないこと。情報提供で終わる投稿にする'}
 
 【重要】投稿文のみを出力。説明や前置きは一切不要。`
       : `あなたはSNS運用のエキスパートです。
-以下のバズ投稿から1つ選び、そのテーマを借りて指定アカウントのトーンで完全に書き直してください。
+以下のバズ投稿を参考に、【具体的なデータや事例を含む情報量の多い投稿】を作成してください。
 
 ## アカウント情報
 ${accountInfo.description}
+
+${industryData}
 
 ## バズ投稿（参考）- これらがバズった理由を分析して活かすこと
 ${sourcePosts.map((p: { text: string; engagement?: number }, i: number) => `${i + 1}. ${JSON.stringify(p)}`).join('\n')}
@@ -260,23 +295,24 @@ ${sourcePosts.map((p: { text: string; engagement?: number }, i: number) => `${i 
 ## 最近の投稿（トーン参考）
 ${recentPosts.map((t: string, i: number) => `${i + 1}. ${t}`).join('\n\n')}
 
+## 【最重要】短く刺さる投稿ルール
+- 1つのメッセージに絞る（詰め込まない）
+- 具体的な数字を1つ入れる（月○万円、○時間など）
+- 短文でリズムよく、インパクト重視
+
 ## バズる投稿の特徴（必ず1つ以上取り入れる）
 - 冒頭で「え？」「実は」「意外と」など興味を引く
-- 具体的な数字を入れる（「月○万円」「○時間で」など）
-- 読み手の「あるある」や「知らなかった」を刺激
+- 読み手の「あるある」「知らなかった」を刺激
 - 最後にオチや気づきがある
-- 短文でリズムよく
 
 ## 条件
 - このアカウントのターゲット層に響く内容
 - テーマだけ借りて完全オリジナル化
-- 構造を変える（リスト形式なら文章形式に、など）
-- 数字があれば変える
-- 最初の10文字は元ネタと違う書き出しにする
-- 【必須】${minChars}〜${maxChars}文字で書くこと
+- 【絶対厳守】${minChars}〜${maxChars}文字で書くこと（280文字超えると切れる）
+- 【絶対厳守】文章は必ず完結させること。途中で切れたり「...」で終わることは絶対禁止
 - 【絵文字禁止】絵文字は一切使わない
-- 自然な日本語で、押し売り感のない文章
-- 【重要】適度に改行を入れて読みやすくする（3〜5文ごとに空行）
+- 改行は1-2回まで（短いので入れすぎない）
+- 最後は必ず締めの文で終わること
 ${shouldIncludeCTA ? '- 最後にさりげなくDM誘導を入れてもOK（「気になる方はDMください」程度）' : '- 【重要】DM誘導や問い合わせ誘導は入れないこと。情報提供や気づきで終わる投稿にする'}
 
 【重要】投稿文のみを出力。説明や前置きは一切不要。`;
@@ -294,22 +330,23 @@ ${shouldIncludeCTA ? '- 最後にさりげなくDM誘導を入れてもOK（「�
     console.log(`[CRON] Text generated in ${textGeneratedAt}ms`);
     console.log(`[CRON] Text: ${generatedText.substring(0, 80)}...`);
 
-    // 画像生成（現在は無効化 - テスト段階）
-    // TODO: テスト完了後に有効化
-    // const shouldGenerateImage = Math.random() < 0.3; // 30%で画像付き
-    const imageBuffer: Buffer | null = null;
-    /*
+    // 画像生成（image=trueパラメータで有効化）
+    let imageBuffer: Buffer | null = null;
     if (shouldGenerateImage) {
-      const accountType = accountId === 'chatre2' ? 'chatre' : 'liver';
+      const accountType = 'liver'; // tt_liver, litz_grp はライバー系
       console.log(`[CRON] Generating image for ${accountType}...`);
-      imageBuffer = await generateImageForPost(generatedText, accountType);
-      if (imageBuffer) {
-        console.log(`[CRON] Image generated: ${imageBuffer.length} bytes`);
-      } else {
-        console.log(`[CRON] Image generation failed, posting without image`);
+      try {
+        imageBuffer = await generateImageForPost(generatedText, accountType);
+        if (imageBuffer) {
+          console.log(`[CRON] Image generated: ${imageBuffer.length} bytes`);
+        } else {
+          console.log(`[CRON] Image generation failed, posting without image`);
+        }
+      } catch (imgError) {
+        console.error(`[CRON] Image generation error:`, imgError);
+        // 画像生成失敗しても投稿は続行
       }
     }
-    */
 
     const processingTime = Date.now() - startTime;
 
