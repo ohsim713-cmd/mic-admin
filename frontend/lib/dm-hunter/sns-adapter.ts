@@ -9,6 +9,7 @@ import { TwitterApi } from 'twitter-api-v2';
 export type AccountType = 'tt_liver' | 'litz_grp' | 'chatre1' | 'chatre2' | 'wordpress';
 
 // アカウント設定
+// ⚠️ 2024/01/26: Buffer移行のため全アカウント一時停止中
 export const ACCOUNTS: {
   id: AccountType;
   name: string;
@@ -17,11 +18,11 @@ export const ACCOUNTS: {
   platform: 'twitter' | 'wordpress';
   enabled?: boolean;
 }[] = [
-  { id: 'tt_liver', name: 'ライバー事務所', handle: '@tt_liver', type: 'ライバー', platform: 'twitter', enabled: true },
-  { id: 'litz_grp', name: 'ライバー事務所公式', handle: '@Litz_grp', type: 'ライバー', platform: 'twitter', enabled: true },
-  { id: 'chatre1', name: 'チャトレ事務所①', handle: '@mic_chat_', type: 'チャトレ', platform: 'twitter', enabled: true },
+  { id: 'tt_liver', name: 'ライバー事務所', handle: '@tt_liver', type: 'ライバー', platform: 'twitter', enabled: false },
+  { id: 'litz_grp', name: 'ライバー事務所公式', handle: '@Litz_grp', type: 'ライバー', platform: 'twitter', enabled: false },
+  { id: 'chatre1', name: 'チャトレ事務所①', handle: '@mic_chat_', type: 'チャトレ', platform: 'twitter', enabled: false },
   { id: 'chatre2', name: 'チャトレ事務所②', handle: '@ms_stripchat', type: 'チャトレ', platform: 'twitter', enabled: false },
-  { id: 'wordpress', name: 'WordPress記事', handle: 'チャトレブログ', type: 'チャトレ', platform: 'wordpress', enabled: true },
+  { id: 'wordpress', name: 'WordPress記事', handle: 'チャトレブログ', type: 'チャトレ', platform: 'wordpress', enabled: false },
 ];
 
 // SNS別の制限
