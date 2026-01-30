@@ -2,11 +2,11 @@
  * Twitter/X 用テンプレート（横長 1200x675）
  */
 
-import React from 'react';
-import { AbsoluteFill, Img } from 'remotion';
+import React, { useEffect, useState } from 'react';
+import { AbsoluteFill, Img, delayRender, continueRender } from 'remotion';
 import { loadFont } from '@remotion/google-fonts/NotoSansJP';
 
-const { fontFamily } = loadFont();
+const { fontFamily, waitUntilDone } = loadFont();
 
 export interface TwitterTemplateProps {
   topic: string;
@@ -37,6 +37,27 @@ export const TwitterTemplate: React.FC<TwitterTemplateProps> = (props) => {
     headerText,
     backgroundImage,
   } = { ...defaultProps, ...props };
+
+  const [fontLoaded, setFontLoaded] = useState(false);
+  const [handle] = useState(() => delayRender('Loading Japanese font'));
+
+  useEffect(() => {
+    waitUntilDone()
+      .then(() => {
+        setFontLoaded(true);
+        continueRender(handle);
+      })
+      .catch((err) => {
+        console.error('Font loading error:', err);
+        // フォントが読み込めなくても続行
+        setFontLoaded(true);
+        continueRender(handle);
+      });
+  }, [handle]);
+
+  if (!fontLoaded) {
+    return null;
+  }
 
   return (
     <AbsoluteFill

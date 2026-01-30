@@ -12,7 +12,7 @@ import {
 } from 'remotion';
 import { loadFont } from '@remotion/google-fonts/NotoSansJP';
 
-export const { fontFamily } = loadFont();
+export const { fontFamily, waitUntilDone } = loadFont();
 
 // アスペクト比タイプ
 export type AspectRatio = 'vertical' | 'horizontal';

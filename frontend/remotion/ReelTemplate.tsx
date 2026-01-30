@@ -5,12 +5,12 @@
  * データを渡すだけで画像を生成
  */
 
-import React from 'react';
-import { AbsoluteFill, Img, staticFile } from 'remotion';
+import React, { useEffect, useState } from 'react';
+import { AbsoluteFill, Img, staticFile, delayRender, continueRender } from 'remotion';
 import { loadFont } from '@remotion/google-fonts/NotoSansJP';
 
 // 日本語フォントを読み込み
-const { fontFamily } = loadFont();
+const { fontFamily, waitUntilDone } = loadFont();
 
 export interface ReelTemplateProps {
   // メインコンテンツ
@@ -53,6 +53,27 @@ export const ReelTemplate: React.FC<ReelTemplateProps> = (props) => {
     backgroundImage,
     characterImage,
   } = { ...defaultProps, ...props };
+
+  const [fontLoaded, setFontLoaded] = useState(false);
+  const [handle] = useState(() => delayRender('Loading Japanese font'));
+
+  useEffect(() => {
+    waitUntilDone()
+      .then(() => {
+        setFontLoaded(true);
+        continueRender(handle);
+      })
+      .catch((err) => {
+        console.error('Font loading error:', err);
+        // フォントが読み込めなくても続行
+        setFontLoaded(true);
+        continueRender(handle);
+      });
+  }, [handle]);
+
+  if (!fontLoaded) {
+    return null;
+  }
 
   return (
     <AbsoluteFill

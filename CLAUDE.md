@@ -1,64 +1,57 @@
-# charged-tyson プロジェクト
+# charged-tyson
 
-## 概要
-SNS自動投稿システム - チャットレディ/ライバー事務所向け求人コンテンツ自動生成
+SNS自動投稿システム（チャトレ/ライバー事務所向け）
 
-## 技術スタック
-- Next.js 15 + TypeScript
-- Gemini API (gemini-3-flash-preview)
-- Canva API (画像生成)
-- Twitter/X API
-- Remotion (動画生成)
+## 技術
+Next.js 15 + TypeScript / Gemini API / Twitter API / Remotion
 
-## アカウントタイプ
-- **tt_liver**: ライバー事務所向け（配信者募集、副業、自由な働き方）
-- **chatre**: チャットレディ事務所向け（高収入、在宅ワーク）
+## アカウント
+- **tt_liver**: ライバー事務所
+- **chatre**: チャットレディ事務所
 
-## 主要ディレクトリ
-```
-frontend/
-├── app/api/
-│   ├── content/instagram/  # Instagram投稿生成
-│   ├── content/tiktok/     # TikTok投稿生成
-│   ├── design/             # Canva画像生成
-│   └── generate/x/         # X(Twitter)投稿生成
-├── knowledge/
-│   └── posts_history.json  # 投稿履歴
-├── lib/
-│   ├── dm-hunter/          # DM営業用投稿生成
-│   ├── langgraph/          # LangGraph品質チェック
-│   └── canva-api.ts        # Canva連携
-└── remotion/               # 動画生成
-```
+## 学習モード: ON
+解説しながら進める（何を・なぜ・応用ポイント）
 
-## よく使うコマンド
-```bash
-# 開発サーバー起動
-cd frontend && npm run dev
-
-# TikTok投稿生成
-curl http://localhost:3000/api/content/tiktok?account=tt_liver
-
-# Instagram投稿生成
-curl http://localhost:3000/api/content/instagram?account=tt_liver
-```
+## 詳細ファイル（必要時に読む）
+- `.claude/user.md` - ユーザー目標・価値観
+- `.claude/memory.md` - セッション記録
+- `.claude/context/` - 個別トピックの詳細
 
 ## 投稿ルール
-- 200-270文字（Twitter API制限280文字以内）
-- ハッシュタグ禁止
-- 絵文字は1-2個まで
-- 最後にCTA（「DMで」など）
+200-270文字 / ハッシュタグ禁止 / 絵文字1-2個 / 最後にCTA
 
-## 環境変数
-- GEMINI_API_KEY
-- CANVA_API_KEY / CANVA_USER_ID
-- TWITTER_API_KEY_TT_LIVER / TWITTER_ACCESS_TOKEN_TT_LIVER
-- ENCRYPTION_KEY
+## コマンド
+```bash
+cd frontend && npm run dev
+curl http://localhost:3000/api/content/tiktok?account=tt_liver
+```
 
-## スキル
-このプロジェクトでは以下の作業が可能:
-1. 投稿文の生成・改善
-2. プロンプトの確認・修正
-3. 投稿履歴の確認
-4. コードの編集・デバッグ
-5. Web検索でトレンド調査
+## コーディングルール
+
+### テスト
+- 新機能には必ずテストを書く
+- テストファイル: `*.test.ts` or `*.spec.ts`
+- テスト実行: `npm test`
+
+### 品質
+- TypeScript strict mode
+- 関数は単一責任
+- エラーハンドリング必須
+- コメントは「なぜ」を書く（「何」は書かない）
+
+### 並列作業時
+- 複数ファイル同時編集OK
+- 依存関係あるタスクは順番に
+- 「並列で」と言えば同時実行
+
+### 外部ツール連携時
+- 公式ドキュメントをWebFetchで確認する
+- 手動作業を最小限に（CLIで完結させる）
+- 設定ファイルは全て自動生成
+- 動作確認まで行う
+
+### ユーザーの手動作業を減らす
+- インストールはコマンドで実行
+- 設定ファイルは書き込む
+- 環境変数は.envに追記
+- 最後に動作確認コマンドを実行

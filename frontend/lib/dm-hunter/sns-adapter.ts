@@ -18,7 +18,7 @@ export const ACCOUNTS: {
   platform: 'twitter' | 'wordpress';
   enabled?: boolean;
 }[] = [
-  { id: 'tt_liver', name: 'ライバー事務所', handle: '@tt_liver', type: 'ライバー', platform: 'twitter', enabled: false },
+  { id: 'tt_liver', name: 'ライバー事務所', handle: '@tt_liver', type: 'ライバー', platform: 'twitter', enabled: true },
   { id: 'litz_grp', name: 'ライバー事務所公式', handle: '@Litz_grp', type: 'ライバー', platform: 'twitter', enabled: false },
   { id: 'chatre1', name: 'チャトレ事務所①', handle: '@mic_chat_', type: 'チャトレ', platform: 'twitter', enabled: false },
   { id: 'chatre2', name: 'チャトレ事務所②', handle: '@ms_stripchat', type: 'チャトレ', platform: 'twitter', enabled: false },

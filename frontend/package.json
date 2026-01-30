@@ -12,9 +12,12 @@
     "remotion:preview": "remotion preview remotion/index.ts",
     "remotion:render": "remotion render remotion/index.ts ReelTemplate out/reel.png",
     "remotion:studio": "remotion studio",
-    "test": "playwright test",
-    "test:ui": "playwright test --ui",
-    "test:headed": "playwright test --headed"
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.15",
@@ -26,6 +29,7 @@
     "@arizeai/phoenix-otel": "^0.3.4",
     "@atproto/api": "^0.18.13",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@fontsource/noto-sans-jp": "^5.2.9",
     "@google-cloud/functions-framework": "^5.0.0",
     "@google-cloud/scheduler": "^5.3.1",
     "@google-cloud/storage": "^7.18.0",
@@ -69,9 +73,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/ui": "^4.0.18",
     "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   }
 }
